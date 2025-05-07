@@ -4,7 +4,11 @@ import './globals.css';
 import { NextThemeProvider } from '@/provider/theme';
 
 import type { Metadata } from 'next';
-
+import { Header } from '@/components/layout/header';
+import { Footer } from '@/components/layout/footer';
+import { APP_NAME, APP_DESCRIPTION } from '@/config/base';
+import { DAppProvider } from '@/provider/dapp';
+import { TooltipProvider } from '@/components/ui/tooltip';
 const geistSans = Geist({
   variable: '--font-geist-sans',
   subsets: ['latin']
@@ -16,9 +20,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'DeGov.AI',
-  description:
-    'DeGov.AI is a AI-powered platform for decentralized governance, built on the Openzeppelin contracts.'
+  title: APP_NAME,
+  description: APP_DESCRIPTION
 };
 
 export default function RootLayout({
@@ -29,7 +32,17 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <NextThemeProvider>{children}</NextThemeProvider>
+        <NextThemeProvider>
+          <TooltipProvider>
+            <DAppProvider>
+              <div className="bg-background flex h-dvh flex-col overflow-hidden font-sans antialiased">
+                <Header />
+                <main className="flex-1">{children}</main>
+                <Footer />
+              </div>
+            </DAppProvider>
+          </TooltipProvider>
+        </NextThemeProvider>
       </body>
     </html>
   );
