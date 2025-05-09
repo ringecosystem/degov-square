@@ -37,7 +37,7 @@ export default function RootLayout({
             <DAppProvider>
               <div className="bg-background flex h-dvh flex-col overflow-hidden font-sans antialiased">
                 <Header />
-                <main className="flex-1">{children}</main>
+                <main className="flex-1 py-[30px]">{children}</main>
                 <Footer />
               </div>
             </DAppProvider>

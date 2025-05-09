@@ -40,7 +40,7 @@ export const Connected = ({ address }: ConnectedProps) => {
           )}
         </AddressResolver>
       </DropdownMenuTrigger>
-      <DropdownMenuContent className="bg-muted rounded-[26px] p-[20px] shadow-2xl" align="end">
+      <DropdownMenuContent className="bg-card rounded-[26px] p-[20px] shadow-2xl" align="end">
         <div className="flex items-center gap-[10px]">
           <AddressAvatar address={address} className="rounded-full" />
           <Tooltip>
@@ -53,13 +53,9 @@ export const Connected = ({ address }: ConnectedProps) => {
           </Tooltip>
           <ClipboardIconButton text={address} size={20} />
         </div>
-        <DropdownMenuSeparator className="bg-border/20 my-[20px]" />
+        <DropdownMenuSeparator className="my-[20px]" />
         <div className="flex flex-col justify-center gap-[20px]">
-          <Button
-            asChild
-            className="border-border bg-card w-full gap-[10px] rounded-[100px]"
-            variant="outline"
-          >
+          <Button asChild className="h-[40px] w-full gap-[5px] rounded-[100px]" variant="outline">
             <Link href="/profile">
               <Image
                 src="/bell.svg"
@@ -68,12 +64,12 @@ export const Connected = ({ address }: ConnectedProps) => {
                 height={20}
                 className="size-[20px] flex-shrink-0"
               />
-              <span className="text-[14px]">Notifications</span>
+              <span className="text-[14px]">Notification</span>
             </Link>
           </Button>
           <Button
             onClick={handleDisconnect}
-            className="border-border bg-card w-full gap-[10px] rounded-[100px]"
+            className="h-[40px] w-full gap-[5px] rounded-[100px]"
             variant="outline"
           >
             <Power size={20} className="text-white" strokeWidth={2} />
