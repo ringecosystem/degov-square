@@ -54,9 +54,12 @@ export default function Home() {
       render(value, index) {
         return (
           <div className="flex items-center justify-end gap-[10px]">
-            <button className="cursor-pointer transition-opacity hover:opacity-80">
+            <Link
+              href={`/setting/${value?.id}/basic`}
+              className="cursor-pointer transition-opacity hover:opacity-80"
+            >
               <Image src="/setting.svg" alt="setting" width={20} height={20} />
-            </button>
+            </Link>
             <button className="cursor-pointer transition-opacity hover:opacity-80">
               <Image src="/favorite.svg" alt="favorite" width={20} height={20} />
             </button>
