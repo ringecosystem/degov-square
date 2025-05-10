@@ -1,15 +1,11 @@
-import { darwinia, mainnet } from 'viem/chains';
+import { supportedChains, supportedChainsById } from '@/config/chains';
+import { mainnet } from 'wagmi/chains';
 
 import type { Chain } from '@rainbow-me/rainbowkit';
 
-const chainConfigMap: Record<number, Chain> = {
-  [mainnet.id]: mainnet,
-  [darwinia.id]: darwinia
-};
-
 // Returns an array of all chain configurations, filtering based on deployment mode
 export function getChains(): [Chain, ...Chain[]] {
-  const filteredChains: Chain[] = Object.values(chainConfigMap);
+  const filteredChains: Chain[] = supportedChains;
   if (filteredChains.length === 0) {
     throw new Error('No suitable chain configurations are available.');
   }
@@ -18,12 +14,12 @@ export function getChains(): [Chain, ...Chain[]] {
 
 // Returns the chain by its id
 export function getChainById(id?: number): Chain | undefined {
-  return id ? chainConfigMap[id] : undefined;
+  return id ? supportedChainsById[id] : undefined;
 }
 
 // Returns the default chain configuration based on deployment mode
 export function getDefaultChain(): Chain {
-  const filteredChains = Object.values(chainConfigMap);
+  const filteredChains = supportedChains;
   if (filteredChains.length === 0) {
     throw new Error(
       'No suitable chain configurations are available for the current deployment mode.'
@@ -43,7 +39,6 @@ export function getDefaultChainId(): number {
 }
 
 // return if the chain is supported
-export function isSupportedChain(chainId: number): boolean {
-  const filteredChains = Object.values(chainConfigMap);
-  return filteredChains.some((chain) => chain.id === chainId);
+export function isSupportedChainById(chainId: number): boolean {
+  return supportedChainsById[chainId] !== undefined;
 }

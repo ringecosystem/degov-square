@@ -35,7 +35,7 @@ export default function RootLayout({
         <NextThemeProvider>
           <TooltipProvider>
             <DAppProvider>
-              <div className="bg-background flex h-dvh flex-col overflow-hidden font-sans antialiased">
+              <div className="bg-background flex min-h-dvh flex-col overflow-hidden font-sans antialiased">
                 <Header />
                 <main className="flex-1 py-[30px]">{children}</main>
                 <Footer />
