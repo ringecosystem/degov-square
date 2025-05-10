@@ -1,10 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { isAddress } from 'viem';
+import { debounce } from 'lodash-es';
 
 import { Button } from '@/components/ui/button';
 import { LoadedButton } from '@/components/ui/loaded-button';
@@ -64,6 +65,17 @@ export function AddTokensDialog({
 }: AddTokensDialogProps) {
   const [searchResults, setSearchResults] = useState<Token[]>([]);
   const [selectedTokens, setSelectedTokens] = useState<number[]>([]);
+  const [tokenData, setTokenData] = useState<Token | null>(null);
+  const [isSearching, setIsSearching] = useState(false);
+
+  const form = useForm<TokenFormValues>({
+    resolver: zodResolver(tokenSchema),
+    defaultValues: {
+      contractAddress: '' as `0x${string}`,
+      tokenType: TokenStandard.ERC20
+    },
+    mode: 'onChange'
+  });
 
   // Mock token search function
   const mockTokenSearch = (address: `0x${string}`, type: string): Token[] => {
@@ -91,18 +103,42 @@ export function AddTokensDialog({
     ];
   };
 
-  const form = useForm<TokenFormValues>({
-    resolver: zodResolver(tokenSchema),
-    defaultValues: {
-      contractAddress: '' as `0x${string}`,
-      tokenType: TokenStandard.ERC20
-    }
-  });
+  // Debounced search function
+  const debouncedSearch = useCallback(
+    debounce((address: `0x${string}`, type: string) => {
+      if (isAddress(address)) {
+        setIsSearching(true);
+        // Simulate API call
+        setTimeout(() => {
+          const results = mockTokenSearch(address, type);
+          setSearchResults(results);
+          setTokenData(results[0] || null);
+          setSelectedTokens(results.length > 0 ? [results[0].id] : []);
+          setIsSearching(false);
+        }, 500);
+      }
+    }, 500),
+    []
+  );
 
-  const onSearch = (values: TokenFormValues) => {
-    const results = mockTokenSearch(values.contractAddress, values.tokenType);
-    setSearchResults(results);
-  };
+  // Watch for changes in form values and trigger search
+  useEffect(() => {
+    const subscription = form.watch((value, { name, type }) => {
+      const contractAddress = value.contractAddress as `0x${string}`;
+      const tokenType = value.tokenType;
+
+      if (contractAddress && tokenType && isAddress(contractAddress)) {
+        debouncedSearch(contractAddress, tokenType);
+      } else {
+        // Clear results if inputs are invalid
+        setTokenData(null);
+        setSearchResults([]);
+        setSelectedTokens([]);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [form, debouncedSearch]);
 
   const toggleToken = (tokenId: number) => {
     setSelectedTokens((prev) =>
@@ -119,6 +155,7 @@ export function AddTokensDialog({
     onOpenChange(false);
     setSelectedTokens([]);
     setSearchResults([]);
+    setTokenData(null);
     form.reset();
   };
 
@@ -131,7 +168,7 @@ export function AddTokensDialog({
 
         <Separator className="my-0" />
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSearch)} className="flex flex-col gap-6">
+          <div className="flex flex-col gap-6">
             <FormField
               control={form.control}
               name="contractAddress"
@@ -152,23 +189,31 @@ export function AddTokensDialog({
                 </FormItem>
               )}
             />
-          </form>
+          </div>
         </Form>
 
-        <div className="bg-background flex flex-col gap-[20px] rounded-[14px] p-[20px]">
-          <div className="flex items-center gap-[20px]">
-            <span className="text-muted-foreground w-[100px]">Token Name</span>
-            <span>Governance RING</span>
+        {isSearching && (
+          <div className="bg-background flex h-[140px] flex-col items-center justify-center gap-[20px] rounded-[14px] p-[20px]">
+            <span className="text-muted-foreground">Searching for token...</span>
           </div>
-          <div className="flex items-center gap-[20px]">
-            <span className="text-muted-foreground w-[100px]">Token Symbol</span>
-            <span>gRING</span>
+        )}
+
+        {tokenData && !isSearching && (
+          <div className="bg-background flex flex-col gap-[20px] rounded-[14px] p-[20px]">
+            <div className="flex items-center gap-[20px]">
+              <span className="text-muted-foreground w-[100px]">Token Name</span>
+              <span>{tokenData.name}</span>
+            </div>
+            <div className="flex items-center gap-[20px]">
+              <span className="text-muted-foreground w-[100px]">Token Symbol</span>
+              <span>{tokenData.symbol}</span>
+            </div>
+            <div className="flex items-center gap-[20px]">
+              <span className="text-muted-foreground w-[100px]">Token Owner</span>
+              <span>{tokenData.owner}</span>
+            </div>
           </div>
-          <div className="flex items-center gap-[20px]">
-            <span className="text-muted-foreground w-[100px]">Token Owner</span>
-            <span>0x3B9F644BC66573f36DaD692097476628ET5FE890</span>
-          </div>
-        </div>
+        )}
 
         <Separator className="my-4" />
 
@@ -185,7 +230,7 @@ export function AddTokensDialog({
             variant="default"
             isLoading={isLoading}
             onClick={handleAddTokens}
-            disabled={selectedTokens.length === 0}
+            disabled={selectedTokens.length === 0 || isSearching}
           >
             Add to Treasury
           </LoadedButton>
