@@ -8,7 +8,14 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/ui/button';
 import { LoadedButton } from '@/components/ui/loaded-button';
 import { Input } from '@/components/ui/input';
-import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage
+} from '@/components/ui/form';
 
 // Schema for validation
 const emailSchema = z.object({
@@ -41,53 +48,45 @@ export default function SubscriptionPage() {
   };
 
   return (
-    <div className="bg-card rounded-[14px]">
-      <div className="p-8">
-        <h2 className="mb-6 text-lg font-medium">Email</h2>
+    <div className="bg-card h-[calc(100vh-300px)] space-y-[20px] rounded-[14px] p-[20px]">
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(handleVerify)}>
+          <FormField
+            control={form.control}
+            name="email"
+            render={({ field }) => (
+              <FormItem className="flex-1 gap-[5px]">
+                <FormLabel className="text-[14px]">Email</FormLabel>
+                <FormControl>
+                  <div className="flex items-center gap-[10px]">
+                    <Input
+                      className="border-border/20 h-[39px] rounded-lg"
+                      placeholder="Email@example.com"
+                      {...field}
+                    />
+                    <LoadedButton
+                      type="submit"
+                      variant="default"
+                      className="h-[37px] w-[155px] rounded-full p-[10px]"
+                      isLoading={isLoading}
+                      disabled={!form.formState.isValid || isLoading}
+                    >
+                      Verify
+                    </LoadedButton>
+                  </div>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </form>
+      </Form>
 
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleVerify)} className="flex flex-col gap-6">
-            <div className="flex items-center gap-4">
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem className="flex-1">
-                    <FormControl>
-                      <Input
-                        className="border-border/20 h-12 rounded-lg"
-                        placeholder="Email@example.com"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <LoadedButton
-                type="submit"
-                variant="default"
-                className="h-12 rounded-full px-8"
-                isLoading={isLoading}
-                disabled={!form.formState.isValid || isLoading}
-              >
-                Verify
-              </LoadedButton>
-            </div>
-          </form>
-        </Form>
-
-        <div className="text-muted-foreground mt-6">
-          <p>
-            Please set up your email to receive the notification from the DAOs you are interested in
-            or the proposals you are interested in.
-          </p>
-          <p className="mt-2">
-            This will help you to keep track of the latest updates and news from the DAOs and
-            proposals you care about.
-          </p>
-        </div>
-      </div>
+      <p className="text-[14px]">
+        Please set up your email to receive the notification from the DAOs you are interested in or
+        the proposals you are interested in. This will help you to keep track of the latest updates
+        and news from the DAOs and proposals you care about.
+      </p>
     </div>
   );
 }

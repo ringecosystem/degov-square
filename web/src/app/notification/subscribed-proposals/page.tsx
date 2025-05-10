@@ -106,7 +106,7 @@ export default function SubscribedProposalsPage() {
   }, []);
 
   return (
-    <div className="bg-card rounded-[14px]">
+    <div className="bg-card min-h-[calc(100vh-300px)] rounded-[14px]">
       <CustomTable
         columns={columns({ onRemove: handleUnsubscribe })}
         dataSource={subscriptions}

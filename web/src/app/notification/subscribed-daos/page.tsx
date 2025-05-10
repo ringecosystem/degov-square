@@ -116,8 +116,7 @@ export default function SubscribedDAOsPage() {
   );
 
   return (
-    <div className="bg-card rounded-[14px]">
-      <h2 className="text-lg font-medium">Subscribed DAOs</h2>
+    <div className="bg-card h-[calc(100vh-300px)] rounded-[14px]">
       <CustomTable
         columns={columns({ onRemove: handleUnsubscribe })}
         dataSource={subscriptions}

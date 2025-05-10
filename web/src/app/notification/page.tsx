@@ -1,14 +1,5 @@
-'use client';
-
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { redirect } from 'next/navigation';
 
 export default function NotificationPage() {
-  const router = useRouter();
-
-  useEffect(() => {
-    router.push('/notification/subscription');
-  }, [router]);
-
-  return null;
+  redirect('/notification/subscription');
 }

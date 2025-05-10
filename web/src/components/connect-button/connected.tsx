@@ -56,7 +56,7 @@ export const Connected = ({ address }: ConnectedProps) => {
         <DropdownMenuSeparator className="my-[20px]" />
         <div className="flex flex-col justify-center gap-[20px]">
           <Button asChild className="h-[40px] w-full gap-[5px] rounded-[100px]" variant="outline">
-            <Link href="/profile">
+            <Link href="/notification">
               <Image
                 src="/bell.svg"
                 alt="bell"
