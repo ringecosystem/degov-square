@@ -1,18 +1,39 @@
 'use client';
-
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
+import { useSelectedLayoutSegment, useParams, usePathname } from 'next/navigation';
+
 const NAVS = [
-  { label: 'Basic', path: '/setting/basic' },
-  { label: 'Treasury', path: '/setting/treasury' },
-  { label: 'Safes', path: '/setting/safes' },
-  { label: 'Advanced', path: '/setting/advanced' }
+  { label: 'Basic', value: 'basic' },
+  { label: 'Treasury', value: 'treasury' },
+  { label: 'Safes', value: 'safes' },
+  { label: 'Advanced', value: 'advanced' }
 ];
 
-export default function SettingLayout({ children }: { children: React.ReactNode }) {
+function NavLink({ nav }: { nav: (typeof NAVS)[0] }) {
+  const id = useSelectedLayoutSegment();
   const pathname = usePathname();
+  const isActive = `/setting/${id}/${nav.value}` === pathname;
+  const href = `/setting/${id}/${nav.value}`;
+
+  return (
+    <Link
+      key={nav.value}
+      href={href}
+      className={cn(
+        'border-border hover:border-foreground bg-card text-foreground rounded-[14px] border px-[20px] py-[15px] text-left text-[14px] transition-colors',
+        isActive ? 'border-foreground' : ''
+      )}
+    >
+      {nav.label}
+    </Link>
+  );
+}
+
+export default function SettingLayout({ children }: { children: React.ReactNode }) {
+  const params = useParams();
+  const { id } = params || {};
 
   return (
     <div className="container space-y-[20px]">
@@ -31,19 +52,7 @@ export default function SettingLayout({ children }: { children: React.ReactNode 
         <aside className="w-[300px] flex-shrink-0">
           <div className="flex flex-col gap-[10px]">
             {NAVS.map((nav) => (
-              <Link
-                key={nav.path}
-                href={nav.path}
-                className={cn(
-                  'border-border hover:border-foreground bg-card text-foreground rounded-[14px] border px-[20px] py-[15px] text-left text-[14px] transition-colors',
-                  pathname === nav.path ||
-                    (pathname === '/setting' && nav.path === '/setting/basic')
-                    ? 'border-foreground'
-                    : ''
-                )}
-              >
-                {nav.label}
-              </Link>
+              <NavLink key={nav.path} nav={nav} id={id as string} />
             ))}
           </div>
         </aside>

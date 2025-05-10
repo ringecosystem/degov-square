@@ -6,7 +6,8 @@ export const daoInfo = [
     networkIcon: '/example/network1.svg',
     proposals: 100,
     favorite: true,
-    settable: true
+    settable: true,
+    id: 1
   },
   {
     name: 'DAO 2',
@@ -15,7 +16,8 @@ export const daoInfo = [
     networkIcon: '/example/network1.svg',
     proposals: 200,
     favorite: false,
-    settable: false
+    settable: false,
+    id: 2
   },
   {
     name: 'DAO 3',
@@ -24,6 +26,7 @@ export const daoInfo = [
     networkIcon: '/example/network1.svg',
     proposals: 300,
     favorite: false,
-    settable: false
+    settable: false,
+    id: 3
   }
 ];
