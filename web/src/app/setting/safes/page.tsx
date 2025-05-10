@@ -1,15 +1,16 @@
 'use client';
 
 import Image from 'next/image';
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 
 import { ColumnType } from '@/components/custom-table';
 import { CustomTable } from '@/components/custom-table';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { useConfirm } from '@/contexts/confirm-context';
+import { LinkSafeDialog, Safe } from './_components/link-safe-dialog';
 
-const erc20Data = [
+const safeData = [
   {
     id: 1,
     name: 'Test',
@@ -63,7 +64,7 @@ const columns = ({ onDelete }: ColumnProps): ColumnType<any[number]>[] => [
     render(value, index) {
       return (
         <div className="flex items-center justify-end gap-[10px]">
-          <Link href={value?.safeLink}>
+          <Link href={value?.safeLink} target="_blank" rel="noopener noreferrer">
             <Image src="/safe.svg" alt="safe" width={16} height={17} />
           </Link>
           <button
@@ -80,29 +81,43 @@ const columns = ({ onDelete }: ColumnProps): ColumnType<any[number]>[] => [
   }
 ];
 
-export default function Treasury() {
+export default function SafesPage() {
   const { confirm } = useConfirm();
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [safes, setSafes] = useState<Safe[]>(safeData as unknown as Safe[]);
+  const [isLoading, setIsLoading] = useState(false);
+
   const handleDelete = useCallback(
     (id: number) => {
-      console.log(id);
       confirm({
         title: 'Delete Confirmation',
-        description: 'Are you sure you want to delete this asset from Safes?',
+        description: 'Are you sure you want to delete this safe?',
         confirmText: 'Confirm',
         cancelText: 'Cancel',
         onConfirm: () => {
-          console.log('confirmed');
+          // Filter out the deleted safe
+          setSafes((prev) => prev.filter((safe) => safe.id !== id));
         }
       });
     },
     [confirm]
   );
+
+  const handleAddSafe = useCallback((safe: Safe) => {
+    setIsLoading(true);
+    // Simulate API call delay
+    setTimeout(() => {
+      setSafes((prev) => [...prev, safe]);
+      setIsLoading(false);
+    }, 1000);
+  }, []);
+
   return (
     <div className="flex flex-col gap-[20px]">
       <header className="flex items-center justify-between">
-        <h3 className="text-[18px] font-extrabold">Treasury Assets</h3>
-        <Button className="rounded-[100px]">
-          <Image src="/plus.svg" alt="add" width={20} height={20} />
+        <h3 className="text-[18px] font-extrabold">Safes</h3>
+        <Button className="rounded-[100px]" onClick={() => setIsDialogOpen(true)}>
+          <Image src="/plus.svg" alt="add" width={20} height={20} className="mr-2" />
           Link Safe
         </Button>
       </header>
@@ -111,9 +126,16 @@ export default function Treasury() {
         columns={columns({
           onDelete: (id) => handleDelete(id)
         })}
-        dataSource={erc20Data}
+        dataSource={safes}
         isLoading={false}
         rowKey="id"
+      />
+
+      <LinkSafeDialog
+        open={isDialogOpen}
+        onOpenChange={setIsDialogOpen}
+        onAddSafe={handleAddSafe}
+        isLoading={isLoading}
       />
     </div>
   );
