@@ -1,13 +1,12 @@
 'use client';
 import { RainbowKitProvider } from '@rainbow-me/rainbowkit';
 import { QueryClientProvider } from '@tanstack/react-query';
-
 import * as React from 'react';
 import { WagmiProvider } from 'wagmi';
 
+import { APP_NAME } from '@/config/base';
 import { config, queryClient } from '@/config/wagmi';
 import { getDefaultChain, getDefaultChainId } from '@/utils/chains';
-import { APP_NAME } from '@/config/base';
 import '@rainbow-me/rainbowkit/styles.css';
 import { useRainbowKitTheme } from '@/hooks/useRainbowKitTheme';
 

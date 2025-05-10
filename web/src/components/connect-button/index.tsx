@@ -2,10 +2,11 @@
 import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { useAccount } from 'wagmi';
 
+import { isSupportedChainById } from '@/utils/chains';
+
 import { Button } from '../ui/button';
 
 import { Connected } from './connected';
-import { isSupportedChainById } from '@/utils/chains';
 export const ConnectButton = () => {
   const { openConnectModal } = useConnectModal();
   const { chainId, address, isConnected, isConnecting, isReconnecting } = useAccount();

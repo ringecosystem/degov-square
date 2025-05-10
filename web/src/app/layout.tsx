@@ -1,16 +1,17 @@
 import { Geist, Geist_Mono } from 'next/font/google';
-
 import './globals.css';
+import { ToastContainer } from 'react-toastify';
+
+import { Footer } from '@/components/layout/footer';
+import { Header } from '@/components/layout/header';
+import { TooltipProvider } from '@/components/ui/tooltip';
+import { APP_NAME, APP_DESCRIPTION } from '@/config/base';
+import { ConfirmProvider } from '@/provider/confirm';
+import { DAppProvider } from '@/provider/dapp';
 import { NextThemeProvider } from '@/provider/theme';
 
 import type { Metadata } from 'next';
-import { Header } from '@/components/layout/header';
-import { Footer } from '@/components/layout/footer';
-import { APP_NAME, APP_DESCRIPTION } from '@/config/base';
-import { DAppProvider } from '@/provider/dapp';
-import { TooltipProvider } from '@/components/ui/tooltip';
-import { ConfirmProvider } from '@/provider/confirm';
-import { ToastContainer } from 'react-toastify';
+
 const geistSans = Geist({
   variable: '--font-geist-sans',
   subsets: ['latin']

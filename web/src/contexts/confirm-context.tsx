@@ -1,5 +1,6 @@
 import { createContext, useContext } from 'react';
-import { ConfirmDialogProps } from '@/components/ui/confirm-dialog';
+
+import type { ConfirmDialogProps } from '@/components/ui/confirm-dialog';
 
 export type ConfirmOptions = Omit<ConfirmDialogProps, 'open' | 'onOpenChange'>;
 

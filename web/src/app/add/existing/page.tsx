@@ -2,10 +2,12 @@
 
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+
+import { Separator } from '@/components/ui/separator';
+
+import { Review } from './_components/review';
 import { Step1Form, type Step1FormValues } from './_components/step1-form';
 import { Step2Form, type Step2FormValues } from './_components/step2-form';
-import { Review } from './_components/review';
-import { Separator } from '@/components/ui/separator';
 type Step = 1 | 2 | 3;
 
 export default function AddExisting() {

@@ -1,14 +1,17 @@
 'use client';
 
 import Image from 'next/image';
+import Link from 'next/link';
 import { useCallback, useState } from 'react';
 
-import { ColumnType } from '@/components/custom-table';
+import type { ColumnType } from '@/components/custom-table';
 import { CustomTable } from '@/components/custom-table';
 import { Button } from '@/components/ui/button';
-import Link from 'next/link';
 import { useConfirm } from '@/contexts/confirm-context';
-import { AddTokensDialog, Token } from './_components/add-tokens-dialog';
+
+import { AddTokensDialog } from './_components/add-tokens-dialog';
+
+import type { Token } from './_components/add-tokens-dialog';
 
 const erc20Data = [
   {

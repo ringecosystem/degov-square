@@ -3,6 +3,9 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useCallback } from 'react';
 
+import { AddressAvatar } from '@/components/address-avatar';
+import { AddressResolver } from '@/components/address-resolver';
+import ClipboardIconButton from '@/components/clipboard-icon-button';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,9 +16,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { useDisconnectWallet } from '@/hooks/useDisconnectWallet';
 import { formatShortAddress } from '@/utils';
 
-import { AddressAvatar } from '@/components/address-avatar';
-import { AddressResolver } from '@/components/address-resolver';
-import ClipboardIconButton from '@/components/clipboard-icon-button';
+
 import { Button } from '../ui/button';
 interface ConnectedProps {
   address: `0x${string}`;

@@ -1,13 +1,12 @@
-import { isEmpty } from "lodash-es";
-import { useMemo } from "react";
-import { erc20Abi, erc721Abi, formatUnits } from "viem";
-import { useReadContracts } from "wagmi";
+import { isEmpty } from 'lodash-es';
+import { useMemo } from 'react';
+import { erc20Abi, erc721Abi, formatUnits } from 'viem';
+import { useReadContracts } from 'wagmi';
 
-import type { TokenDetails } from "@/types/config";
-import { formatBigIntForDisplay } from "@/utils/number";
+import type { TokenDetails } from '@/types/config';
+import { formatBigIntForDisplay } from '@/utils/number';
 
-import { useDaoConfig } from "./useDaoConfig";
-import { useGetTokenInfo } from "./useGetTokenInfo";
+import { useGetTokenInfo } from './useGetTokenInfo';
 
 export interface TokenWithBalance extends TokenDetails {
   rawBalance?: bigint;
@@ -22,15 +21,13 @@ export interface UseTokenBalancesReturn {
   isError: boolean;
 }
 
-export function useTokenBalances(
-  assets: TokenDetails[]
-): UseTokenBalancesReturn {
+export function useTokenBalances(assets: TokenDetails[]): UseTokenBalancesReturn {
   const daoConfig = useDaoConfig();
   const timeLockAddress = daoConfig?.contracts?.timeLock;
   const { tokenInfo } = useGetTokenInfo(
     assets.map((v) => ({
       contract: v.contract,
-      standard: v.standard,
+      standard: v.standard
     }))
   );
   const contractCalls = useMemo(() => {
@@ -40,25 +37,22 @@ export function useTokenBalances(
       .filter((asset) => asset.contract && asset.standard)
       .map((asset) => ({
         address: asset.contract as `0x${string}`,
-        abi: asset.standard === "ERC20" ? erc20Abi : erc721Abi,
-        functionName: "balanceOf",
+        abi: asset.standard === 'ERC20' ? erc20Abi : erc721Abi,
+        functionName: 'balanceOf',
         args: [timeLockAddress as `0x${string}`],
-        chainId: daoConfig?.chain?.id,
+        chainId: daoConfig?.chain?.id
       }));
   }, [assets, timeLockAddress, daoConfig?.chain?.id]);
 
   const {
     data: balanceResults,
     isLoading,
-    isError,
+    isError
   } = useReadContracts({
     contracts: contractCalls,
     query: {
-      enabled:
-        contractCalls.length > 0 &&
-        Boolean(timeLockAddress) &&
-        Boolean(daoConfig?.chain?.id),
-    },
+      enabled: contractCalls.length > 0 && Boolean(timeLockAddress) && Boolean(daoConfig?.chain?.id)
+    }
   });
 
   const assetsWithBalances = useMemo(() => {
@@ -69,28 +63,22 @@ export function useTokenBalances(
 
       const rawBalance = balanceResults[index].result as bigint;
 
-      if (asset.standard === "ERC721") {
+      if (asset.standard === 'ERC721') {
         return {
           ...asset,
           rawBalance,
-          balance: rawBalance ? rawBalance.toString() : "0",
-          formattedBalance: formatBigIntForDisplay(rawBalance ?? 0n, 0),
+          balance: rawBalance ? rawBalance.toString() : '0',
+          formattedBalance: formatBigIntForDisplay(rawBalance ?? 0n, 0)
         };
       } else {
-        const decimals =
-          tokenInfo[asset.contract as `0x${string}`]?.decimals ?? 18;
-        const formattedBalance = rawBalance
-          ? formatUnits(rawBalance, decimals)
-          : 0;
+        const decimals = tokenInfo[asset.contract as `0x${string}`]?.decimals ?? 18;
+        const formattedBalance = rawBalance ? formatUnits(rawBalance, decimals) : 0;
 
         return {
           ...asset,
           rawBalance,
           balance: formattedBalance,
-          formattedBalance: formatBigIntForDisplay(
-            rawBalance ?? 0n,
-            decimals ?? 18
-          ),
+          formattedBalance: formatBigIntForDisplay(rawBalance ?? 0n, decimals ?? 18)
         };
       }
     });
@@ -99,6 +87,6 @@ export function useTokenBalances(
   return {
     assets: assetsWithBalances,
     isLoading,
-    isError,
+    isError
   };
 }

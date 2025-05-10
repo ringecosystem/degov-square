@@ -1,8 +1,9 @@
 'use client';
-import Link from 'next/link';
-import { cn } from '@/lib/utils';
 import Image from 'next/image';
+import Link from 'next/link';
 import { useSelectedLayoutSegment, useParams, usePathname } from 'next/navigation';
+
+import { cn } from '@/lib/utils';
 
 const NAVS = [
   { label: 'Basic', value: 'basic' },
@@ -52,7 +53,7 @@ export default function SettingLayout({ children }: { children: React.ReactNode 
         <aside className="w-[300px] flex-shrink-0">
           <div className="flex flex-col gap-[10px]">
             {NAVS.map((nav) => (
-              <NavLink key={nav.path} nav={nav} id={id as string} />
+              <NavLink key={nav.value} nav={nav} />
             ))}
           </div>
         </aside>

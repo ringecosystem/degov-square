@@ -1,13 +1,14 @@
 'use client';
 
-import { useState } from 'react';
 import Image from 'next/image';
-import { CustomTable } from '@/components/custom-table';
-import { ColumnType } from '@/components/custom-table';
-import { ProposalState, ProposalStatus } from '@/components/proposal-status';
+import { useState } from 'react';
 import { useCallback } from 'react';
+
+import { CustomTable } from '@/components/custom-table';
+import type { ColumnType } from '@/components/custom-table';
+import { ProposalState, ProposalStatus } from '@/components/proposal-status';
 import { useConfirm } from '@/contexts/confirm-context';
-import Link from 'next/link';
+
 // Mock data for subscribed proposals
 const proposalSubscriptions = [
   {
@@ -69,7 +70,7 @@ const columns = ({ onRemove }: ColumnProps): ColumnType<any>[] => [
     key: 'action',
     width: 80,
     className: 'text-right',
-    render(value, index) {
+    render(value) {
       return (
         <button
           className="cursor-pointer transition-opacity hover:opacity-80"
@@ -95,15 +96,18 @@ type ColumnProps = {
 export default function SubscribedProposalsPage() {
   const [subscriptions, setSubscriptions] = useState(proposalSubscriptions);
   const { confirm } = useConfirm();
-  const handleUnsubscribe = useCallback((id: number) => {
-    confirm({
-      title: 'Unsubscribe',
-      description: 'Are you sure you want to unsubscribe notification?',
-      cancelText: 'Cancel',
-      confirmText: 'Confirm',
-      onConfirm: () => setSubscriptions((prev) => prev.filter((sub) => sub.id !== id))
-    });
-  }, []);
+  const handleUnsubscribe = useCallback(
+    (id: number) => {
+      confirm({
+        title: 'Unsubscribe',
+        description: 'Are you sure you want to unsubscribe notification?',
+        cancelText: 'Cancel',
+        confirmText: 'Confirm',
+        onConfirm: () => setSubscriptions((prev) => prev.filter((sub) => sub.id !== id))
+      });
+    },
+    [confirm]
+  );
 
   return (
     <div className="bg-card min-h-[calc(100vh-300px)] rounded-[14px]">

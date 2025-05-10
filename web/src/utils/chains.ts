@@ -1,5 +1,6 @@
-import { supportedChains, supportedChainsById } from '@/config/chains';
 import { mainnet } from 'wagmi/chains';
+
+import { supportedChains, supportedChainsById } from '@/config/chains';
 
 import type { Chain } from '@rainbow-me/rainbowkit';
 

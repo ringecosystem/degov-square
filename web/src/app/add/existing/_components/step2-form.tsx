@@ -1,8 +1,11 @@
 'use client';
 
+import { zodResolver } from '@hookform/resolvers/zod';
+import { CircleHelp } from 'lucide-react';
+import { useForm } from 'react-hook-form';
+import { isAddress } from 'viem';
 import { z } from 'zod';
-import { Separator } from '@/components/ui/separator';
-import { Input } from '@/components/ui/input';
+
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -12,11 +15,9 @@ import {
   FormLabel,
   FormMessage
 } from '@/components/ui/form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useForm } from 'react-hook-form';
-import { isAddress } from 'viem';
-import { CircleHelp } from 'lucide-react';
+import { Input } from '@/components/ui/input';
 import { InputSelect } from '@/components/ui/input-select';
+import { Separator } from '@/components/ui/separator';
 import { tokenStandardOptions } from '@/config/dao';
 export const step2Schema = z.object({
   governorAddress: z
