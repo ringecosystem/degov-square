@@ -59,7 +59,7 @@ const InputSelect = forwardRef<HTMLInputElement, InputSelectProps>(
     );
 
     return (
-      <div className={cn('flex items-end gap-2', containerClassName)}>
+      <div className={cn('flex items-end gap-[10px]', containerClassName)}>
         {position === 'prefix' && selectElement}
 
         <div className="flex-1">

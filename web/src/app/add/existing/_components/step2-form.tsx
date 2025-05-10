@@ -15,7 +15,7 @@ import {
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { isAddress } from 'viem';
-import { InfoIcon } from 'lucide-react';
+import { CircleHelp } from 'lucide-react';
 import { InputSelect } from '@/components/ui/input-select';
 import { tokenStandardOptions } from '@/config/dao';
 export const step2Schema = z.object({
@@ -64,12 +64,11 @@ export function Step2Form({ onSubmit, onBack, defaultValues }: Step2FormProps) {
   });
 
   return (
-    <>
-      <Separator className="my-0" />
-      <h3 className="text-base font-medium">Provide the contracts information for the DAO</h3>
+    <div className="flex flex-col gap-[20px]">
+      <h3 className="text-[18px] font-semibold">Provide the contracts information for the DAO</h3>
 
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-6">
+        <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-[20px]">
           <FormField
             control={form.control}
             name="governorAddress"
@@ -77,7 +76,7 @@ export function Step2Form({ onSubmit, onBack, defaultValues }: Step2FormProps) {
               <FormItem>
                 <div className="flex items-center gap-2">
                   <FormLabel>Governor Address</FormLabel>
-                  <InfoIcon className="text-muted-foreground h-4 w-4" />
+                  <CircleHelp className="text-muted-foreground h-4 w-4" />
                 </div>
                 <FormControl>
                   <Input placeholder="please enter the governor address" {...field} />
@@ -94,7 +93,7 @@ export function Step2Form({ onSubmit, onBack, defaultValues }: Step2FormProps) {
               <FormItem>
                 <div className="flex items-center gap-2">
                   <FormLabel>Token Address</FormLabel>
-                  <InfoIcon className="text-muted-foreground h-4 w-4" />
+                  <CircleHelp className="text-muted-foreground h-4 w-4" />
                 </div>
                 <FormControl>
                   <InputSelect
@@ -118,7 +117,7 @@ export function Step2Form({ onSubmit, onBack, defaultValues }: Step2FormProps) {
               <FormItem>
                 <div className="flex items-center gap-2">
                   <FormLabel>TimeLock Address</FormLabel>
-                  <InfoIcon className="text-muted-foreground h-4 w-4" />
+                  <CircleHelp className="text-muted-foreground h-4 w-4" />
                 </div>
                 <FormControl>
                   <Input placeholder="please enter the time lock address" {...field} />
@@ -128,16 +127,23 @@ export function Step2Form({ onSubmit, onBack, defaultValues }: Step2FormProps) {
             )}
           />
 
-          <div className="flex justify-between pt-4">
-            <Button variant="outline" type="button" className="rounded-full px-8" onClick={onBack}>
+          <Separator className="my-0" />
+
+          <div className="flex justify-between">
+            <Button
+              variant="outline"
+              type="button"
+              className="w-[140px] rounded-full p-[10px]"
+              onClick={onBack}
+            >
               Back
             </Button>
-            <Button type="submit" className="rounded-full px-8">
+            <Button type="submit" className="w-[140px] rounded-full p-[10px]">
               Next
             </Button>
           </div>
         </form>
       </Form>
-    </>
+    </div>
   );
 }

@@ -74,14 +74,13 @@ export function Step1Form({ onSubmit, defaultValues }: Step1FormProps) {
   };
 
   return (
-    <>
-      <Separator className="my-0" />
-      <h3 className="text-base font-medium">
+    <div className="flex flex-col gap-[20px]">
+      <h3 className="text-[18px] font-semibold">
         Provide the most basic information for displaying the DAO
       </h3>
 
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-6">
+        <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-[20px]">
           <div className="flex gap-4">
             <FormField
               control={form.control}
@@ -114,7 +113,7 @@ export function Step1Form({ onSubmit, defaultValues }: Step1FormProps) {
                 <FormControl>
                   <textarea
                     placeholder="Write a description for your DAO. This will be displayed on the DAO dashboard"
-                    className="file:text-foreground placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground dark:bg-input/30 border-input flex min-h-[120px] w-full min-w-0 resize-none rounded-md border bg-transparent px-3 py-2 text-base shadow-xs transition-[color,box-shadow] outline-none"
+                    className="file:text-foreground placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground dark:bg-input/30 border-input flex min-h-[120px] w-full min-w-0 resize-none rounded-[4px] border bg-transparent px-3 py-2 text-base shadow-xs transition-[color,box-shadow] outline-none"
                     {...field}
                   />
                 </FormControl>
@@ -178,22 +177,23 @@ export function Step1Form({ onSubmit, defaultValues }: Step1FormProps) {
               </FormItem>
             )}
           />
+          <Separator className="my-0" />
 
-          <div className="flex justify-between pt-4">
+          <div className="flex justify-between">
             <Button
               variant="outline"
               type="button"
-              className="rounded-full px-8"
+              className="w-[140px] rounded-full p-[10px]"
               onClick={handleBack}
             >
               Back
             </Button>
-            <Button type="submit" className="rounded-full px-8">
+            <Button type="submit" className="w-[140px] rounded-full p-[10px]">
               Next
             </Button>
           </div>
         </form>
       </Form>
-    </>
+    </div>
   );
 }
