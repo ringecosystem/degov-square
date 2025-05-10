@@ -10,7 +10,7 @@ import { APP_NAME, APP_DESCRIPTION } from '@/config/base';
 import { DAppProvider } from '@/provider/dapp';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { ConfirmProvider } from '@/provider/confirm';
-
+import { ToastContainer } from 'react-toastify';
 const geistSans = Geist({
   variable: '--font-geist-sans',
   subsets: ['latin']
@@ -43,6 +43,11 @@ export default function RootLayout({
                   <main className="flex-1 py-[30px]">{children}</main>
                   <Footer />
                 </div>
+                <ToastContainer
+                  pauseOnFocusLoss={false}
+                  theme="dark"
+                  className="w-auto text-[14px] md:w-[380px]"
+                />
               </ConfirmProvider>
             </DAppProvider>
           </TooltipProvider>

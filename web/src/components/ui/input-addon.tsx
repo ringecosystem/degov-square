@@ -10,19 +10,29 @@ export interface InputAddonProps extends React.InputHTMLAttributes<HTMLInputElem
   suffixClassName?: string;
   prefixClassName?: string;
   containerClassName?: string;
+  inputContainerClassName?: string;
 }
 
 const InputAddon = forwardRef<HTMLInputElement, InputAddonProps>(
   (
-    { className, suffix, prefix, suffixClassName, prefixClassName, containerClassName, ...props },
+    {
+      className,
+      suffix,
+      prefix,
+      suffixClassName,
+      prefixClassName,
+      containerClassName,
+      inputContainerClassName,
+      ...props
+    },
     ref
   ) => {
     return (
-      <div className={cn('flex items-end gap-2', containerClassName)}>
+      <div className={cn('flex w-full gap-2', containerClassName)}>
         {prefix && (
           <div
             className={cn(
-              'border-input bg-muted flex h-9 items-center rounded-md border px-3',
+              'border-input bg-muted flex h-10 items-center rounded-md px-3',
               prefixClassName
             )}
           >
@@ -30,14 +40,21 @@ const InputAddon = forwardRef<HTMLInputElement, InputAddonProps>(
           </div>
         )}
 
-        <div className={cn('flex-1', !prefix && !suffix && 'w-full')}>
-          <Input ref={ref} className={className} {...props} />
+        <div
+          className={cn(
+            'flex-1',
+            prefix && !suffix && 'w-full',
+            !prefix && suffix && 'w-full',
+            inputContainerClassName
+          )}
+        >
+          <Input ref={ref} className={cn(className)} {...props} />
         </div>
 
         {suffix && (
           <div
             className={cn(
-              'border-input bg-muted flex h-9 items-center rounded-md border px-3',
+              'border-input bg-background flex h-9 items-center rounded-md border px-4 text-sm',
               suffixClassName
             )}
           >
