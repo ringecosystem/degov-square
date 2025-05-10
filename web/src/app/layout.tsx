@@ -9,6 +9,8 @@ import { Footer } from '@/components/layout/footer';
 import { APP_NAME, APP_DESCRIPTION } from '@/config/base';
 import { DAppProvider } from '@/provider/dapp';
 import { TooltipProvider } from '@/components/ui/tooltip';
+import { ConfirmProvider } from '@/provider/confirm';
+
 const geistSans = Geist({
   variable: '--font-geist-sans',
   subsets: ['latin']
@@ -35,11 +37,13 @@ export default function RootLayout({
         <NextThemeProvider>
           <TooltipProvider>
             <DAppProvider>
-              <div className="bg-background flex min-h-dvh flex-col overflow-hidden font-sans antialiased">
-                <Header />
-                <main className="flex-1 py-[30px]">{children}</main>
-                <Footer />
-              </div>
+              <ConfirmProvider>
+                <div className="bg-background flex min-h-dvh flex-col overflow-hidden font-sans antialiased">
+                  <Header />
+                  <main className="flex-1 py-[30px]">{children}</main>
+                  <Footer />
+                </div>
+              </ConfirmProvider>
             </DAppProvider>
           </TooltipProvider>
         </NextThemeProvider>
