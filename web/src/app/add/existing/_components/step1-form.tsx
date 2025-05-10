@@ -20,7 +20,7 @@ import { InputAddon } from '@/components/ui/input-addon';
 import { InputSelect } from '@/components/ui/input-select';
 import { getChains } from '@/utils/chains';
 import { isAddress } from 'viem';
-
+import { useRouter } from 'next/navigation';
 // Define form schema with validation
 export const step1Schema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -53,6 +53,7 @@ interface Step1FormProps {
 }
 
 export function Step1Form({ onSubmit, defaultValues }: Step1FormProps) {
+  const router = useRouter();
   const form = useForm<Step1FormValues>({
     resolver: zodResolver(step1Schema),
     defaultValues: {
@@ -67,6 +68,10 @@ export function Step1Form({ onSubmit, defaultValues }: Step1FormProps) {
       ...defaultValues
     }
   });
+
+  const handleBack = () => {
+    router.push('/');
+  };
 
   return (
     <>
@@ -174,7 +179,15 @@ export function Step1Form({ onSubmit, defaultValues }: Step1FormProps) {
             )}
           />
 
-          <div className="flex justify-end pt-4">
+          <div className="flex justify-between pt-4">
+            <Button
+              variant="outline"
+              type="button"
+              className="rounded-full px-8"
+              onClick={handleBack}
+            >
+              Back
+            </Button>
             <Button type="submit" className="rounded-full px-8">
               Next
             </Button>

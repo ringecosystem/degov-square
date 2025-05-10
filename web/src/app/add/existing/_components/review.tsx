@@ -8,6 +8,7 @@ import { useAddDaoReview } from '@/hooks/useAddDaoReview';
 import { getChains } from '@/utils/chains';
 import { useConfirm } from '@/contexts/confirm-context';
 import { useCallback } from 'react';
+import Image from 'next/image';
 interface ReviewProps {
   step1Data: Step1FormValues;
   step2Data: Step2FormValues;
@@ -18,6 +19,13 @@ interface ReviewProps {
 export function Review({ step1Data, step2Data, onSubmit, onBack }: ReviewProps) {
   const { data, isLoading } = useAddDaoReview(step1Data, step2Data, true);
   const { confirm } = useConfirm();
+  // 判断是否有错误（合约数据读取失败）
+  const hasError =
+    !isLoading &&
+    (!data.governanceParams ||
+      !data.tokenMetadata ||
+      Object.values(data.governanceParams).some((v) => v === undefined || v === null));
+
   // 查找链名称
   const network =
     getChains().find((chain) => chain.id.toString() === step1Data.chainId)?.name ||
@@ -35,14 +43,14 @@ export function Review({ step1Data, step2Data, onSubmit, onBack }: ReviewProps) 
     'Governor Address': step2Data.governorAddress,
     'Proposal threshold': isLoading
       ? 'Loading...'
-      : data.governanceParams?.proposalThreshold.toString() || 'N/A',
-    Quorum: isLoading ? 'Loading...' : data.governanceParams?.quorum.toString() || 'N/A',
+      : data.governanceParams?.proposalThreshold?.toString() || 'N/A',
+    Quorum: isLoading ? 'Loading...' : data.governanceParams?.quorum?.toString() || 'N/A',
     'Proposal delay': isLoading
       ? 'Loading...'
-      : `${data.governanceParams?.votingDelay.toString() || 'N/A'} day`,
+      : `${data.governanceParams?.votingDelay?.toString() || 'N/A'} day`,
     'Voting period': isLoading
       ? 'Loading...'
-      : `${data.governanceParams?.votingPeriod.toString() || 'N/A'} days`
+      : `${data.governanceParams?.votingPeriod?.toString() || 'N/A'} days`
   };
 
   // 获取显示数据 - 代币信息
@@ -51,7 +59,7 @@ export function Review({ step1Data, step2Data, onSubmit, onBack }: ReviewProps) 
     'Token Address': step2Data.tokenAddress,
     'Token type': step2Data.tokenType,
     'token symbol': isLoading ? 'Loading...' : data.tokenMetadata?.symbol || 'N/A',
-    'token decimal': isLoading ? 'Loading...' : data.tokenMetadata?.decimals.toString() || 'N/A'
+    'token decimal': isLoading ? 'Loading...' : data.tokenMetadata?.decimals?.toString() || 'N/A'
   };
 
   // 获取显示数据 - 时间锁信息
@@ -59,14 +67,14 @@ export function Review({ step1Data, step2Data, onSubmit, onBack }: ReviewProps) 
     'TimeLock Address': step2Data.timeLockAddress,
     'TimeLock delay': isLoading
       ? 'Loading...'
-      : `${data.governanceParams?.timeLockDelay.toString() || 'N/A'} day`
+      : `${data.governanceParams?.timeLockDelay?.toString() || 'N/A'} day`
   };
 
   const handleSubmit = useCallback(() => {
     confirm({
       title: 'Congratulations !',
       description:
-        'We have received your DAO’s information, will review it and get back to you soon.',
+        "We have received your DAO's information, will review it and get back to you soon.",
       confirmText: 'Ok',
       variant: 'default',
       onConfirm: onSubmit
@@ -81,64 +89,81 @@ export function Review({ step1Data, step2Data, onSubmit, onBack }: ReviewProps) 
       </h3>
 
       <div className="mt-4 flex flex-col gap-6">
-        {/* 基础信息 */}
-        <div className="bg-opacity-5 dark:bg-opacity-5 bg-background rounded-lg p-4">
-          <h4 className="mb-4 text-lg font-bold">Basic</h4>
-          <div className="space-y-2">
-            {Object.entries(basicInfo).map(([key, value]) => (
-              <div key={key} className="flex">
-                <span className="w-1/3 text-gray-500">{key}</span>
-                <span className="w-2/3">{value}</span>
-              </div>
-            ))}
+        {hasError ? (
+          <div className="bg-background flex min-h-[300px] flex-col items-center justify-center rounded-lg">
+            <Image src="/alert.svg" alt="alert" width={60} height={60} />
+            <div className="flex flex-col text-center text-[14px] font-normal">
+              <span>Something unexpected happened while validating your contract information.</span>
+              <span>Please check your contract address and try again.</span>
+            </div>
           </div>
-        </div>
+        ) : (
+          <>
+            {/* 基础信息 */}
+            <div className="bg-opacity-5 dark:bg-opacity-5 bg-background rounded-lg p-4">
+              <h4 className="mb-4 text-lg font-bold">Basic</h4>
+              <div className="space-y-2">
+                {Object.entries(basicInfo).map(([key, value]) => (
+                  <div key={key} className="flex">
+                    <span className="w-1/3 text-gray-500">{key}</span>
+                    <span className="w-2/3">{value}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
 
-        {/* 治理合约信息 */}
-        <div className="bg-opacity-5 dark:bg-opacity-5 bg-background rounded-lg p-4">
-          <h4 className="mb-4 text-lg font-bold">Governor</h4>
-          <div className="space-y-2">
-            {Object.entries(governorInfo).map(([key, value]) => (
-              <div key={key} className="flex">
-                <span className="w-1/3 text-gray-500">{key}</span>
-                <span className="w-2/3 break-all">{value}</span>
+            {/* 治理合约信息 */}
+            <div className="bg-opacity-5 dark:bg-opacity-5 bg-background rounded-lg p-4">
+              <h4 className="mb-4 text-lg font-bold">Governor</h4>
+              <div className="space-y-2">
+                {Object.entries(governorInfo).map(([key, value]) => (
+                  <div key={key} className="flex">
+                    <span className="w-1/3 text-gray-500">{key}</span>
+                    <span className="w-2/3 break-all">{value}</span>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        </div>
+            </div>
 
-        {/* 代币信息 */}
-        <div className="bg-opacity-5 dark:bg-opacity-5 bg-background rounded-lg p-4">
-          <h4 className="mb-4 text-lg font-bold">Token</h4>
-          <div className="space-y-2">
-            {Object.entries(tokenInfo).map(([key, value]) => (
-              <div key={key} className="flex">
-                <span className="w-1/3 text-gray-500">{key}</span>
-                <span className="w-2/3 break-all">{value}</span>
+            {/* 代币信息 */}
+            <div className="bg-opacity-5 dark:bg-opacity-5 bg-background rounded-lg p-4">
+              <h4 className="mb-4 text-lg font-bold">Token</h4>
+              <div className="space-y-2">
+                {Object.entries(tokenInfo).map(([key, value]) => (
+                  <div key={key} className="flex">
+                    <span className="w-1/3 text-gray-500">{key}</span>
+                    <span className="w-2/3 break-all">{value}</span>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        </div>
+            </div>
 
-        {/* 时间锁信息 */}
-        <div className="bg-opacity-5 dark:bg-opacity-5 bg-background rounded-lg p-4">
-          <h4 className="mb-4 text-lg font-bold">TimeLock</h4>
-          <div className="space-y-2">
-            {Object.entries(timeLockInfo).map(([key, value]) => (
-              <div key={key} className="flex">
-                <span className="w-1/3 text-gray-500">{key}</span>
-                <span className="w-2/3 break-all">{value}</span>
+            {/* 时间锁信息 */}
+            <div className="bg-opacity-5 dark:bg-opacity-5 bg-background rounded-lg p-4">
+              <h4 className="mb-4 text-lg font-bold">TimeLock</h4>
+              <div className="space-y-2">
+                {Object.entries(timeLockInfo).map(([key, value]) => (
+                  <div key={key} className="flex">
+                    <span className="w-1/3 text-gray-500">{key}</span>
+                    <span className="w-2/3 break-all">{value}</span>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        </div>
+            </div>
+          </>
+        )}
 
         {/* 操作按钮 */}
         <div className="flex justify-between pt-4">
           <Button variant="outline" type="button" className="rounded-full px-8" onClick={onBack}>
             Back
           </Button>
-          <Button type="button" className="rounded-full px-8" onClick={handleSubmit}>
+          <Button
+            type="button"
+            className="rounded-full px-8"
+            onClick={handleSubmit}
+            disabled={hasError || isLoading}
+          >
             Submit
           </Button>
         </div>
