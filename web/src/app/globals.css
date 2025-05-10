@@ -77,6 +77,17 @@
   --sidebar-accent-foreground: oklch(0.21 0.034 264.665);
   --sidebar-border: oklch(0.928 0.006 264.531);
   --sidebar-ring: oklch(0.707 0.022 261.325);
+
+  --success: 132 100% 36%;
+  --warning: 42 100% 48%;
+  --danger: 359 100% 62%;
+
+  --pending: var(--warning);
+  --active: 197 100% 50%;
+  --succeeded: 132 100% 36%;
+  --executed: 276 100% 67%;
+  --defeated: var(--danger);
+  --canceled: var(--muted-foreground);
 }
 
 .dark {

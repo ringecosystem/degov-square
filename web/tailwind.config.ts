@@ -7,6 +7,17 @@ const config: Config = {
       container: {
         center: true,
         padding: '30px'
+      },
+      colors: {
+        success: 'hsl(var(--success))',
+        warning: 'hsl(var(--warning))',
+        danger: 'hsl(var(--danger))',
+        pending: 'hsl(var(--pending))',
+        active: 'hsl(var(--active))',
+        succeeded: 'hsl(var(--succeeded))',
+        executed: 'hsl(var(--executed))',
+        defeated: 'hsl(var(--defeated))',
+        canceled: 'hsl(var(--canceled))'
       }
     }
   }
