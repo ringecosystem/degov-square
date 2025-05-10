@@ -24,7 +24,7 @@ export default function SettingLayout({ children }: { children: React.ReactNode 
           height={32}
           className="size-[32px] flex-shrink-0"
         />
-        <h1 className="text-2xl font-bold">DAO Settings</h1>
+        <h1 className="text-[18px] font-semibold">DAO Settings</h1>
       </Link>
 
       <div className="flex w-full gap-[30px]">

@@ -24,22 +24,22 @@ export default function NotificationLayout({ children }: { children: React.React
           height={32}
           className="size-[32px] flex-shrink-0"
         />
-        <h1 className="text-2xl font-bold">Notifications Settings</h1>
+        <h1 className="text-[18px] font-semibold">Notifications Settings</h1>
       </Link>
 
-      <div className="flex min-h-[80vh] w-full gap-6">
-        <aside className="w-[270px] flex-shrink-0">
-          <div className="flex flex-col gap-2">
+      <div className="flex w-full gap-[30px]">
+        <aside className="w-[300px] flex-shrink-0">
+          <div className="flex flex-col gap-[10px]">
             {NAVS.map((nav) => (
               <Link
                 key={nav.path}
                 href={nav.path}
                 className={cn(
-                  'rounded-[10px] px-4 py-3 text-left text-base transition-colors',
+                  'border-border hover:border-foreground bg-card text-foreground rounded-[14px] border px-[20px] py-[15px] text-left text-[14px] transition-colors',
                   pathname === nav.path ||
                     (pathname === '/notification' && nav.path === '/notification/subscription')
-                    ? 'bg-card'
-                    : 'hover:bg-background/80 text-muted-foreground'
+                    ? 'border-foreground'
+                    : ''
                 )}
               >
                 {nav.label}
