@@ -54,7 +54,7 @@ const InputAddon = forwardRef<HTMLInputElement, InputAddonProps>(
         {suffix && (
           <div
             className={cn(
-              'border-input bg-background flex h-9 items-center rounded-md border px-4 text-sm',
+              'border-input bg-muted flex h-9 items-center rounded-[4px] border px-4 text-sm',
               suffixClassName
             )}
           >

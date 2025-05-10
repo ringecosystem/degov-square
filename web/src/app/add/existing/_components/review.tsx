@@ -19,26 +19,22 @@ interface ReviewProps {
 export function Review({ step1Data, step2Data, onSubmit, onBack }: ReviewProps) {
   const { data, isLoading } = useAddDaoReview(step1Data, step2Data, true);
   const { confirm } = useConfirm();
-  // 判断是否有错误（合约数据读取失败）
   const hasError =
     !isLoading &&
     (!data.governanceParams ||
       !data.tokenMetadata ||
       Object.values(data.governanceParams).some((v) => v === undefined || v === null));
 
-  // 查找链名称
   const network =
     getChains().find((chain) => chain.id.toString() === step1Data.chainId)?.name ||
     step1Data.chainId;
 
-  // 获取显示数据 - 基础信息
   const basicInfo = {
     Name: step1Data.name,
     Network: network,
     'DAO Url': `https://${step1Data.daoUrl}${step1Data.domain}`
   };
 
-  // 获取显示数据 - 治理合约信息
   const governorInfo = {
     'Governor Address': step2Data.governorAddress,
     'Proposal threshold': isLoading
@@ -53,7 +49,6 @@ export function Review({ step1Data, step2Data, onSubmit, onBack }: ReviewProps) 
       : `${data.governanceParams?.votingPeriod?.toString() || 'N/A'} days`
   };
 
-  // 获取显示数据 - 代币信息
   const tokenInfo = {
     'Token name': isLoading ? 'Loading...' : data.tokenMetadata?.name || 'N/A',
     'Token Address': step2Data.tokenAddress,
@@ -62,7 +57,6 @@ export function Review({ step1Data, step2Data, onSubmit, onBack }: ReviewProps) 
     'token decimal': isLoading ? 'Loading...' : data.tokenMetadata?.decimals?.toString() || 'N/A'
   };
 
-  // 获取显示数据 - 时间锁信息
   const timeLockInfo = {
     'TimeLock Address': step2Data.timeLockAddress,
     'TimeLock delay': isLoading
@@ -83,14 +77,13 @@ export function Review({ step1Data, step2Data, onSubmit, onBack }: ReviewProps) 
 
   return (
     <>
-      <Separator className="my-0" />
-      <h3 className="text-base font-medium">
+      <h3 className="text-[18px] font-semibold">
         Review all the information of the DAO before proceeding to build the DAO.
       </h3>
 
       <div className="mt-4 flex flex-col gap-6">
         {hasError ? (
-          <div className="bg-background flex min-h-[300px] flex-col items-center justify-center rounded-lg">
+          <div className="bg-background flex min-h-[388px] flex-col items-center justify-center gap-[20px] rounded-[14px]">
             <Image src="/alert.svg" alt="alert" width={60} height={60} />
             <div className="flex flex-col text-center text-[14px] font-normal">
               <span>Something unexpected happened while validating your contract information.</span>
@@ -153,14 +146,20 @@ export function Review({ step1Data, step2Data, onSubmit, onBack }: ReviewProps) 
           </>
         )}
 
-        {/* 操作按钮 */}
-        <div className="flex justify-between pt-4">
-          <Button variant="outline" type="button" className="rounded-full px-8" onClick={onBack}>
+        <Separator className="my-0" />
+
+        <div className="flex justify-between">
+          <Button
+            variant="outline"
+            type="button"
+            className="w-[140px] rounded-full p-[10px]"
+            onClick={onBack}
+          >
             Back
           </Button>
           <Button
             type="button"
-            className="rounded-full px-8"
+            className="w-[140px] rounded-full p-[10px]"
             onClick={handleSubmit}
             disabled={hasError || isLoading}
           >
