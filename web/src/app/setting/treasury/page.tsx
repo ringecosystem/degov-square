@@ -1,13 +1,14 @@
 'use client';
 
 import Image from 'next/image';
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 
 import { ColumnType } from '@/components/custom-table';
 import { CustomTable } from '@/components/custom-table';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { useConfirm } from '@/contexts/confirm-context';
+import { AddTokensDialog, Token } from './_components/add-tokens-dialog';
 
 const erc20Data = [
   {
@@ -90,6 +91,11 @@ const columns = ({ assetTitle, onDelete }: ColumnProps): ColumnType<any[number]>
 
 export default function Treasury() {
   const { confirm } = useConfirm();
+  const [isAddTokensOpen, setIsAddTokensOpen] = useState(false);
+  const [erc20Tokens, setErc20Tokens] = useState(erc20Data);
+  const [erc721Tokens, setErc721Tokens] = useState<typeof erc20Data>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
   const handleDelete = useCallback(
     (type: string, id: number) => {
       console.log(type, id);
@@ -100,17 +106,47 @@ export default function Treasury() {
         cancelText: 'Cancel',
         onConfirm: () => {
           console.log('confirmed');
+          // Handle token deletion here
+          if (type === 'ERC20') {
+            setErc20Tokens((prev) => prev.filter((token) => token.id !== id));
+          } else if (type === 'ERC721') {
+            setErc721Tokens((prev) => prev.filter((token) => token.id !== id));
+          }
         }
       });
     },
     [confirm]
   );
+
+  const handleAddToken = useCallback((token: Token) => {
+    setIsLoading(true);
+
+    // Simulate API call
+    setTimeout(() => {
+      const newToken = {
+        id: Date.now(), // Use timestamp as temp ID
+        name: token.name,
+        tokenLogo: token.tokenLogo,
+        balance: '0',
+        value: '0'
+      };
+
+      if (token.type === 'ERC20') {
+        setErc20Tokens((prev) => [...prev, newToken]);
+      } else {
+        setErc721Tokens((prev) => [...prev, newToken]);
+      }
+
+      setIsLoading(false);
+    }, 1000);
+  }, []);
+
   return (
     <div className="flex flex-col gap-[20px]">
       <header className="flex items-center justify-between">
         <h3 className="text-[18px] font-extrabold">Treasury Assets</h3>
-        <Button className="rounded-[100px]">
-          <Image src="/plus.svg" alt="add" width={20} height={20} />
+        <Button className="rounded-full px-8" onClick={() => setIsAddTokensOpen(true)}>
+          <Image src="/plus.svg" alt="add" width={20} height={20} className="mr-2" />
           Add Tokens
         </Button>
       </header>
@@ -120,7 +156,7 @@ export default function Treasury() {
           assetTitle: 'ERC-20 Assets',
           onDelete: (id) => handleDelete('ERC20', id)
         })}
-        dataSource={erc20Data}
+        dataSource={erc20Tokens}
         isLoading={false}
         rowKey="id"
       />
@@ -130,9 +166,16 @@ export default function Treasury() {
           assetTitle: 'ERC-721 Assets',
           onDelete: (id) => handleDelete('ERC721', id)
         })}
-        dataSource={erc20Data}
+        dataSource={erc721Tokens}
         isLoading={false}
         rowKey="id"
+      />
+
+      <AddTokensDialog
+        open={isAddTokensOpen}
+        onOpenChange={setIsAddTokensOpen}
+        onAddToken={handleAddToken}
+        isLoading={isLoading}
       />
     </div>
   );
