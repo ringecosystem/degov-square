@@ -58,72 +58,66 @@ export default function AdvancedSettingPage() {
   };
 
   return (
-    <div className="bg-card rounded-[14px]">
-      <div className="bg-card rounded-2xl p-8">
-        <h2 className="mb-8 text-xl font-medium">Advanced Settings</h2>
+    <div className="bg-card h-[calc(100vh-300px)] rounded-[14px] p-[20px]">
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(handleSubmit)} className="flex flex-col gap-[20px]">
+          <div className="flex flex-col gap-[5px]">
+            <FormLabel className="text-foreground text-[14px]">Change Admin</FormLabel>
+            <FormField
+              control={form.control}
+              name="adminAddress"
+              render={({ field }) => (
+                <FormItem>
+                  <FormControl>
+                    <Input className="border-border h-[39px]" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
 
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="flex flex-col gap-8">
-            <div>
-              <FormLabel className="text-foreground/70 mb-2 block">Change Admin</FormLabel>
-              <FormField
-                control={form.control}
-                name="adminAddress"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormControl>
-                      <Input className="border-border/20 h-12 rounded-lg" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+          <div className="flex flex-col gap-[5px]">
+            <FormLabel className="text-foreground text-[14px]">walletConnectProjectId</FormLabel>
+            <FormField
+              control={form.control}
+              name="walletConnectProjectId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormControl>
+                    <Input
+                      className="border-border h-[39px]"
+                      placeholder="Wallet Connect API Key"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
 
-            <div>
-              <FormLabel className="text-foreground/70 mb-2 block">
-                walletConnectProjectId
-              </FormLabel>
-              <FormField
-                control={form.control}
-                name="walletConnectProjectId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormControl>
-                      <Input
-                        className="border-border/20 h-12 rounded-lg"
-                        placeholder="Wallet Connect API Key"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <div className="mt-4 flex justify-center gap-4">
-              <Button
-                type="button"
-                variant="outline"
-                className="border-border/20 bg-card h-12 min-w-[140px] rounded-full border"
-                onClick={() => form.reset(defaultValues)}
-              >
-                Cancel
-              </Button>
-              <LoadedButton
-                type="submit"
-                variant="default"
-                className="h-12 min-w-[140px] rounded-full"
-                isLoading={isLoading}
-                disabled={!form.formState.isDirty || !form.formState.isValid}
-              >
-                Save Changes
-              </LoadedButton>
-            </div>
-          </form>
-        </Form>
-      </div>
+          <div className="flex justify-center gap-[20px]">
+            <Button
+              type="button"
+              variant="outline"
+              className="bg-card h-[37px] w-[155px] rounded-full border"
+              onClick={() => form.reset(defaultValues)}
+            >
+              Cancel
+            </Button>
+            <LoadedButton
+              type="submit"
+              variant="default"
+              className="h-[37px] w-[155px] rounded-full"
+              isLoading={isLoading}
+              disabled={!form.formState.isDirty || !form.formState.isValid}
+            >
+              Save Changes
+            </LoadedButton>
+          </div>
+        </form>
+      </Form>
     </div>
   );
 }

@@ -145,8 +145,11 @@ export default function Treasury() {
     <div className="flex flex-col gap-[20px]">
       <header className="flex items-center justify-between">
         <h3 className="text-[18px] font-extrabold">Treasury Assets</h3>
-        <Button className="rounded-full px-8" onClick={() => setIsAddTokensOpen(true)}>
-          <Image src="/plus.svg" alt="add" width={20} height={20} className="mr-2" />
+        <Button
+          className="gap-[5px] rounded-full px-[10px] py-[5px]"
+          onClick={() => setIsAddTokensOpen(true)}
+        >
+          <Image src="/plus.svg" alt="add" width={20} height={20} />
           Add Tokens
         </Button>
       </header>

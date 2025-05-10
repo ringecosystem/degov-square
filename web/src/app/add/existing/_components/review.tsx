@@ -92,7 +92,6 @@ export function Review({ step1Data, step2Data, onSubmit, onBack }: ReviewProps) 
           </div>
         ) : (
           <>
-            {/* 基础信息 */}
             <div className="bg-opacity-5 dark:bg-opacity-5 bg-background rounded-lg p-4">
               <h4 className="mb-4 text-lg font-bold">Basic</h4>
               <div className="space-y-2">
@@ -105,7 +104,6 @@ export function Review({ step1Data, step2Data, onSubmit, onBack }: ReviewProps) 
               </div>
             </div>
 
-            {/* 治理合约信息 */}
             <div className="bg-opacity-5 dark:bg-opacity-5 bg-background rounded-lg p-4">
               <h4 className="mb-4 text-lg font-bold">Governor</h4>
               <div className="space-y-2">
@@ -118,7 +116,6 @@ export function Review({ step1Data, step2Data, onSubmit, onBack }: ReviewProps) 
               </div>
             </div>
 
-            {/* 代币信息 */}
             <div className="bg-opacity-5 dark:bg-opacity-5 bg-background rounded-lg p-4">
               <h4 className="mb-4 text-lg font-bold">Token</h4>
               <div className="space-y-2">
@@ -131,7 +128,6 @@ export function Review({ step1Data, step2Data, onSubmit, onBack }: ReviewProps) 
               </div>
             </div>
 
-            {/* 时间锁信息 */}
             <div className="bg-opacity-5 dark:bg-opacity-5 bg-background rounded-lg p-4">
               <h4 className="mb-4 text-lg font-bold">TimeLock</h4>
               <div className="space-y-2">

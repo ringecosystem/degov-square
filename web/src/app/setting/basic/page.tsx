@@ -172,203 +172,206 @@ export default function BasicSettingPage() {
   };
 
   return (
-    <div className="bg-card rounded-[14px]">
-      <div className="flex p-[20px]">
+    <div className="bg-card rounded-[14px] p-[20px]">
+      <div className="flex items-start justify-center gap-[20px]">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 p-[20px]">
-            <div className="grid grid-cols-[600px_200px] gap-10">
-              {/* 左侧表单 */}
-              <div className="space-y-6">
-                <FormField
-                  control={form.control}
-                  name="name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <div className="flex items-center gap-4">
-                        <FormLabel className="w-[140px] text-sm">DAO name</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Enter your DAO name" {...field} />
-                        </FormControl>
-                      </div>
-                      <div className="pl-[160px]">
-                        <FormMessage />
-                      </div>
-                    </FormItem>
-                  )}
-                />
+            <div className="space-y-[20px]">
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <div className="flex items-center gap-[10px]">
+                      <FormLabel className="w-[140px] flex-shrink-0 text-[14px]">
+                        DAO name
+                      </FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter your DAO name" {...field} />
+                      </FormControl>
+                    </div>
+                    <div className="pl-[160px]">
+                      <FormMessage />
+                    </div>
+                  </FormItem>
+                )}
+              />
 
-                <FormField
-                  control={form.control}
-                  name="description"
-                  render={({ field }) => (
-                    <FormItem>
-                      <div className="flex gap-4">
-                        <FormLabel className="w-[140px] text-sm">Description</FormLabel>
-                        <FormControl>
-                          <Textarea
-                            placeholder="Write a description for your DAO. This will be displayed on the DAO dashboard"
-                            className="min-h-[120px] resize-none"
-                            {...field}
-                          />
-                        </FormControl>
-                      </div>
-                      <div className="pl-[160px]">
-                        <FormMessage />
-                      </div>
-                    </FormItem>
-                  )}
-                />
+              <FormField
+                control={form.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <div className="flex items-center gap-[10px]">
+                      <FormLabel className="w-[140px] flex-shrink-0 text-[14px]">
+                        Description
+                      </FormLabel>
+                      <FormControl>
+                        <Textarea
+                          placeholder="Write a description for your DAO. This will be displayed on the DAO dashboard"
+                          className="min-h-[120px] resize-none"
+                          {...field}
+                        />
+                      </FormControl>
+                    </div>
+                    <div className="pl-[160px]">
+                      <FormMessage />
+                    </div>
+                  </FormItem>
+                )}
+              />
 
-                <FormField
-                  control={form.control}
-                  name="daoUrl"
-                  render={({ field }) => (
-                    <FormItem>
-                      <div className="flex items-center gap-4">
-                        <FormLabel className="w-[140px] text-sm">DAO URL</FormLabel>
-                        <FormControl className="w-full">
-                          <InputAddon
-                            suffix=".degov.ai"
-                            placeholder="DAO-name"
-                            suffixClassName="bg-muted text-muted-foreground"
-                            {...field}
-                          />
-                        </FormControl>
-                      </div>
-                      <div className="pl-[160px]">
-                        <FormMessage />
-                      </div>
-                    </FormItem>
-                  )}
-                />
+              <FormField
+                control={form.control}
+                name="daoUrl"
+                render={({ field }) => (
+                  <FormItem>
+                    <div className="flex items-center gap-[10px]">
+                      <FormLabel className="w-[140px] flex-shrink-0 text-[14px]">DAO URL</FormLabel>
+                      <FormControl className="w-full">
+                        <InputAddon
+                          suffix=".degov.ai"
+                          placeholder="DAO-name"
+                          suffixClassName="bg-muted text-muted-foreground"
+                          {...field}
+                        />
+                      </FormControl>
+                    </div>
+                    <div className="pl-[160px]">
+                      <FormMessage />
+                    </div>
+                  </FormItem>
+                )}
+              />
 
-                <FormField
-                  control={form.control}
-                  name="website"
-                  render={({ field }) => (
-                    <FormItem>
-                      <div className="flex items-center gap-4">
-                        <FormLabel className="w-[140px] text-sm">Website</FormLabel>
-                        <FormControl>
-                          <Input placeholder="The DAO site" {...field} />
-                        </FormControl>
-                      </div>
-                      <div className="pl-[160px]">
-                        <FormMessage />
-                      </div>
-                    </FormItem>
-                  )}
-                />
+              <FormField
+                control={form.control}
+                name="website"
+                render={({ field }) => (
+                  <FormItem>
+                    <div className="flex items-center gap-[10px]">
+                      <FormLabel className="w-[140px] flex-shrink-0 text-[14px]">Website</FormLabel>
+                      <FormControl>
+                        <Input placeholder="The DAO site" {...field} />
+                      </FormControl>
+                    </div>
+                    <div className="pl-[160px]">
+                      <FormMessage />
+                    </div>
+                  </FormItem>
+                )}
+              />
 
-                <FormField
-                  control={form.control}
-                  name="twitter"
-                  render={({ field }) => (
-                    <FormItem>
-                      <div className="flex items-center gap-4">
-                        <FormLabel className="w-[140px] text-sm">Twitter</FormLabel>
-                        <FormControl>
-                          <Input placeholder="@Username" {...field} />
-                        </FormControl>
-                      </div>
-                      <div className="pl-[160px]">
-                        <FormMessage />
-                      </div>
-                    </FormItem>
-                  )}
-                />
+              <FormField
+                control={form.control}
+                name="twitter"
+                render={({ field }) => (
+                  <FormItem>
+                    <div className="flex items-center gap-[10px]">
+                      <FormLabel className="w-[140px] flex-shrink-0 text-[14px]">Twitter</FormLabel>
+                      <FormControl>
+                        <Input placeholder="@Username" {...field} />
+                      </FormControl>
+                    </div>
+                    <div className="pl-[160px]">
+                      <FormMessage />
+                    </div>
+                  </FormItem>
+                )}
+              />
 
-                <FormField
-                  control={form.control}
-                  name="discord"
-                  render={({ field }) => (
-                    <FormItem>
-                      <div className="flex items-center gap-4">
-                        <FormLabel className="w-[140px] text-sm">Discord</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Username" {...field} />
-                        </FormControl>
-                      </div>
-                      <div className="pl-[160px]">
-                        <FormMessage />
-                      </div>
-                    </FormItem>
-                  )}
-                />
+              <FormField
+                control={form.control}
+                name="discord"
+                render={({ field }) => (
+                  <FormItem>
+                    <div className="flex items-center gap-[10px]">
+                      <FormLabel className="w-[140px] flex-shrink-0 text-[14px]">Discord</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Username" {...field} />
+                      </FormControl>
+                    </div>
+                    <div className="pl-[160px]">
+                      <FormMessage />
+                    </div>
+                  </FormItem>
+                )}
+              />
 
-                <FormField
-                  control={form.control}
-                  name="telegram"
-                  render={({ field }) => (
-                    <FormItem>
-                      <div className="flex items-center gap-4">
-                        <FormLabel className="w-[140px] text-sm">Telegram</FormLabel>
-                        <FormControl>
-                          <Input placeholder="@Username" {...field} />
-                        </FormControl>
-                      </div>
-                      <div className="pl-[160px]">
-                        <FormMessage />
-                      </div>
-                    </FormItem>
-                  )}
-                />
+              <FormField
+                control={form.control}
+                name="telegram"
+                render={({ field }) => (
+                  <FormItem>
+                    <div className="flex items-center gap-[10px]">
+                      <FormLabel className="w-[140px] flex-shrink-0 text-[14px]">
+                        Telegram
+                      </FormLabel>
+                      <FormControl>
+                        <Input placeholder="@Username" {...field} />
+                      </FormControl>
+                    </div>
+                    <div className="pl-[160px]">
+                      <FormMessage />
+                    </div>
+                  </FormItem>
+                )}
+              />
 
-                <FormField
-                  control={form.control}
-                  name="github"
-                  render={({ field }) => (
-                    <FormItem>
-                      <div className="flex items-center gap-4">
-                        <FormLabel className="w-[140px] text-sm">Github</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Username" {...field} />
-                        </FormControl>
-                      </div>
-                      <div className="pl-[160px]">
-                        <FormMessage />
-                      </div>
-                    </FormItem>
-                  )}
-                />
+              <FormField
+                control={form.control}
+                name="github"
+                render={({ field }) => (
+                  <FormItem>
+                    <div className="flex items-center gap-[10px]">
+                      <FormLabel className="w-[140px] flex-shrink-0 text-[14px]">Github</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Username" {...field} />
+                      </FormControl>
+                    </div>
+                    <div className="pl-[160px]">
+                      <FormMessage />
+                    </div>
+                  </FormItem>
+                )}
+              />
 
-                <FormField
-                  control={form.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <div className="flex items-center gap-4">
-                        <FormLabel className="w-[140px] text-sm">Email</FormLabel>
-                        <FormControl>
-                          <Input type="email" placeholder="Email@example.com" {...field} />
-                        </FormControl>
-                      </div>
-                      <div className="pl-[160px]">
-                        <FormMessage />
-                      </div>
-                    </FormItem>
-                  )}
-                />
-              </div>
-              <Separator className="my-6" />
-              <div className="flex justify-center gap-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="w-[155px] rounded-full"
-                  onClick={() => form.reset()}
-                >
-                  Cancel
-                </Button>
-                <Button type="submit" className="w-[155px] rounded-full" disabled={isLoading}>
-                  {isLoading ? 'Saving...' : 'Save'}
-                </Button>
-              </div>
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <div className="flex items-center gap-[10px]">
+                      <FormLabel className="w-[140px] flex-shrink-0 text-[14px]">Email</FormLabel>
+                      <FormControl>
+                        <Input type="email" placeholder="Email@example.com" {...field} />
+                      </FormControl>
+                    </div>
+                    <div className="pl-[160px]">
+                      <FormMessage />
+                    </div>
+                  </FormItem>
+                )}
+              />
+            </div>
+            <Separator className="my-6" />
+            <div className="flex justify-center gap-[20px]">
+              <Button
+                type="button"
+                variant="outline"
+                className="w-[155px] rounded-full"
+                onClick={() => form.reset()}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" className="w-[155px] rounded-full" disabled={isLoading}>
+                {isLoading ? 'Saving...' : 'Save'}
+              </Button>
             </div>
           </form>
         </Form>
 
-        <div className="flex flex-col items-center gap-4 p-[20px]">
+        <div className="flex flex-col items-center gap-[20px] p-[20px]">
           <div className="relative h-[110px] w-[110px] overflow-hidden rounded-full">
             {avatar ? (
               <NextImage
@@ -406,7 +409,7 @@ export default function BasicSettingPage() {
           <Button
             type="button"
             variant="outline"
-            className="w-full rounded-full border"
+            className="w-full rounded-[14px] border"
             onClick={() => document.getElementById('avatar-upload')?.click()}
             disabled={isAvatarUploading}
           >

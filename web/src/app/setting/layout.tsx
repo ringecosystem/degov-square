@@ -15,8 +15,8 @@ export default function SettingLayout({ children }: { children: React.ReactNode 
   const pathname = usePathname();
 
   return (
-    <div className="container py-6">
-      <Link href="/" className="mb-6 flex items-center gap-2">
+    <div className="container space-y-[20px]">
+      <Link href="/" className="flex items-center gap-2">
         <Image
           src="/back.svg"
           alt="back"
@@ -27,19 +27,19 @@ export default function SettingLayout({ children }: { children: React.ReactNode 
         <h1 className="text-2xl font-bold">DAO Settings</h1>
       </Link>
 
-      <div className="flex min-h-[80vh] w-full gap-6">
-        <aside className="w-[270px] flex-shrink-0">
-          <div className="flex flex-col gap-2">
+      <div className="flex w-full gap-[30px]">
+        <aside className="w-[300px] flex-shrink-0">
+          <div className="flex flex-col gap-[10px]">
             {NAVS.map((nav) => (
               <Link
                 key={nav.path}
                 href={nav.path}
                 className={cn(
-                  'rounded-[10px] px-4 py-3 text-left text-base transition-colors',
+                  'border-border hover:border-foreground bg-card text-foreground rounded-[14px] border px-[20px] py-[15px] text-left text-[14px] transition-colors',
                   pathname === nav.path ||
                     (pathname === '/setting' && nav.path === '/setting/basic')
-                    ? 'bg-card'
-                    : 'hover:bg-background/80 text-muted-foreground'
+                    ? 'border-foreground'
+                    : ''
                 )}
               >
                 {nav.label}

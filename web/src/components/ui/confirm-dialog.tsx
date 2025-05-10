@@ -34,11 +34,11 @@ export function ConfirmDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="border-border/20 bg-card w-[400px] rounded-[26px] p-[20px] sm:rounded-[26px]">
         <DialogHeader className="flex w-full flex-row items-center justify-between">
-          <DialogTitle className="text-[18px] font-normal">{title}</DialogTitle>
+          <DialogTitle className="text-[18px] font-semibold">{title}</DialogTitle>
         </DialogHeader>
-        <Separator className="bg-muted-foreground/40 my-0" />
+        <Separator className="my-0" />
         <div className="w-[360px] text-[14px] leading-normal font-normal">{description}</div>
-        <Separator className="bg-muted-foreground/40 my-0" />
+        <Separator className="my-0" />
         <div
           className={cn(
             'grid grid-cols-2 gap-[20px]',
@@ -47,7 +47,7 @@ export function ConfirmDialog({
         >
           {cancelText && (
             <Button
-              className="border-border/20 bg-card rounded-[100px] border"
+              className="bg-card rounded-[100px] border"
               variant="outline"
               onClick={() => onOpenChange(false)}
             >
