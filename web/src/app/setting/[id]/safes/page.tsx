@@ -1,14 +1,17 @@
 'use client';
 
 import Image from 'next/image';
+import Link from 'next/link';
 import { useCallback, useState } from 'react';
 
-import { ColumnType } from '@/components/custom-table';
+import type { ColumnType } from '@/components/custom-table';
 import { CustomTable } from '@/components/custom-table';
 import { Button } from '@/components/ui/button';
-import Link from 'next/link';
 import { useConfirm } from '@/contexts/confirm-context';
-import { LinkSafeDialog, Safe } from './_components/link-safe-dialog';
+
+import { LinkSafeDialog } from './_components/link-safe-dialog';
+
+import type { Safe } from './_components/link-safe-dialog';
 
 const safeData = [
   {

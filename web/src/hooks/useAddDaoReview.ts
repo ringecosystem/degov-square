@@ -1,13 +1,13 @@
 import { useMemo } from 'react';
 import { useReadContracts } from 'wagmi';
 
+import { type Step1FormValues } from '@/app/add/existing/_components/step1-form';
+import { type Step2FormValues } from '@/app/add/existing/_components/step2-form';
 import { abi as governorAbi } from '@/config/abi/governor';
 import { abi as timeLockAbi } from '@/config/abi/timeLock';
 import { abi as tokenAbi } from '@/config/abi/token';
 
 import type { Address } from 'viem';
-import { type Step1FormValues } from '@/app/add/existing/_components/step1-form';
-import { type Step2FormValues } from '@/app/add/existing/_components/step2-form';
 
 interface GovernanceParams {
   proposalThreshold: bigint;

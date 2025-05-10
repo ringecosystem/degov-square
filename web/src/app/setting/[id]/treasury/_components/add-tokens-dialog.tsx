@@ -1,16 +1,14 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { z } from 'zod';
-import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { isAddress } from 'viem';
 import { debounce } from 'lodash-es';
+import { useState, useEffect, useCallback } from 'react';
+import { useForm } from 'react-hook-form';
+import { isAddress } from 'viem';
+import { z } from 'zod';
 
 import { Button } from '@/components/ui/button';
-import { LoadedButton } from '@/components/ui/loaded-button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { InputSelect } from '@/components/ui/input-select';
 import {
   Form,
   FormControl,
@@ -19,6 +17,8 @@ import {
   FormLabel,
   FormMessage
 } from '@/components/ui/form';
+import { InputSelect } from '@/components/ui/input-select';
+import { LoadedButton } from '@/components/ui/loaded-button';
 import { Separator } from '@/components/ui/separator';
 import { TokenStandard, tokenStandardOptions } from '@/config/dao';
 

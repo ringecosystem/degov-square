@@ -1,8 +1,8 @@
 'use client';
 
 import React, { forwardRef } from 'react';
+
 import { Input } from '@/components/ui/input';
-import { cn } from '@/lib/utils';
 import {
   Select,
   SelectContent,
@@ -10,6 +10,7 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select';
+import { cn } from '@/lib/utils';
 
 export type SelectOption = {
   value: string;

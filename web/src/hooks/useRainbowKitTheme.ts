@@ -1,6 +1,7 @@
 'use client';
-import { useTheme } from 'next-themes';
 import { darkTheme, lightTheme } from '@rainbow-me/rainbowkit';
+import { useTheme } from 'next-themes';
+
 import { useMounted } from './useMounted';
 
 export const dark = darkTheme({

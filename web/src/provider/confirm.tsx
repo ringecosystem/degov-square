@@ -1,8 +1,11 @@
 'use client';
 
-import { ReactNode, useState } from 'react';
-import { ConfirmContext, type ConfirmOptions } from '@/contexts/confirm-context';
+import { useState } from 'react';
+
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { ConfirmContext, type ConfirmOptions } from '@/contexts/confirm-context';
+
+import type { ReactNode} from 'react';
 interface ConfirmProviderProps {
   children: ReactNode;
 }

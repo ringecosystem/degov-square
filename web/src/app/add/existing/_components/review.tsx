@@ -1,14 +1,16 @@
 'use client';
 
+import Image from 'next/image';
+import { useCallback } from 'react';
+
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { Step1FormValues } from './step1-form';
-import { Step2FormValues } from './step2-form';
+import { useConfirm } from '@/contexts/confirm-context';
 import { useAddDaoReview } from '@/hooks/useAddDaoReview';
 import { getChains } from '@/utils/chains';
-import { useConfirm } from '@/contexts/confirm-context';
-import { useCallback } from 'react';
-import Image from 'next/image';
+
+import type { Step1FormValues } from './step1-form';
+import type { Step2FormValues } from './step2-form';
 interface ReviewProps {
   step1Data: Step1FormValues;
   step2Data: Step2FormValues;
@@ -73,7 +75,7 @@ export function Review({ step1Data, step2Data, onSubmit, onBack }: ReviewProps) 
       variant: 'default',
       onConfirm: onSubmit
     });
-  }, [onSubmit]);
+  }, [onSubmit, confirm]);
 
   return (
     <>

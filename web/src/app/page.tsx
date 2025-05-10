@@ -1,11 +1,14 @@
 'use client';
 import Image from 'next/image';
-import { Button } from '@/components/ui/button';
-import { CustomTable, ColumnType } from '@/components/custom-table';
-import { useState, useEffect } from 'react';
-import { daoInfo } from '@/data/daoInfo';
-import { SortableCell } from '@/components/sortable-cell';
 import Link from 'next/link';
+import { useState, useEffect } from 'react';
+
+import type { ColumnType } from '@/components/custom-table';
+import { CustomTable } from '@/components/custom-table';
+import { SortableCell } from '@/components/sortable-cell';
+import { Button } from '@/components/ui/button';
+import { daoInfo } from '@/data/daoInfo';
+
 type SortState = 'asc' | 'desc';
 
 export default function Home() {
@@ -17,7 +20,7 @@ export default function Home() {
       title: 'Name',
       key: 'name',
       className: 'w-[34%] text-left',
-      render(value, index) {
+      render(value) {
         return (
           <div className="flex items-center gap-[10px]">
             <Image src={value?.daoIcon} alt="dao" width={34} height={34} />
@@ -30,7 +33,7 @@ export default function Home() {
       title: 'Network',
       key: 'network',
       className: 'w-[28%] text-center',
-      render(value, index) {
+      render(value) {
         return (
           <div className="flex items-center justify-center gap-[10px]">
             <Image src={value?.networkIcon} alt="network" width={24} height={24} />
@@ -43,7 +46,7 @@ export default function Home() {
       title: <SortableCell onClick={setSortState} sortState={sortState} />,
       key: 'proposals',
       className: 'w-[28%] text-center',
-      render(value, index) {
+      render(value) {
         return <span className="text-[16px]">{value?.proposals}</span>;
       }
     },
@@ -51,7 +54,7 @@ export default function Home() {
       title: 'Action',
       key: 'action',
       className: 'w-[20%] text-right',
-      render(value, index) {
+      render(value) {
         return (
           <div className="flex items-center justify-end gap-[10px]">
             <Link

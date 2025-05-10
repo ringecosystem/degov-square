@@ -1,17 +1,14 @@
 'use client';
 
-import { useState } from 'react';
-import { z } from 'zod';
-import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { isAddress } from 'viem';
 import { X } from 'lucide-react';
+import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { isAddress } from 'viem';
+import { z } from 'zod';
 
 import { Button } from '@/components/ui/button';
-import { LoadedButton } from '@/components/ui/loaded-button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { InputSelect } from '@/components/ui/input-select';
-import { Input } from '@/components/ui/input';
 import {
   Form,
   FormControl,
@@ -20,7 +17,9 @@ import {
   FormLabel,
   FormMessage
 } from '@/components/ui/form';
-import { Separator } from '@/components/ui/separator';
+import { Input } from '@/components/ui/input';
+import { InputSelect } from '@/components/ui/input-select';
+import { LoadedButton } from '@/components/ui/loaded-button';
 import {
   Select,
   SelectContent,
@@ -28,6 +27,7 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select';
+import { Separator } from '@/components/ui/separator';
 
 // Safe type definition
 export type Safe = {

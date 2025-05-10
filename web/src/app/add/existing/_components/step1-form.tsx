@@ -1,8 +1,11 @@
 'use client';
 
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useRouter } from 'next/navigation';
+import { useForm } from 'react-hook-form';
+import { isAddress } from 'viem';
 import { z } from 'zod';
-import { Separator } from '@/components/ui/separator';
-import { Input } from '@/components/ui/input';
+
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -12,15 +15,12 @@ import {
   FormLabel,
   FormMessage
 } from '@/components/ui/form';
-
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useForm } from 'react-hook-form';
-
+import { Input } from '@/components/ui/input';
 import { InputAddon } from '@/components/ui/input-addon';
 import { InputSelect } from '@/components/ui/input-select';
+import { Separator } from '@/components/ui/separator';
 import { getChains } from '@/utils/chains';
-import { isAddress } from 'viem';
-import { useRouter } from 'next/navigation';
+
 // Define form schema with validation
 export const step1Schema = z.object({
   name: z.string().min(1, 'Name is required'),

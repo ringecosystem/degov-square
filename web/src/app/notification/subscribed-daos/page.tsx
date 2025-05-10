@@ -1,11 +1,12 @@
 'use client';
 
-import { useState } from 'react';
 import Image from 'next/image';
-import { CustomTable } from '@/components/custom-table';
-import { ColumnType } from '@/components/custom-table';
 import Link from 'next/link';
+import { useState } from 'react';
 import { useCallback } from 'react';
+
+import { CustomTable } from '@/components/custom-table';
+import type { ColumnType } from '@/components/custom-table';
 import { useConfirm } from '@/contexts/confirm-context';
 // Mock data for subscribed DAOs
 const daoSubscriptions = [
@@ -36,7 +37,15 @@ type ColumnProps = {
   onRemove: (id: number) => void;
 };
 
-const columns = ({ onRemove }: ColumnProps): ColumnType<any>[] => [
+const columns = ({
+  onRemove
+}: ColumnProps): ColumnType<{
+  id: number;
+  name: string;
+  logo: string;
+  network: string;
+  networkLogo: string;
+}>[] => [
   {
     title: 'Name',
     key: 'name',
@@ -60,7 +69,7 @@ const columns = ({ onRemove }: ColumnProps): ColumnType<any>[] => [
     key: 'network',
     width: 375,
     className: 'text-center',
-    render(value, index) {
+    render(value) {
       return (
         <Link
           href={`/setting/safes/${value?.id}`}
@@ -77,7 +86,7 @@ const columns = ({ onRemove }: ColumnProps): ColumnType<any>[] => [
     key: 'action',
     width: 60,
     className: 'text-right',
-    render(value, index) {
+    render(value) {
       return (
         <button
           className="cursor-pointer transition-opacity hover:opacity-80"

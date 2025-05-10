@@ -1,4 +1,6 @@
-import { mainnet, arbitrum, base, sepolia, Chain } from 'wagmi/chains';
+import { mainnet, arbitrum, base, sepolia } from 'wagmi/chains';
+
+import type { Chain } from 'wagmi/chains';
 
 export const supportedChains = [mainnet, sepolia, arbitrum, base];
 
