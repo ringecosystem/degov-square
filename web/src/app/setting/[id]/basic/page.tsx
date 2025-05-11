@@ -199,7 +199,11 @@ export default function BasicSettingPage() {
                         DAO name
                       </FormLabel>
                       <FormControl>
-                        <Input placeholder="Enter your DAO name" {...field} />
+                        <Input
+                          placeholder="Enter your DAO name"
+                          {...field}
+                          className="w-full md:w-[410px]"
+                        />
                       </FormControl>
                     </div>
                     <div className="pl-0 md:pl-[160px]">
@@ -221,7 +225,7 @@ export default function BasicSettingPage() {
                       <FormControl>
                         <Textarea
                           placeholder="Write a description for your DAO. This will be displayed on the DAO dashboard"
-                          className="min-h-[120px] resize-none"
+                          className="min-h-[120px] w-full resize-none md:w-[410px]"
                           {...field}
                         />
                       </FormControl>
@@ -242,11 +246,12 @@ export default function BasicSettingPage() {
                       <FormLabel className="w-auto flex-shrink-0 text-[14px] md:w-[140px]">
                         DAO URL
                       </FormLabel>
-                      <FormControl className="w-full">
+                      <FormControl>
                         <InputAddon
                           suffix=".degov.ai"
                           placeholder="DAO-name"
                           suffixClassName="bg-muted text-muted-foreground"
+                          containerClassName="w-full md:w-[410px]"
                           {...field}
                         />
                       </FormControl>
@@ -268,7 +273,11 @@ export default function BasicSettingPage() {
                         Website
                       </FormLabel>
                       <FormControl>
-                        <Input placeholder="The DAO site" {...field} />
+                        <Input
+                          placeholder="The DAO site"
+                          {...field}
+                          className="w-full md:w-[410px]"
+                        />
                       </FormControl>
                     </div>
                     <div className="pl-0 md:pl-[160px]">
@@ -288,7 +297,7 @@ export default function BasicSettingPage() {
                         Twitter
                       </FormLabel>
                       <FormControl>
-                        <Input placeholder="@Username" {...field} />
+                        <Input placeholder="@Username" {...field} className="w-full md:w-[410px]" />
                       </FormControl>
                     </div>
                     <div className="pl-0 md:pl-[160px]">
@@ -308,7 +317,7 @@ export default function BasicSettingPage() {
                         Discord
                       </FormLabel>
                       <FormControl>
-                        <Input placeholder="Username" {...field} />
+                        <Input placeholder="Username" {...field} className="w-full md:w-[410px]" />
                       </FormControl>
                     </div>
                     <div className="pl-0 md:pl-[160px]">
@@ -328,7 +337,7 @@ export default function BasicSettingPage() {
                         Telegram
                       </FormLabel>
                       <FormControl>
-                        <Input placeholder="@Username" {...field} />
+                        <Input placeholder="@Username" {...field} className="w-full md:w-[410px]" />
                       </FormControl>
                     </div>
                     <div className="pl-0 md:pl-[160px]">
@@ -348,7 +357,7 @@ export default function BasicSettingPage() {
                         Github
                       </FormLabel>
                       <FormControl>
-                        <Input placeholder="Username" {...field} />
+                        <Input placeholder="Username" {...field} className="w-full md:w-[410px]" />
                       </FormControl>
                     </div>
                     <div className="pl-0 md:pl-[160px]">
@@ -366,7 +375,12 @@ export default function BasicSettingPage() {
                     <div className="flex flex-col gap-[10px] md:flex-row md:items-center">
                       <FormLabel className="w-[140px] flex-shrink-0 text-[14px]">Email</FormLabel>
                       <FormControl>
-                        <Input type="email" placeholder="Email@example.com" {...field} />
+                        <Input
+                          type="email"
+                          placeholder="Email@example.com"
+                          {...field}
+                          className="w-full md:w-[410px]"
+                        />
                       </FormControl>
                     </div>
                     <div className="pl-0 md:pl-[160px]">
