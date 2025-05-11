@@ -8,6 +8,8 @@ import { useCallback } from 'react';
 import { CustomTable } from '@/components/custom-table';
 import type { ColumnType } from '@/components/custom-table';
 import { useConfirm } from '@/contexts/confirm-context';
+import { useIsMobileAndSubSection } from '@/app/notification/_hooks/isMobileAndSubSection';
+import { Item } from './_components/item';
 // Mock data for subscribed DAOs
 const daoSubscriptions = [
   {
@@ -108,7 +110,7 @@ const columns = ({
 export default function SubscribedDAOsPage() {
   const [subscriptions, setSubscriptions] = useState(daoSubscriptions);
   const { confirm } = useConfirm();
-
+  const isMobileAndSubSection = useIsMobileAndSubSection();
   const handleUnsubscribe = useCallback(
     (id: number) => {
       confirm({
@@ -125,13 +127,36 @@ export default function SubscribedDAOsPage() {
   );
 
   return (
-    <div className="bg-card h-[calc(100vh-300px)] rounded-[14px]">
+    <div className="md:bg-card md:h-[calc(100vh-300px)] md:rounded-[14px]">
+      {isMobileAndSubSection && (
+        <Link href={`/notification`} className="flex items-center gap-[5px] md:gap-[10px]">
+          <Image
+            src="/back.svg"
+            alt="back"
+            width={32}
+            height={32}
+            className="size-[32px] flex-shrink-0"
+          />
+          <h1 className="text-[18px] font-semibold">Subscribed DAOs</h1>
+        </Link>
+      )}
       <CustomTable
         columns={columns({ onRemove: handleUnsubscribe })}
         dataSource={subscriptions}
         isLoading={false}
         rowKey="id"
+        className="hidden md:block"
       />
+
+      <div className="mt-[15px] flex flex-col gap-[15px] md:hidden">
+        {subscriptions.map((subscription) => (
+          <Item
+            key={subscription.id}
+            {...subscription}
+            onRemove={() => handleUnsubscribe(subscription.id)}
+          />
+        ))}
+      </div>
     </div>
   );
 }
