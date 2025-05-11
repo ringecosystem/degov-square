@@ -213,6 +213,14 @@ export default function Treasury() {
         />
       </div>
 
+      <Button
+        className="fixed bottom-[20px] w-[calc(100%-40px)] gap-[5px] rounded-full px-[10px] py-[5px] md:hidden"
+        onClick={() => setIsAddTokensOpen(true)}
+      >
+        <Image src="/plus.svg" alt="add" width={20} height={20} />
+        Add Tokens
+      </Button>
+
       <AddTokensDialog
         open={isAddTokensOpen}
         onOpenChange={setIsAddTokensOpen}
