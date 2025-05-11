@@ -1,3 +1,4 @@
+'use client';
 import { useMobile } from '@/hooks/useMobile';
 import { getPathLevel } from '@/utils/helper';
 import { usePathname } from 'next/navigation';
