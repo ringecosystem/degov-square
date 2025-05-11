@@ -16,7 +16,6 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { useDisconnectWallet } from '@/hooks/useDisconnectWallet';
 import { formatShortAddress } from '@/utils';
 
-
 import { Button } from '../ui/button';
 interface ConnectedProps {
   address: `0x${string}`;
@@ -33,9 +32,11 @@ export const Connected = ({ address }: ConnectedProps) => {
       <DropdownMenuTrigger>
         <AddressResolver address={address} showShortAddress>
           {(value) => (
-            <div className="border-foreground/20 flex cursor-pointer items-center gap-[10px] rounded-[10px] border p-[5px]">
+            <div className="border-foreground/20 flex cursor-pointer items-center gap-[5px] rounded-[10px] border p-[5px] md:gap-[10px]">
               <AddressAvatar address={address} className="size-[24px] rounded-full" size={24} />
-              <span className="text-foreground text-[14px] font-medium">{value}</span>
+              <span className="text-foreground hidden text-[14px] font-medium md:block">
+                {value}
+              </span>
               <ChevronDown size={16} className="text-muted-foreground" />
             </div>
           )}

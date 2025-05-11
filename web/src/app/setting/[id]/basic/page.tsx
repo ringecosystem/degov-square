@@ -7,7 +7,7 @@ import { useForm } from 'react-hook-form';
 import { toast } from 'react-toastify';
 import { useAccount } from 'wagmi';
 import { z } from 'zod';
-
+import Link from 'next/link';
 import { AddressAvatar } from '@/components/address-avatar';
 import { Button } from '@/components/ui/button';
 import {
@@ -18,11 +18,12 @@ import {
   FormLabel,
   FormMessage
 } from '@/components/ui/form';
+import { useParams } from 'next/navigation';
 import { Input } from '@/components/ui/input';
 import { InputAddon } from '@/components/ui/input-addon';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
-
+import { useIsMobileAndSubSection } from '@/app/setting/_hooks/isMobileAndSubSection';
 
 // 表单验证
 const formSchema = z.object({
@@ -39,7 +40,6 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
-// 图片配置
 const IMAGE_CONFIG = {
   maxWidth: 800,
   maxHeight: 800,
@@ -50,11 +50,12 @@ const IMAGE_CONFIG = {
 
 export default function BasicSettingPage() {
   const { address } = useAccount();
+  const { id } = useParams();
   const [isLoading, setIsLoading] = useState(false);
   const [avatar, setAvatar] = useState<string | null>(null);
   const [isAvatarUploading, setIsAvatarUploading] = useState(false);
+  const isMobileAndSubSection = useIsMobileAndSubSection();
 
-  // 表单初始化
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -70,14 +71,12 @@ export default function BasicSettingPage() {
     }
   });
 
-  // 表单提交
   async function onSubmit(values: FormValues) {
     setIsLoading(true);
     try {
       console.log('Form Values:', values);
       console.log('Avatar:', avatar);
 
-      // 这里添加API调用保存数据
       await new Promise((resolve) => setTimeout(resolve, 1000)); // 模拟API调用
 
       toast.success('Settings saved successfully');
@@ -89,7 +88,6 @@ export default function BasicSettingPage() {
     }
   }
 
-  // 图片压缩处理
   const compressImage = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -142,7 +140,6 @@ export default function BasicSettingPage() {
     });
   };
 
-  // 头像上传处理
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -162,7 +159,6 @@ export default function BasicSettingPage() {
       const base64 = await compressImage(file);
       setAvatar(base64);
 
-      // 这里可以添加API调用，上传头像
       console.log('Avatar updated:', base64);
     } catch (error) {
       console.error('Error processing image:', error);
@@ -173,18 +169,33 @@ export default function BasicSettingPage() {
   };
 
   return (
-    <div className="bg-card rounded-[14px] p-[20px]">
-      <div className="flex items-start justify-center gap-[20px]">
+    <div className="md:bg-card md:rounded-[14px] md:p-[20px]">
+      {isMobileAndSubSection && (
+        <Link href={`/setting/${id}`} className="flex items-center gap-[5px] md:gap-[10px]">
+          <NextImage
+            src="/back.svg"
+            alt="back"
+            width={32}
+            height={32}
+            className="size-[32px] flex-shrink-0"
+          />
+          <h1 className="text-[18px] font-semibold">Basic</h1>
+        </Link>
+      )}
+      <div className="mt-[15px] flex items-start justify-center gap-[20px] md:mt-0">
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 p-[20px]">
-            <div className="space-y-[20px]">
+          <form
+            onSubmit={form.handleSubmit(onSubmit)}
+            className="space-y-[15px] md:space-y-[20px] md:p-[20px]"
+          >
+            <div className="space-y-[15px] md:space-y-[20px]">
               <FormField
                 control={form.control}
                 name="name"
                 render={({ field }) => (
                   <FormItem>
-                    <div className="flex items-center gap-[10px]">
-                      <FormLabel className="w-[140px] flex-shrink-0 text-[14px]">
+                    <div className="flex flex-col gap-[10px] md:flex-row md:items-center">
+                      <FormLabel className="w-auto flex-shrink-0 text-[14px] md:w-[140px]">
                         DAO name
                       </FormLabel>
                       <FormControl>
@@ -203,8 +214,8 @@ export default function BasicSettingPage() {
                 name="description"
                 render={({ field }) => (
                   <FormItem>
-                    <div className="flex items-center gap-[10px]">
-                      <FormLabel className="w-[140px] flex-shrink-0 text-[14px]">
+                    <div className="flex flex-col gap-[10px] md:flex-row md:items-center">
+                      <FormLabel className="w-auto flex-shrink-0 text-[14px] md:w-[140px]">
                         Description
                       </FormLabel>
                       <FormControl>
@@ -227,8 +238,10 @@ export default function BasicSettingPage() {
                 name="daoUrl"
                 render={({ field }) => (
                   <FormItem>
-                    <div className="flex items-center gap-[10px]">
-                      <FormLabel className="w-[140px] flex-shrink-0 text-[14px]">DAO URL</FormLabel>
+                    <div className="flex flex-col gap-[10px] md:flex-row md:items-center">
+                      <FormLabel className="w-auto flex-shrink-0 text-[14px] md:w-[140px]">
+                        DAO URL
+                      </FormLabel>
                       <FormControl className="w-full">
                         <InputAddon
                           suffix=".degov.ai"
@@ -250,8 +263,10 @@ export default function BasicSettingPage() {
                 name="website"
                 render={({ field }) => (
                   <FormItem>
-                    <div className="flex items-center gap-[10px]">
-                      <FormLabel className="w-[140px] flex-shrink-0 text-[14px]">Website</FormLabel>
+                    <div className="flex flex-col gap-[10px] md:flex-row md:items-center">
+                      <FormLabel className="w-auto flex-shrink-0 text-[14px] md:w-[140px]">
+                        Website
+                      </FormLabel>
                       <FormControl>
                         <Input placeholder="The DAO site" {...field} />
                       </FormControl>
@@ -268,8 +283,10 @@ export default function BasicSettingPage() {
                 name="twitter"
                 render={({ field }) => (
                   <FormItem>
-                    <div className="flex items-center gap-[10px]">
-                      <FormLabel className="w-[140px] flex-shrink-0 text-[14px]">Twitter</FormLabel>
+                    <div className="flex flex-col gap-[10px] md:flex-row md:items-center">
+                      <FormLabel className="w-auto flex-shrink-0 text-[14px] md:w-[140px]">
+                        Twitter
+                      </FormLabel>
                       <FormControl>
                         <Input placeholder="@Username" {...field} />
                       </FormControl>
@@ -286,8 +303,10 @@ export default function BasicSettingPage() {
                 name="discord"
                 render={({ field }) => (
                   <FormItem>
-                    <div className="flex items-center gap-[10px]">
-                      <FormLabel className="w-[140px] flex-shrink-0 text-[14px]">Discord</FormLabel>
+                    <div className="flex flex-col gap-[10px] md:flex-row md:items-center">
+                      <FormLabel className="w-auto flex-shrink-0 text-[14px] md:w-[140px]">
+                        Discord
+                      </FormLabel>
                       <FormControl>
                         <Input placeholder="Username" {...field} />
                       </FormControl>
@@ -304,8 +323,8 @@ export default function BasicSettingPage() {
                 name="telegram"
                 render={({ field }) => (
                   <FormItem>
-                    <div className="flex items-center gap-[10px]">
-                      <FormLabel className="w-[140px] flex-shrink-0 text-[14px]">
+                    <div className="flex flex-col gap-[10px] md:flex-row md:items-center">
+                      <FormLabel className="w-auto flex-shrink-0 text-[14px] md:w-[140px]">
                         Telegram
                       </FormLabel>
                       <FormControl>
@@ -324,8 +343,10 @@ export default function BasicSettingPage() {
                 name="github"
                 render={({ field }) => (
                   <FormItem>
-                    <div className="flex items-center gap-[10px]">
-                      <FormLabel className="w-[140px] flex-shrink-0 text-[14px]">Github</FormLabel>
+                    <div className="flex flex-col gap-[10px] md:flex-row md:items-center">
+                      <FormLabel className="w-auto flex-shrink-0 text-[14px] md:w-[140px]">
+                        Github
+                      </FormLabel>
                       <FormControl>
                         <Input placeholder="Username" {...field} />
                       </FormControl>
@@ -342,8 +363,10 @@ export default function BasicSettingPage() {
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <div className="flex items-center gap-[10px]">
-                      <FormLabel className="w-[140px] flex-shrink-0 text-[14px]">Email</FormLabel>
+                    <div className="flex flex-col gap-[10px] md:flex-row md:items-center">
+                      <FormLabel className="w-auto flex-shrink-0 text-[14px] md:w-[140px]">
+                        Email
+                      </FormLabel>
                       <FormControl>
                         <Input type="email" placeholder="Email@example.com" {...field} />
                       </FormControl>
@@ -355,7 +378,7 @@ export default function BasicSettingPage() {
                 )}
               />
             </div>
-            <Separator className="my-6" />
+            <Separator className="hidden md:my-[20px] md:block" />
             <div className="flex justify-center gap-[20px]">
               <Button
                 type="button"
@@ -372,7 +395,7 @@ export default function BasicSettingPage() {
           </form>
         </Form>
 
-        <div className="flex flex-col items-center gap-[20px] p-[20px]">
+        <div className="hidden flex-col items-center gap-[20px] p-[20px] md:flex">
           <div className="relative h-[110px] w-[110px] overflow-hidden rounded-full">
             {avatar ? (
               <NextImage

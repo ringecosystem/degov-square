@@ -31,6 +31,7 @@ export interface CustomTableProps<T> {
   loadingRows?: number;
   loadingHeight?: number;
   emptyText?: React.ReactNode;
+  className?: string;
   bodyClassName?: string;
   tableClassName?: string;
   maxHeight?: string;
@@ -46,6 +47,7 @@ export function CustomTable<T extends Record<string, unknown>>({
   loadingRows = 5,
   loadingHeight = 30,
   emptyText = 'No data',
+  className,
   bodyClassName,
   tableClassName,
   maxHeight = 'calc(100vh-200px)',
@@ -92,7 +94,7 @@ export function CustomTable<T extends Record<string, unknown>>({
   }, [columns, loadingRows, loadingHeight]);
 
   return (
-    <div className="bg-card rounded-[14px] p-[20px]">
+    <div className={cn('bg-card rounded-[14px] p-[20px]', className)}>
       <Table className={cn(tableClassName)}>
         <TableHeader>
           <TableRow className="bg-muted !border-b-0">

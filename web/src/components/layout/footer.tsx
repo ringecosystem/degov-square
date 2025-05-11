@@ -3,7 +3,7 @@ import Link from 'next/link';
 export function Footer() {
   const year = new Date().getFullYear();
   return (
-    <footer className="container flex items-center justify-between py-[10px]">
+    <footer className="container hidden items-center justify-between py-[10px] md:flex">
       <p className="text-muted-foreground text-[14px] font-medium">&copy; {year} RingDAO</p>
       <div className="flex items-center gap-[10px]">
         <Link

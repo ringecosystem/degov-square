@@ -74,7 +74,7 @@ export function Step1Form({ onSubmit, defaultValues }: Step1FormProps) {
   };
 
   return (
-    <div className="flex flex-col gap-[20px]">
+    <div className="flex flex-col gap-[15px] md:gap-[20px]">
       <h3 className="text-[18px] font-semibold">
         Provide the most basic information for displaying the DAO
       </h3>

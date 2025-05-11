@@ -46,7 +46,7 @@ export default function AddExisting() {
   }
 
   return (
-    <div className="bg-card mx-auto flex w-[800px] flex-col gap-[20px] rounded-[14px] p-[20px]">
+    <div className="md:bg-card container mx-auto flex flex-col gap-[15px] md:w-[800px] md:gap-[20px] md:rounded-[14px] md:p-[20px]">
       <header>
         <h2 className="text-[26px] font-semibold">Add existing DAO</h2>
       </header>

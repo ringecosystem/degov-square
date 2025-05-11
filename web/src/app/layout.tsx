@@ -41,7 +41,7 @@ export default function RootLayout({
               <ConfirmProvider>
                 <div className="bg-background flex min-h-dvh flex-col overflow-hidden font-sans antialiased">
                   <Header />
-                  <main className="flex-1 py-[30px]">{children}</main>
+                  <main className="flex-1 py-[20px] md:py-[30px]">{children}</main>
                   <Footer />
                 </div>
                 <ToastContainer
