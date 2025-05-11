@@ -37,10 +37,7 @@ function NavLink({
 
 const isActive = (nav: (typeof NAVS)[0]) => {
   const pathname = usePathname();
-  return (
-    `/notification/${nav.value}` === pathname ||
-    (pathname === '/notification' && nav.value === 'subscription')
-  );
+  return `/notification/${nav.value}` === pathname;
 };
 
 const getHref = (nav: (typeof NAVS)[0]) => {
