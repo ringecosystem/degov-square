@@ -1,49 +1,23 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
-import { useState } from 'react';
-
 import { Separator } from '@/components/ui/separator';
+import { AddDaoProvider, useAddDao } from '@/contexts/add-dao';
 
 import { Review } from './_components/review';
-import { Step1Form, type Step1FormValues } from './_components/step1-form';
-import { Step2Form, type Step2FormValues } from './_components/step2-form';
-type Step = 1 | 2 | 3;
+import { Step1Form } from './_components/step1-form';
+import { Step2Form } from './_components/step2-form';
 
-export default function AddExisting() {
-  const router = useRouter();
-  const [currentStep, setCurrentStep] = useState<Step>(1);
-  const [step1Data, setStep1Data] = useState<Step1FormValues | null>(null);
-  const [step2Data, setStep2Data] = useState<Step2FormValues | null>(null);
-
-  function handleStep1Submit(values: Step1FormValues) {
-    console.log('Step 1 Values:', values);
-    setStep1Data(values);
-    setCurrentStep(2);
-  }
-
-  function handleStep2Submit(values: Step2FormValues) {
-    console.log('Step 2 Values:', values);
-    setStep2Data(values);
-    setCurrentStep(3);
-  }
-
-  function handleReviewSubmit() {
-    console.log('Complete Form Data:', {
-      ...step1Data,
-      ...step2Data
-    });
-
-    router.push('/add/existing/success');
-  }
-
-  function handleBackToStep1() {
-    setCurrentStep(1);
-  }
-
-  function handleBackToStep2() {
-    setCurrentStep(2);
-  }
+function AddExistingContent() {
+  const {
+    currentStep,
+    step1Data,
+    step2Data,
+    handleStep1Submit,
+    handleStep2Submit,
+    handleBackToStep1,
+    handleBackToStep2,
+    handleReviewSubmit
+  } = useAddDao();
 
   return (
     <div className="md:bg-card container mx-auto flex flex-col gap-[15px] md:w-[800px] md:gap-[20px] md:rounded-[14px] md:p-[20px]">
@@ -51,6 +25,7 @@ export default function AddExisting() {
         <h2 className="text-[26px] font-semibold">Add existing DAO</h2>
       </header>
       <Separator className="my-0" />
+
       {currentStep === 1 && (
         <Step1Form onSubmit={handleStep1Submit} defaultValues={step1Data || undefined} />
       )}
@@ -72,5 +47,13 @@ export default function AddExisting() {
         />
       )}
     </div>
+  );
+}
+
+export default function AddExisting() {
+  return (
+    <AddDaoProvider>
+      <AddExistingContent />
+    </AddDaoProvider>
   );
 }
