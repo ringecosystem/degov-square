@@ -8,10 +8,9 @@ import type { ColumnType } from '@/components/custom-table';
 import { CustomTable } from '@/components/custom-table';
 import { Button } from '@/components/ui/button';
 import { useConfirm } from '@/contexts/confirm-context';
-import { AssetItem } from './_components/assetItem';
 import { AddTokensDialog } from './_components/add-tokens-dialog';
 import { useIsMobileAndSubSection } from '@/app/setting/_hooks/isMobileAndSubSection';
-
+import { AssetList } from './_components/assetList';
 import type { Token } from './_components/add-tokens-dialog';
 import { useParams } from 'next/navigation';
 const erc20Data = [
@@ -197,15 +196,21 @@ export default function Treasury() {
 
       <div className="flex flex-col gap-[10px] md:hidden">
         <h2 className="text-[12px] font-semibold">ERC-20 Assets</h2>
-        {erc20Tokens.map((token) => (
-          <AssetItem key={token.id} {...token} onDelete={() => handleDelete('ERC20', token.id)} />
-        ))}
+        <AssetList
+          title="ERC-20 Assets"
+          assets={erc20Tokens}
+          isLoading={isLoading}
+          onDelete={(id) => handleDelete('ERC20', id)}
+        />
       </div>
       <div className="flex flex-col gap-[10px] md:hidden">
         <h2 className="text-[12px] font-semibold">ERC-721 Assets</h2>
-        {erc721Tokens.map((token) => (
-          <AssetItem key={token.id} {...token} onDelete={() => handleDelete('ERC721', token.id)} />
-        ))}
+        <AssetList
+          title="ERC-721 Assets"
+          assets={erc721Tokens}
+          isLoading={isLoading}
+          onDelete={(id) => handleDelete('ERC721', id)}
+        />
       </div>
 
       <AddTokensDialog

@@ -5,7 +5,10 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { isAddress } from 'viem';
 import { z } from 'zod';
-
+import Link from 'next/link';
+import Image from 'next/image';
+import { useIsMobileAndSubSection } from '@/app/setting/_hooks/isMobileAndSubSection';
+import { useParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -34,6 +37,8 @@ type AdvancedSettingsFormValues = z.infer<typeof advancedSettingsSchema>;
 
 export default function AdvancedSettingPage() {
   const [isLoading, setIsLoading] = useState(false);
+  const { id } = useParams();
+  const isMobileAndSubSection = useIsMobileAndSubSection();
 
   // Mock initial data - would come from API in a real app
   const defaultValues = {
@@ -58,7 +63,20 @@ export default function AdvancedSettingPage() {
   };
 
   return (
-    <div className="bg-card h-[calc(100vh-300px)] rounded-[14px] p-[20px]">
+    <div className="md:bg-card flex flex-col gap-[15px] md:h-[calc(100vh-300px)] md:gap-0 md:rounded-[14px] md:p-[20px]">
+      {isMobileAndSubSection && (
+        <Link href={`/setting/${id}`} className="flex items-center gap-[5px] md:gap-[10px]">
+          <Image
+            src="/back.svg"
+            alt="back"
+            width={32}
+            height={32}
+            className="size-[32px] flex-shrink-0"
+          />
+          <h1 className="text-[18px] font-semibold">Advanced</h1>
+        </Link>
+      )}
+
       <Form {...form}>
         <form onSubmit={form.handleSubmit(handleSubmit)} className="flex flex-col gap-[20px]">
           <div className="flex flex-col gap-[5px]">
@@ -97,7 +115,7 @@ export default function AdvancedSettingPage() {
             />
           </div>
 
-          <div className="flex justify-center gap-[20px]">
+          <div className="bg-background fixed right-0 bottom-0 left-0 flex justify-center gap-[20px] p-[20px] md:static">
             <Button
               type="button"
               variant="outline"
