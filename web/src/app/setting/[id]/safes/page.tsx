@@ -10,9 +10,10 @@ import { Button } from '@/components/ui/button';
 import { useConfirm } from '@/contexts/confirm-context';
 
 import { LinkSafeDialog } from './_components/link-safe-dialog';
-
+import { useIsMobileAndSubSection } from '@/app/setting/_hooks/isMobileAndSubSection';
+import { useParams } from 'next/navigation';
 import type { Safe } from './_components/link-safe-dialog';
-
+import { Item } from './_components/item';
 const safeData = [
   {
     id: 1,
@@ -89,7 +90,8 @@ export default function SafesPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [safes, setSafes] = useState<Safe[]>(safeData as unknown as Safe[]);
   const [isLoading, setIsLoading] = useState(false);
-
+  const isMobileAndSubSection = useIsMobileAndSubSection();
+  const { id } = useParams();
   const handleDelete = useCallback(
     (id: number) => {
       confirm({
@@ -117,17 +119,29 @@ export default function SafesPage() {
 
   return (
     <div className="flex flex-col gap-[20px]">
-      <header className="flex items-center justify-between">
-        <h3 className="text-[18px] font-extrabold">Safes</h3>
-        <Button
-          className="gap-[5px] rounded-full px-[10px] py-[5px]"
-          onClick={() => setIsDialogOpen(true)}
-        >
-          <Image src="/plus.svg" alt="add" width={20} height={20} />
-          Link Safe
-        </Button>
-      </header>
-
+      {!isMobileAndSubSection ? (
+        <header className="flex items-center justify-between">
+          <h3 className="text-[18px] font-extrabold">Safes</h3>
+          <Button
+            className="gap-[5px] rounded-full px-[10px] py-[5px]"
+            onClick={() => setIsDialogOpen(true)}
+          >
+            <Image src="/plus.svg" alt="add" width={20} height={20} />
+            Link Safe
+          </Button>
+        </header>
+      ) : (
+        <Link href={`/setting/${id}`} className="flex items-center gap-[5px] md:gap-[10px]">
+          <Image
+            src="/back.svg"
+            alt="back"
+            width={32}
+            height={32}
+            className="size-[32px] flex-shrink-0"
+          />
+          <h1 className="text-[18px] font-semibold">Safes</h1>
+        </Link>
+      )}
       <CustomTable
         columns={columns({
           onDelete: (id) => handleDelete(id)
@@ -135,8 +149,13 @@ export default function SafesPage() {
         dataSource={safes}
         isLoading={false}
         rowKey="id"
+        className="hidden md:block"
       />
-
+      <div className="flex flex-col gap-[15px] md:hidden">
+        {safes.map((safe) => (
+          <Item key={safe.id} {...safe} onDelete={() => handleDelete(safe.id)} />
+        ))}
+      </div>
       <LinkSafeDialog
         open={isDialogOpen}
         onOpenChange={setIsDialogOpen}
