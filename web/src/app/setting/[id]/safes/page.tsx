@@ -13,7 +13,7 @@ import { LinkSafeDialog } from './_components/link-safe-dialog';
 import { useIsMobileAndSubSection } from '@/app/setting/_hooks/isMobileAndSubSection';
 import { useParams } from 'next/navigation';
 import type { Safe } from './_components/link-safe-dialog';
-import { Item } from './_components/item';
+import { SafeList } from './_components/list';
 const safeData = [
   {
     id: 1,
@@ -151,11 +151,7 @@ export default function SafesPage() {
         rowKey="id"
         className="hidden md:block"
       />
-      <div className="flex flex-col gap-[15px] md:hidden">
-        {safes.map((safe) => (
-          <Item key={safe.id} {...safe} onDelete={() => handleDelete(safe.id)} />
-        ))}
-      </div>
+      <SafeList safes={safes} isLoading={isLoading} onDelete={(id) => handleDelete(id)} />
       <LinkSafeDialog
         open={isDialogOpen}
         onOpenChange={setIsDialogOpen}

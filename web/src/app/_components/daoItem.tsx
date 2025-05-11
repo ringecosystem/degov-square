@@ -25,7 +25,7 @@ export const DaoItem = ({ name, daoIcon, network, proposals, id }: DaoItemProps)
         <p className="text-[14px]">{proposals ?? 0} Proposals</p>
         <div className="flex items-center justify-end gap-[10px]">
           <Link
-            href={`/setting/${id}/basic`}
+            href={`/setting/${id}`}
             className="cursor-pointer transition-opacity hover:opacity-80"
           >
             <Image src="/setting.svg" alt="setting" width={20} height={20} />
