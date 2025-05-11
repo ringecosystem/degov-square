@@ -8,7 +8,7 @@ import { CustomTable } from '@/components/custom-table';
 import { SortableCell } from '@/components/sortable-cell';
 import { Button } from '@/components/ui/button';
 import { daoInfo } from '@/data/daoInfo';
-import { DaoItem } from './_components/daoItem';
+import { DaoList } from './_components/daoList';
 
 type SortState = 'asc' | 'desc';
 
@@ -59,7 +59,7 @@ export default function Home() {
         return (
           <div className="flex items-center justify-end gap-[10px]">
             <Link
-              href={`/setting/${value?.id}/basic`}
+              href={`/setting/${value?.id}`}
               className="cursor-pointer transition-opacity hover:opacity-80"
             >
               <Image src="/setting.svg" alt="setting" width={20} height={20} />
@@ -111,11 +111,7 @@ export default function Home() {
           </div>
         }
       />
-      <div className="flex flex-col gap-[10px]">
-        {daoInfo?.map((v) => {
-          return <DaoItem {...v} key={v.id} />;
-        })}
-      </div>
+      <DaoList daoInfo={daoInfo} isLoading={false} />
     </div>
   );
 }
