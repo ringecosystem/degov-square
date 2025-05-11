@@ -152,6 +152,14 @@ export default function SafesPage() {
         className="hidden md:block"
       />
       <SafeList safes={safes} isLoading={isLoading} onDelete={(id) => handleDelete(id)} />
+
+      <Button
+        className="fixed bottom-[20px] w-[calc(100%-40px)] gap-[5px] rounded-full px-[10px] py-[5px] md:hidden"
+        onClick={() => setIsDialogOpen(true)}
+      >
+        <Image src="/plus.svg" alt="add" width={20} height={20} />
+        Link Safe
+      </Button>
       <LinkSafeDialog
         open={isDialogOpen}
         onOpenChange={setIsDialogOpen}
