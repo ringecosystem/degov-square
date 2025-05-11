@@ -8,11 +8,12 @@ import type { ColumnType } from '@/components/custom-table';
 import { CustomTable } from '@/components/custom-table';
 import { Button } from '@/components/ui/button';
 import { useConfirm } from '@/contexts/confirm-context';
-
+import { AssetItem } from './_components/assetItem';
 import { AddTokensDialog } from './_components/add-tokens-dialog';
+import { useIsMobileAndSubSection } from '@/app/setting/_hooks/isMobileAndSubSection';
 
 import type { Token } from './_components/add-tokens-dialog';
-
+import { useParams } from 'next/navigation';
 const erc20Data = [
   {
     id: 1,
@@ -94,10 +95,12 @@ const columns = ({ assetTitle, onDelete }: ColumnProps): ColumnType<any[number]>
 
 export default function Treasury() {
   const { confirm } = useConfirm();
+  const { id } = useParams();
   const [isAddTokensOpen, setIsAddTokensOpen] = useState(false);
   const [erc20Tokens, setErc20Tokens] = useState(erc20Data);
   const [erc721Tokens, setErc721Tokens] = useState<typeof erc20Data>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const isMobileAndSubSection = useIsMobileAndSubSection();
 
   const handleDelete = useCallback(
     (type: string, id: number) => {
@@ -146,16 +149,29 @@ export default function Treasury() {
 
   return (
     <div className="flex flex-col gap-[20px]">
-      <header className="flex items-center justify-between">
-        <h3 className="text-[18px] font-extrabold">Treasury Assets</h3>
-        <Button
-          className="gap-[5px] rounded-full px-[10px] py-[5px]"
-          onClick={() => setIsAddTokensOpen(true)}
-        >
-          <Image src="/plus.svg" alt="add" width={20} height={20} />
-          Add Tokens
-        </Button>
-      </header>
+      {!isMobileAndSubSection ? (
+        <header className="flex items-center justify-between">
+          <h3 className="text-[18px] font-extrabold">Treasury Assets</h3>
+          <Button
+            className="gap-[5px] rounded-full px-[10px] py-[5px]"
+            onClick={() => setIsAddTokensOpen(true)}
+          >
+            <Image src="/plus.svg" alt="add" width={20} height={20} />
+            Add Tokens
+          </Button>
+        </header>
+      ) : (
+        <Link href={`/setting/${id}`} className="flex items-center gap-[5px] md:gap-[10px]">
+          <Image
+            src="/back.svg"
+            alt="back"
+            width={32}
+            height={32}
+            className="size-[32px] flex-shrink-0"
+          />
+          <h1 className="text-[18px] font-semibold">Treasury Assets</h1>
+        </Link>
+      )}
 
       <CustomTable
         columns={columns({
@@ -165,6 +181,7 @@ export default function Treasury() {
         dataSource={erc20Tokens}
         isLoading={false}
         rowKey="id"
+        className="hidden md:block"
       />
 
       <CustomTable
@@ -175,7 +192,21 @@ export default function Treasury() {
         dataSource={erc721Tokens}
         isLoading={false}
         rowKey="id"
+        className="hidden md:block"
       />
+
+      <div className="flex flex-col gap-[10px] md:hidden">
+        <h2 className="text-[12px] font-semibold">ERC-20 Assets</h2>
+        {erc20Tokens.map((token) => (
+          <AssetItem key={token.id} {...token} onDelete={() => handleDelete('ERC20', token.id)} />
+        ))}
+      </div>
+      <div className="flex flex-col gap-[10px] md:hidden">
+        <h2 className="text-[12px] font-semibold">ERC-721 Assets</h2>
+        {erc721Tokens.map((token) => (
+          <AssetItem key={token.id} {...token} onDelete={() => handleDelete('ERC721', token.id)} />
+        ))}
+      </div>
 
       <AddTokensDialog
         open={isAddTokensOpen}

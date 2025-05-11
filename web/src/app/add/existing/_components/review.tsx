@@ -83,7 +83,7 @@ export function Review({ step1Data, step2Data, onSubmit, onBack }: ReviewProps) 
         Review all the information of the DAO before proceeding to build the DAO.
       </h3>
 
-      <div className="mt-4 flex flex-col gap-6">
+      <div className="mt-4 flex flex-col gap-[15px] md:gap-[20px]">
         {hasError ? (
           <div className="bg-background flex min-h-[388px] flex-col items-center justify-center gap-[20px] rounded-[14px]">
             <Image src="/alert.svg" alt="alert" width={60} height={60} />
@@ -94,7 +94,7 @@ export function Review({ step1Data, step2Data, onSubmit, onBack }: ReviewProps) 
           </div>
         ) : (
           <>
-            <div className="bg-opacity-5 dark:bg-opacity-5 bg-background rounded-lg p-4">
+            <div className="bg-background rounded-lg p-4">
               <h4 className="mb-4 text-lg font-bold">Basic</h4>
               <div className="space-y-2">
                 {Object.entries(basicInfo).map(([key, value]) => (

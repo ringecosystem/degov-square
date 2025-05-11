@@ -6,7 +6,10 @@ const config: Config = {
     extend: {
       container: {
         center: true,
-        padding: '30px'
+        padding: {
+          DEFAULT: '20px',
+          md: '30px'
+        }
       },
       colors: {
         success: 'hsl(var(--success))',

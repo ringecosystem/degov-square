@@ -8,6 +8,7 @@ import { CustomTable } from '@/components/custom-table';
 import { SortableCell } from '@/components/sortable-cell';
 import { Button } from '@/components/ui/button';
 import { daoInfo } from '@/data/daoInfo';
+import { DaoItem } from './_components/daoItem';
 
 type SortState = 'asc' | 'desc';
 
@@ -81,19 +82,20 @@ export default function Home() {
   return (
     <div className="container flex flex-col gap-[20px]">
       <div className="flex items-center justify-between">
-        <span>All DAOs(5)</span>
+        <span className="text-[18px] font-semibold">All DAOs(5)</span>
         <div className="flex items-center gap-[20px]">
-          <div className="bg-card flex w-[388px] items-center gap-[10px] rounded-[19px] border px-[17px] py-[9px]">
+          <div className="bg-card flex h-[36px] w-[109px] items-center gap-[13px] rounded-[19px] border px-[17px] py-[9px] md:h-auto md:w-[388px] md:gap-[10px]">
             <Image src="/search.svg" alt="search" width={16} height={16} />
             <input
-              className="placeholder:text-muted-foreground h-[17px] outline-none placeholder:text-[14px]"
+              className="placeholder:text-muted-foreground hidden h-[17px] outline-none placeholder:text-[14px] md:block"
               placeholder="Search by Name, Chain"
             />
+            <span className="text-muted-foreground block text-[14px] md:hidden">Search</span>
           </div>
-          <Button variant="outline" className="rounded-[100px]" asChild>
+          <Button variant="outline" className="hidden rounded-[100px] md:block" asChild>
             <Link href="/add/existing">Add Existing DAO</Link>
           </Button>
-          <Button variant="outline" className="rounded-[100px]">
+          <Button variant="outline" className="hidden rounded-[100px] md:block">
             With Assistance
           </Button>
         </div>
@@ -101,6 +103,7 @@ export default function Home() {
       <CustomTable
         columns={columns}
         dataSource={daoInfo}
+        className="hidden md:block"
         rowKey="name"
         caption={
           <div className="text-foreground hover:text-foreground/80 cursor-pointer transition-colors">
@@ -108,6 +111,11 @@ export default function Home() {
           </div>
         }
       />
+      <div className="flex flex-col gap-[10px]">
+        {daoInfo?.map((v) => {
+          return <DaoItem {...v} key={v.id} />;
+        })}
+      </div>
     </div>
   );
 }

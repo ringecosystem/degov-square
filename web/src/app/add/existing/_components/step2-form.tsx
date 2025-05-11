@@ -65,7 +65,7 @@ export function Step2Form({ onSubmit, onBack, defaultValues }: Step2FormProps) {
   });
 
   return (
-    <div className="flex flex-col gap-[20px]">
+    <div className="flex flex-col gap-[15px] md:gap-[20px]">
       <h3 className="text-[18px] font-semibold">Provide the contracts information for the DAO</h3>
 
       <Form {...form}>

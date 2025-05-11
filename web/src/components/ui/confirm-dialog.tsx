@@ -37,7 +37,9 @@ export function ConfirmDialog({
           <DialogTitle className="text-[18px] font-semibold">{title}</DialogTitle>
         </DialogHeader>
         <Separator className="my-0" />
-        <div className="w-[360px] text-[14px] leading-normal font-normal">{description}</div>
+        <div className="w-auto text-[14px] leading-normal font-normal md:w-[360px]">
+          {description}
+        </div>
         <Separator className="my-0" />
         <div
           className={cn(

@@ -1,9 +1,9 @@
 'use client';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useSelectedLayoutSegment, useParams, usePathname } from 'next/navigation';
-
+import { useSelectedLayoutSegment, usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
+import { useIsMobileAndSubSection } from './_hooks/isMobileAndSubSection';
 
 const NAVS = [
   { label: 'Basic', value: 'basic' },
@@ -12,12 +12,15 @@ const NAVS = [
   { label: 'Advanced', value: 'advanced' }
 ];
 
-function NavLink({ nav }: { nav: (typeof NAVS)[0] }) {
-  const id = useSelectedLayoutSegment();
-  const pathname = usePathname();
-  const isActive = `/setting/${id}/${nav.value}` === pathname;
-  const href = `/setting/${id}/${nav.value}`;
-
+function NavLink({
+  nav,
+  isActive,
+  href
+}: {
+  nav: (typeof NAVS)[0];
+  isActive: boolean;
+  href: string;
+}) {
   return (
     <Link
       key={nav.value}
@@ -32,31 +35,49 @@ function NavLink({ nav }: { nav: (typeof NAVS)[0] }) {
   );
 }
 
+const isActive = (id: string | null, nav: (typeof NAVS)[0]) => {
+  const pathname = usePathname();
+  return `/setting/${id}/${nav.value}` === pathname;
+};
+
+const getHref = (id: string | null, nav: (typeof NAVS)[0]) => {
+  return `/setting/${id}/${nav.value}`;
+};
+
 export default function SettingLayout({ children }: { children: React.ReactNode }) {
-  const params = useParams();
-  const { id } = params || {};
+  const id = useSelectedLayoutSegment();
+  const isMobileAndSubSection = useIsMobileAndSubSection();
 
   return (
     <div className="container space-y-[20px]">
-      <Link href="/" className="flex items-center gap-2">
-        <Image
-          src="/back.svg"
-          alt="back"
-          width={32}
-          height={32}
-          className="size-[32px] flex-shrink-0"
-        />
-        <h1 className="text-[18px] font-semibold">DAO Settings</h1>
-      </Link>
+      {!isMobileAndSubSection && (
+        <Link href="/" className="flex items-center gap-[5px] md:gap-[10px]">
+          <Image
+            src="/back.svg"
+            alt="back"
+            width={32}
+            height={32}
+            className="size-[32px] flex-shrink-0"
+          />
+          <h1 className="text-[18px] font-semibold">DAO Settings</h1>
+        </Link>
+      )}
 
-      <div className="flex w-full gap-[30px]">
-        <aside className="w-[300px] flex-shrink-0">
-          <div className="flex flex-col gap-[10px]">
-            {NAVS.map((nav) => (
-              <NavLink key={nav.value} nav={nav} />
-            ))}
-          </div>
-        </aside>
+      <div className="flex w-full flex-col gap-[30px] md:flex-row">
+        {!isMobileAndSubSection && (
+          <aside className="w-full flex-shrink-0 md:w-[300px]">
+            <div className="flex flex-col gap-[20px] md:gap-[10px]">
+              {NAVS.map((nav) => (
+                <NavLink
+                  key={nav.value}
+                  nav={nav}
+                  isActive={isActive(id as string, nav)}
+                  href={getHref(id as string, nav)}
+                />
+              ))}
+            </div>
+          </aside>
+        )}
 
         <main className="flex-1">{children}</main>
       </div>
