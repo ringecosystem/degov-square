@@ -202,7 +202,7 @@ export default function BasicSettingPage() {
                         <Input placeholder="Enter your DAO name" {...field} />
                       </FormControl>
                     </div>
-                    <div className="pl-[160px]">
+                    <div className="pl-0 md:pl-[160px]">
                       <FormMessage />
                     </div>
                   </FormItem>
@@ -226,7 +226,7 @@ export default function BasicSettingPage() {
                         />
                       </FormControl>
                     </div>
-                    <div className="pl-[160px]">
+                    <div className="pl-0 md:pl-[160px]">
                       <FormMessage />
                     </div>
                   </FormItem>
@@ -251,7 +251,7 @@ export default function BasicSettingPage() {
                         />
                       </FormControl>
                     </div>
-                    <div className="pl-[160px]">
+                    <div className="pl-0 md:pl-[160px]">
                       <FormMessage />
                     </div>
                   </FormItem>
@@ -271,7 +271,7 @@ export default function BasicSettingPage() {
                         <Input placeholder="The DAO site" {...field} />
                       </FormControl>
                     </div>
-                    <div className="pl-[160px]">
+                    <div className="pl-0 md:pl-[160px]">
                       <FormMessage />
                     </div>
                   </FormItem>
@@ -291,7 +291,7 @@ export default function BasicSettingPage() {
                         <Input placeholder="@Username" {...field} />
                       </FormControl>
                     </div>
-                    <div className="pl-[160px]">
+                    <div className="pl-0 md:pl-[160px]">
                       <FormMessage />
                     </div>
                   </FormItem>
@@ -311,7 +311,7 @@ export default function BasicSettingPage() {
                         <Input placeholder="Username" {...field} />
                       </FormControl>
                     </div>
-                    <div className="pl-[160px]">
+                    <div className="pl-0 md:pl-[160px]">
                       <FormMessage />
                     </div>
                   </FormItem>
@@ -331,7 +331,7 @@ export default function BasicSettingPage() {
                         <Input placeholder="@Username" {...field} />
                       </FormControl>
                     </div>
-                    <div className="pl-[160px]">
+                    <div className="pl-0 md:pl-[160px]">
                       <FormMessage />
                     </div>
                   </FormItem>
@@ -351,7 +351,7 @@ export default function BasicSettingPage() {
                         <Input placeholder="Username" {...field} />
                       </FormControl>
                     </div>
-                    <div className="pl-[160px]">
+                    <div className="pl-0 md:pl-[160px]">
                       <FormMessage />
                     </div>
                   </FormItem>
@@ -364,14 +364,12 @@ export default function BasicSettingPage() {
                 render={({ field }) => (
                   <FormItem>
                     <div className="flex flex-col gap-[10px] md:flex-row md:items-center">
-                      <FormLabel className="w-auto flex-shrink-0 text-[14px] md:w-[140px]">
-                        Email
-                      </FormLabel>
+                      <FormLabel className="w-[140px] flex-shrink-0 text-[14px]">Email</FormLabel>
                       <FormControl>
                         <Input type="email" placeholder="Email@example.com" {...field} />
                       </FormControl>
                     </div>
-                    <div className="pl-[160px]">
+                    <div className="pl-0 md:pl-[160px]">
                       <FormMessage />
                     </div>
                   </FormItem>
@@ -379,16 +377,20 @@ export default function BasicSettingPage() {
               />
             </div>
             <Separator className="hidden md:my-[20px] md:block" />
-            <div className="flex justify-center gap-[20px]">
+            <div className="grid grid-cols-[1fr_1fr] gap-[20px] md:flex md:justify-center">
               <Button
                 type="button"
                 variant="outline"
-                className="w-[155px] rounded-full"
+                className="w-auto rounded-full p-[10px] md:w-[155px]"
                 onClick={() => form.reset()}
               >
                 Cancel
               </Button>
-              <Button type="submit" className="w-[155px] rounded-full" disabled={isLoading}>
+              <Button
+                type="submit"
+                className="w-auto rounded-full p-[10px] md:w-[155px]"
+                disabled={isLoading}
+              >
                 {isLoading ? 'Saving...' : 'Save'}
               </Button>
             </div>

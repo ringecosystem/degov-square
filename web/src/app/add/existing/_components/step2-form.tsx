@@ -130,16 +130,16 @@ export function Step2Form({ onSubmit, onBack, defaultValues }: Step2FormProps) {
 
           <Separator className="my-0" />
 
-          <div className="flex justify-between">
+          <div className="grid grid-cols-[1fr_1fr] gap-[20px] md:flex md:justify-between">
             <Button
               variant="outline"
               type="button"
-              className="w-[140px] rounded-full p-[10px]"
+              className="w-auto rounded-full p-[10px] md:w-[140px]"
               onClick={onBack}
             >
               Back
             </Button>
-            <Button type="submit" className="w-[140px] rounded-full p-[10px]">
+            <Button type="submit" className="w-auto rounded-full p-[10px] md:w-[140px]">
               Next
             </Button>
           </div>
