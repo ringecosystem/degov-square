@@ -35,8 +35,7 @@ function NavLink({
   );
 }
 
-const isActive = (id: string | null, nav: (typeof NAVS)[0]) => {
-  const pathname = usePathname();
+const isActive = (id: string | null, nav: (typeof NAVS)[0], pathname: string) => {
   return `/setting/${id}/${nav.value}` === pathname;
 };
 
@@ -46,6 +45,7 @@ const getHref = (id: string | null, nav: (typeof NAVS)[0]) => {
 
 export default function SettingLayout({ children }: { children: React.ReactNode }) {
   const id = useSelectedLayoutSegment();
+  const pathname = usePathname();
   const isMobileAndSubSection = useIsMobileAndSubSection();
 
   return (
@@ -71,7 +71,7 @@ export default function SettingLayout({ children }: { children: React.ReactNode 
                 <NavLink
                   key={nav.value}
                   nav={nav}
-                  isActive={isActive(id as string, nav)}
+                  isActive={isActive(id as string, nav, pathname)}
                   href={getHref(id as string, nav)}
                 />
               ))}
