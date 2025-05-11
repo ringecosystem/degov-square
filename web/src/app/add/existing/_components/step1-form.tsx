@@ -81,28 +81,26 @@ export function Step1Form({ onSubmit, defaultValues }: Step1FormProps) {
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-[20px]">
-          <div className="flex gap-4">
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem className="flex-1">
-                  <FormLabel>Name</FormLabel>
-                  <FormControl>
-                    <InputSelect
-                      placeholder="Enter your DAO name"
-                      selectPlaceholder="Select chain"
-                      options={chainOptions}
-                      selectValue={form.watch('chainId')}
-                      onSelectChange={(value) => form.setValue('chainId', value)}
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
+          <FormField
+            control={form.control}
+            name="name"
+            render={({ field }) => (
+              <FormItem className="flex-1">
+                <FormLabel>Name</FormLabel>
+                <FormControl>
+                  <InputSelect
+                    placeholder="Enter your DAO name"
+                    selectPlaceholder="Select chain"
+                    options={chainOptions}
+                    selectValue={form.watch('chainId')}
+                    onSelectChange={(value) => form.setValue('chainId', value)}
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
           <FormField
             control={form.control}
@@ -179,16 +177,16 @@ export function Step1Form({ onSubmit, defaultValues }: Step1FormProps) {
           />
           <Separator className="my-0" />
 
-          <div className="flex justify-between">
+          <div className="grid grid-cols-[1fr_1fr] gap-[20px] md:flex md:justify-between">
             <Button
               variant="outline"
               type="button"
-              className="w-[140px] rounded-full p-[10px]"
+              className="w-auto rounded-full p-[10px] md:w-[140px]"
               onClick={handleBack}
             >
               Back
             </Button>
-            <Button type="submit" className="w-[140px] rounded-full p-[10px]">
+            <Button type="submit" className="w-auto rounded-full p-[10px] md:w-[140px]">
               Next
             </Button>
           </div>

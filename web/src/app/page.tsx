@@ -1,7 +1,7 @@
 'use client';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 import type { ColumnType } from '@/components/custom-table';
 import { CustomTable } from '@/components/custom-table';
@@ -9,12 +9,14 @@ import { SortableCell } from '@/components/sortable-cell';
 import { Button } from '@/components/ui/button';
 import { daoInfo } from '@/data/daoInfo';
 import { DaoList } from './_components/daoList';
-
+import { MobileSearchDialog } from './_components/MobileSearchDialog';
 type SortState = 'asc' | 'desc';
 
 export default function Home() {
   const [isFetchingNextPage, setIsFetchingNextPage] = useState(false);
   const [sortState, setSortState] = useState<SortState | undefined>(undefined);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [openSearchDialog, setOpenSearchDialog] = useState(false);
 
   const columns: ColumnType<(typeof daoInfo)[number]>[] = [
     {
@@ -73,6 +75,11 @@ export default function Home() {
     }
   ];
 
+  const handleSearch = useCallback((query: string) => {
+    setSearchQuery(query);
+    setOpenSearchDialog(false);
+  }, []);
+
   useEffect(() => {
     return () => {
       setSortState(undefined);
@@ -92,12 +99,14 @@ export default function Home() {
             />
             <span className="text-muted-foreground block text-[14px] md:hidden">Search</span>
           </div>
-          <Button variant="outline" className="hidden rounded-[100px] md:block" asChild>
-            <Link href="/add/existing">Add Existing DAO</Link>
-          </Button>
-          <Button variant="outline" className="hidden rounded-[100px] md:block">
-            With Assistance
-          </Button>
+          <div className="fixed right-0 bottom-[20px] left-[30px] grid grid-cols-[calc(50%-20px)_calc(50%-20px)] gap-[20px] md:static md:grid-cols-2 md:justify-end">
+            <Button variant="outline" className="rounded-[100px]" asChild>
+              <Link href="/add/existing">Add Existing DAO</Link>
+            </Button>
+            <Button variant="outline" className="rounded-[100px]">
+              With Assistance
+            </Button>
+          </div>
         </div>
       </div>
       <CustomTable
@@ -112,6 +121,11 @@ export default function Home() {
         }
       />
       <DaoList daoInfo={daoInfo} isLoading={false} />
+      <MobileSearchDialog
+        open={openSearchDialog}
+        onOpenChange={setOpenSearchDialog}
+        onConfirm={handleSearch}
+      />
     </div>
   );
 }

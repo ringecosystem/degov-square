@@ -146,18 +146,18 @@ export function Review({ step1Data, step2Data, onSubmit, onBack }: ReviewProps) 
 
         <Separator className="my-0" />
 
-        <div className="flex justify-between">
+        <div className="grid grid-cols-[1fr_1fr] gap-[20px] md:flex md:justify-between">
           <Button
             variant="outline"
             type="button"
-            className="w-[140px] rounded-full p-[10px]"
+            className="w-auto rounded-full p-[10px] md:w-[140px]"
             onClick={onBack}
           >
             Back
           </Button>
           <Button
             type="button"
-            className="w-[140px] rounded-full p-[10px]"
+            className="w-auto rounded-full p-[10px] md:w-[140px]"
             onClick={handleSubmit}
             disabled={hasError || isLoading}
           >
