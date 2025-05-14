@@ -19,6 +19,7 @@ import { Input } from '@/components/ui/input';
 import { InputSelect } from '@/components/ui/input-select';
 import { Separator } from '@/components/ui/separator';
 import { tokenStandardOptions } from '@/config/dao';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 export const step2Schema = z.object({
   governorAddress: z
     .string()
@@ -77,7 +78,14 @@ export function Step2Form({ onSubmit, onBack, defaultValues }: Step2FormProps) {
               <FormItem>
                 <div className="flex items-center gap-2">
                   <FormLabel>Governor Address</FormLabel>
-                  <CircleHelp className="text-muted-foreground h-4 w-4" />
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <CircleHelp className="text-muted-foreground h-4 w-4" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>The Governor handles creating, voting and executing DAO proposals</p>
+                    </TooltipContent>
+                  </Tooltip>
                 </div>
                 <FormControl>
                   <Input placeholder="please enter the governor address" {...field} />
@@ -94,7 +102,14 @@ export function Step2Form({ onSubmit, onBack, defaultValues }: Step2FormProps) {
               <FormItem>
                 <div className="flex items-center gap-2">
                   <FormLabel>Token Address</FormLabel>
-                  <CircleHelp className="text-muted-foreground h-4 w-4" />
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <CircleHelp className="text-muted-foreground h-4 w-4" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>The Token determines voting power in the DAO</p>
+                    </TooltipContent>
+                  </Tooltip>
                 </div>
                 <FormControl>
                   <InputSelect
@@ -118,7 +133,14 @@ export function Step2Form({ onSubmit, onBack, defaultValues }: Step2FormProps) {
               <FormItem>
                 <div className="flex items-center gap-2">
                   <FormLabel>TimeLock Address</FormLabel>
-                  <CircleHelp className="text-muted-foreground h-4 w-4" />
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <CircleHelp className="text-muted-foreground h-4 w-4" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>The Timelock contract is used to delay the execution of proposals</p>
+                    </TooltipContent>
+                  </Tooltip>
                 </div>
                 <FormControl>
                   <Input placeholder="please enter the time lock address" {...field} />
