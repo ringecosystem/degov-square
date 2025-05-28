@@ -3,7 +3,9 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+
 import { cn } from '@/lib/utils';
+
 import { useIsMobileAndSubSection } from './_hooks/isMobileAndSubSection';
 
 const NAVS = [
@@ -35,17 +37,17 @@ function NavLink({
   );
 }
 
-const isActive = (nav: (typeof NAVS)[0]) => {
-  const pathname = usePathname();
-  return `/notification/${nav.value}` === pathname;
-};
-
 const getHref = (nav: (typeof NAVS)[0]) => {
   return `/notification/${nav.value}`;
 };
 
 export default function NotificationLayout({ children }: { children: React.ReactNode }) {
   const isMobileAndSubSection = useIsMobileAndSubSection();
+  const pathname = usePathname();
+
+  const isActive = (nav: (typeof NAVS)[0]) => {
+    return `/notification/${nav.value}` === pathname;
+  };
 
   return (
     <div className="container space-y-[20px]">

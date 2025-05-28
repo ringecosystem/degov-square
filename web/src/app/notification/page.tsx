@@ -1,5 +1,6 @@
 'use client';
 import { redirect } from 'next/navigation';
+
 import { useMobile } from '@/hooks/useMobile';
 
 export default function NotificationPage() {

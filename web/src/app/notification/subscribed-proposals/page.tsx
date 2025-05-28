@@ -1,15 +1,16 @@
 'use client';
 
 import Image from 'next/image';
+import Link from 'next/link';
 import { useState } from 'react';
 import { useCallback } from 'react';
 
+import { useIsMobileAndSubSection } from '@/app/notification/_hooks/isMobileAndSubSection';
 import { CustomTable } from '@/components/custom-table';
 import type { ColumnType } from '@/components/custom-table';
 import { ProposalState, ProposalStatus } from '@/components/proposal-status';
 import { useConfirm } from '@/contexts/confirm-context';
-import Link from 'next/link';
-import { useIsMobileAndSubSection } from '@/app/notification/_hooks/isMobileAndSubSection';
+
 import { Item } from './_components/item';
 // Mock data for subscribed proposals
 const proposalSubscriptions = [
