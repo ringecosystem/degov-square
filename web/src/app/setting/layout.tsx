@@ -2,7 +2,9 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { useSelectedLayoutSegment, usePathname } from 'next/navigation';
+
 import { cn } from '@/lib/utils';
+
 import { useIsMobileAndSubSection } from './_hooks/isMobileAndSubSection';
 
 const NAVS = [

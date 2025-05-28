@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useRef, useEffect, useCallback } from 'react';
 import Image from 'next/image';
+import { useState, useRef, useEffect, useCallback } from 'react';
+
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { LoadedButton } from '@/components/ui/loaded-button';
 interface SearchDialogProps {

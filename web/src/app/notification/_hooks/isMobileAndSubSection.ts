@@ -1,6 +1,7 @@
 'use client';
-import { useMobile } from '@/hooks/useMobile';
 import { usePathname } from 'next/navigation';
+
+import { useMobile } from '@/hooks/useMobile';
 
 export type GetPathLevelType = {
   pathname: string;

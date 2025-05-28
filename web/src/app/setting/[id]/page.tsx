@@ -1,7 +1,8 @@
 'use client';
 import { redirect } from 'next/navigation';
-import { useMobile } from '@/hooks/useMobile';
 import { useParams } from 'next/navigation';
+
+import { useMobile } from '@/hooks/useMobile';
 
 export default function SettingPage() {
   const isMobile = useMobile();

@@ -5,10 +5,11 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { useCallback } from 'react';
 
+import { useIsMobileAndSubSection } from '@/app/notification/_hooks/isMobileAndSubSection';
 import { CustomTable } from '@/components/custom-table';
 import type { ColumnType } from '@/components/custom-table';
 import { useConfirm } from '@/contexts/confirm-context';
-import { useIsMobileAndSubSection } from '@/app/notification/_hooks/isMobileAndSubSection';
+
 import { Item } from './_components/item';
 // Mock data for subscribed DAOs
 const daoSubscriptions = [

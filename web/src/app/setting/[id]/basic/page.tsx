@@ -2,12 +2,15 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import NextImage from 'next/image';
+import Link from 'next/link';
+import { useParams } from 'next/navigation';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'react-toastify';
 import { useAccount } from 'wagmi';
 import { z } from 'zod';
-import Link from 'next/link';
+
+import { useIsMobileAndSubSection } from '@/app/setting/_hooks/isMobileAndSubSection';
 import { AddressAvatar } from '@/components/address-avatar';
 import { Button } from '@/components/ui/button';
 import {
@@ -18,12 +21,10 @@ import {
   FormLabel,
   FormMessage
 } from '@/components/ui/form';
-import { useParams } from 'next/navigation';
 import { Input } from '@/components/ui/input';
 import { InputAddon } from '@/components/ui/input-addon';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
-import { useIsMobileAndSubSection } from '@/app/setting/_hooks/isMobileAndSubSection';
 
 // 表单验证
 const formSchema = z.object({

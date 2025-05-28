@@ -18,8 +18,8 @@ import {
 import { Input } from '@/components/ui/input';
 import { InputSelect } from '@/components/ui/input-select';
 import { Separator } from '@/components/ui/separator';
-import { tokenStandardOptions } from '@/config/dao';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { tokenStandardOptions } from '@/config/dao';
 export const step2Schema = z.object({
   governorAddress: z
     .string()

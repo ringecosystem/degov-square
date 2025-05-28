@@ -1,8 +1,10 @@
 'use client';
-import { useTheme } from 'next-themes';
-import { Button } from './ui/button';
 import { Moon, Sun } from 'lucide-react';
+import { useTheme } from 'next-themes';
+
 import { useMounted } from '@/hooks/useMounted';
+
+import { Button } from './ui/button';
 export function ThemeButton() {
   const { setTheme, resolvedTheme } = useTheme();
 

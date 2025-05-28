@@ -6,9 +6,9 @@ import { WagmiProvider } from 'wagmi';
 
 import { APP_NAME } from '@/config/base';
 import { config, queryClient } from '@/config/wagmi';
+import { useRainbowKitTheme } from '@/hooks/useRainbowKitTheme';
 import { getDefaultChain, getDefaultChainId } from '@/utils/chains';
 import '@rainbow-me/rainbowkit/styles.css';
-import { useRainbowKitTheme } from '@/hooks/useRainbowKitTheme';
 
 export function DAppProvider({ children }: React.PropsWithChildren<unknown>) {
   const rainbowKitTheme = useRainbowKitTheme();
