@@ -8,6 +8,7 @@ import { CustomTable } from '@/components/custom-table';
 import { SortableCell } from '@/components/sortable-cell';
 import { Button } from '@/components/ui/button';
 import { daoInfo } from '@/data/daoInfo';
+
 import { DaoList } from './_components/daoList';
 import { MobileSearchDialog } from './_components/MobileSearchDialog';
 type SortState = 'asc' | 'desc';

@@ -5,7 +5,9 @@
 // status: ProposalState.Succeeded
 
 import Image from 'next/image';
-import { ProposalState, ProposalStatus } from '@/components/proposal-status';
+
+import type { ProposalState} from '@/components/proposal-status';
+import { ProposalStatus } from '@/components/proposal-status';
 
 type ItemProps = {
   id: number;

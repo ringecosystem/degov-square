@@ -2,7 +2,7 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { debounce } from 'lodash-es';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { isAddress } from 'viem';
 import { z } from 'zod';
@@ -78,7 +78,7 @@ export function AddTokensDialog({
   });
 
   // Mock token search function
-  const mockTokenSearch = (address: `0x${string}`, type: string): Token[] => {
+  const mockTokenSearch = useCallback((address: `0x${string}`, type: string): Token[] => {
     return [
       {
         id: 1,
@@ -101,24 +101,33 @@ export function AddTokensDialog({
         chainId: 1
       }
     ];
-  };
+  }, []);
 
-  // Debounced search function
+  // Create debounced search function using useMemo
+  const debouncedSearchFn = useMemo(
+    () =>
+      debounce((address: `0x${string}`, type: string) => {
+        if (isAddress(address)) {
+          setIsSearching(true);
+          // Simulate API call
+          setTimeout(() => {
+            const results = mockTokenSearch(address, type);
+            setSearchResults(results);
+            setTokenData(results[0] || null);
+            setSelectedTokens(results.length > 0 ? [results[0].id] : []);
+            setIsSearching(false);
+          }, 500);
+        }
+      }, 500),
+    [mockTokenSearch]
+  );
+
+  // Wrap in useCallback for stable reference
   const debouncedSearch = useCallback(
-    debounce((address: `0x${string}`, type: string) => {
-      if (isAddress(address)) {
-        setIsSearching(true);
-        // Simulate API call
-        setTimeout(() => {
-          const results = mockTokenSearch(address, type);
-          setSearchResults(results);
-          setTokenData(results[0] || null);
-          setSelectedTokens(results.length > 0 ? [results[0].id] : []);
-          setIsSearching(false);
-        }, 500);
-      }
-    }, 500),
-    []
+    (address: `0x${string}`, type: string) => {
+      debouncedSearchFn(address, type);
+    },
+    [debouncedSearchFn]
   );
 
   // Watch for changes in form values and trigger search

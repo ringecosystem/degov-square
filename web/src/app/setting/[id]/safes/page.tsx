@@ -2,18 +2,20 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
+import { useParams } from 'next/navigation';
 import { useCallback, useState } from 'react';
 
+import { useIsMobileAndSubSection } from '@/app/setting/_hooks/isMobileAndSubSection';
 import type { ColumnType } from '@/components/custom-table';
 import { CustomTable } from '@/components/custom-table';
 import { Button } from '@/components/ui/button';
 import { useConfirm } from '@/contexts/confirm-context';
 
 import { LinkSafeDialog } from './_components/link-safe-dialog';
-import { useIsMobileAndSubSection } from '@/app/setting/_hooks/isMobileAndSubSection';
-import { useParams } from 'next/navigation';
-import type { Safe } from './_components/link-safe-dialog';
 import { SafeList } from './_components/list';
+
+import type { Safe } from './_components/link-safe-dialog';
+
 const safeData = [
   {
     id: 1,

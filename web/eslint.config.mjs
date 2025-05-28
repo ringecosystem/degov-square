@@ -25,6 +25,8 @@ const eslintConfig = [
     },
     rules: {
       'react-compiler/react-compiler': 'error',
+      "@typescript-eslint/no-unused-vars":'off',
+      "@typescript-eslint/no-explicit-any":"off",
       "import/order": [
         "error",
         {

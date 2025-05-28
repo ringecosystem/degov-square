@@ -1,7 +1,9 @@
-import { daoInfo } from '@/data/daoInfo';
 import { Empty } from '@/components/ui/empty';
-import { DaoItem } from './daoItem';
 import { Skeleton } from '@/components/ui/skeleton';
+import type { daoInfo } from '@/data/daoInfo';
+
+import { DaoItem } from './daoItem';
+
 
 interface DaoListProps {
   daoInfo: typeof daoInfo;

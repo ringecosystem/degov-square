@@ -1,10 +1,13 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
+import Image from 'next/image';
+import Link from 'next/link';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
+import { useIsMobileAndSubSection } from '@/app/notification/_hooks/isMobileAndSubSection';
 import {
   Form,
   FormControl,
@@ -15,9 +18,6 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { LoadedButton } from '@/components/ui/loaded-button';
-import { useIsMobileAndSubSection } from '@/app/notification/_hooks/isMobileAndSubSection';
-import Link from 'next/link';
-import Image from 'next/image';
 
 // Schema for validation
 const emailSchema = z.object({

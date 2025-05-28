@@ -9,9 +9,10 @@ import { useConfirm } from '@/contexts/confirm-context';
 import { useAddDaoReview } from '@/hooks/useAddDaoReview';
 import { getChains } from '@/utils/chains';
 
+import { ReviewSkeleton } from './review-skeleton';
+
 import type { Step1FormValues } from './step1-form';
 import type { Step2FormValues } from './step2-form';
-import { ReviewSkeleton } from './review-skeleton';
 
 interface ReviewProps {
   step1Data: Step1FormValues;

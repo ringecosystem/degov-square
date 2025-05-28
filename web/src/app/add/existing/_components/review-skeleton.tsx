@@ -1,7 +1,7 @@
 'use client';
 
-import { Skeleton } from '@/components/ui/skeleton';
 import { Separator } from '@/components/ui/separator';
+import { Skeleton } from '@/components/ui/skeleton';
 
 /**
  * 信息块骨架屏组件

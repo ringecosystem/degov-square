@@ -2,17 +2,19 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
+import { useParams } from 'next/navigation';
 import { useCallback, useState } from 'react';
 
+import { useIsMobileAndSubSection } from '@/app/setting/_hooks/isMobileAndSubSection';
 import type { ColumnType } from '@/components/custom-table';
 import { CustomTable } from '@/components/custom-table';
 import { Button } from '@/components/ui/button';
 import { useConfirm } from '@/contexts/confirm-context';
+
 import { AddTokensDialog } from './_components/add-tokens-dialog';
-import { useIsMobileAndSubSection } from '@/app/setting/_hooks/isMobileAndSubSection';
 import { AssetList } from './_components/assetList';
+
 import type { Token } from './_components/add-tokens-dialog';
-import { useParams } from 'next/navigation';
 const erc20Data = [
   {
     id: 1,
