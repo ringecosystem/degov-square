@@ -6,7 +6,6 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import type { ColumnType } from '@/components/custom-table';
 import { CustomTable } from '@/components/custom-table';
 import { SortableCell } from '@/components/sortable-cell';
-import { DaoListSkeleton, DaoTableSkeleton } from '@/components/ui/dao-skeleton';
 import { useDaoData } from '@/hooks/useDaoData';
 import type { DaoInfo } from '@/utils/config';
 
@@ -15,7 +14,7 @@ import { MobileSearchDialog } from './_components/MobileSearchDialog';
 type SortState = 'asc' | 'desc';
 
 export default function Home() {
-  const { daoData, isLoading, error, refreshData } = useDaoData();
+  const { daoData, isLoading } = useDaoData();
   const [isFetchingNextPage, setIsFetchingNextPage] = useState(false);
   const [sortState, setSortState] = useState<SortState | undefined>(undefined);
   const [searchQuery, setSearchQuery] = useState('');
@@ -176,22 +175,7 @@ export default function Home() {
         </div>
       </div>
 
-      {isLoading ? (
-        <>
-          <DaoTableSkeleton />
-          <DaoListSkeleton />
-        </>
-      ) : error ? (
-        <div className="py-4 text-center text-red-500">
-          Error loading DAO data: {error}
-          <button
-            onClick={refreshData}
-            className="ml-2 rounded bg-blue-500 px-3 py-1 text-white hover:bg-blue-600"
-          >
-            Retry
-          </button>
-        </div>
-      ) : (
+      {
         // <>
         //   {filteredAndSortedData.length === 0 && searchQuery ? (
         //     <div className="text-muted-foreground py-8 text-center">
@@ -223,6 +207,7 @@ export default function Home() {
             dataSource={filteredAndSortedData}
             className="hidden md:block"
             rowKey="name"
+            isLoading={isLoading}
             emptyText="No DAOs found"
             caption={
               filteredAndSortedData.length > 10 ? (
@@ -232,9 +217,9 @@ export default function Home() {
               ) : undefined
             }
           />
-          <DaoList daoInfo={filteredAndSortedData} isLoading={false} />
+          <DaoList daoInfo={filteredAndSortedData} isLoading={isLoading} />
         </>
-      )}
+      }
       <MobileSearchDialog
         open={openSearchDialog}
         onOpenChange={setOpenSearchDialog}
