@@ -6,7 +6,6 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import type { ColumnType } from '@/components/custom-table';
 import { CustomTable } from '@/components/custom-table';
 import { SortableCell } from '@/components/sortable-cell';
-import { Button } from '@/components/ui/button';
 import { DaoListSkeleton, DaoTableSkeleton } from '@/components/ui/dao-skeleton';
 import { useDaoData } from '@/hooks/useDaoData';
 import type { DaoInfo } from '@/utils/config';
@@ -53,10 +52,15 @@ export default function Home() {
       className: 'w-[34%] text-left',
       render(value) {
         return (
-          <div className="flex items-center gap-[10px]">
+          <Link
+            href={value?.website}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-[10px] hover:underline"
+          >
             <Image src={value?.daoIcon} alt="dao" width={34} height={34} />
             <span className="text-[16px]">{value?.name}</span>
-          </div>
+          </Link>
         );
       }
     },
@@ -188,45 +192,47 @@ export default function Home() {
           </button>
         </div>
       ) : (
+        // <>
+        //   {filteredAndSortedData.length === 0 && searchQuery ? (
+        //     <div className="text-muted-foreground py-8 text-center">
+        //       <div className="mb-4">
+        //         <Image
+        //           src="/empty.svg"
+        //           alt="No results"
+        //           width={64}
+        //           height={64}
+        //           className="mx-auto"
+        //         />
+        //       </div>
+        //       <p className="text-lg">No DAOs found</p>
+        //       <p className="text-sm">Try searching with different keywords</p>
+        //       <button
+        //         onClick={clearSearch}
+        //         className="mt-2 text-blue-500 underline hover:text-blue-600"
+        //       >
+        //         View all DAOs
+        //       </button>
+        //     </div>
+        //   ) : (
+
+        //   )}
+        // </>
         <>
-          {filteredAndSortedData.length === 0 && searchQuery ? (
-            <div className="text-muted-foreground py-8 text-center">
-              <div className="mb-4">
-                <Image
-                  src="/empty.svg"
-                  alt="No results"
-                  width={64}
-                  height={64}
-                  className="mx-auto"
-                />
-              </div>
-              <p className="text-lg">No DAOs found</p>
-              <p className="text-sm">Try searching with different keywords</p>
-              <button
-                onClick={clearSearch}
-                className="mt-2 text-blue-500 underline hover:text-blue-600"
-              >
-                View all DAOs
-              </button>
-            </div>
-          ) : (
-            <>
-              <CustomTable
-                columns={columns}
-                dataSource={filteredAndSortedData}
-                className="hidden md:block"
-                rowKey="name"
-                caption={
-                  filteredAndSortedData.length > 10 ? (
-                    <div className="text-foreground hover:text-foreground/80 cursor-pointer transition-colors">
-                      {isFetchingNextPage ? 'Loading more...' : 'View more'}
-                    </div>
-                  ) : undefined
-                }
-              />
-              <DaoList daoInfo={filteredAndSortedData} isLoading={false} />
-            </>
-          )}
+          <CustomTable
+            columns={columns}
+            dataSource={filteredAndSortedData}
+            className="hidden md:block"
+            rowKey="name"
+            emptyText="No DAOs found"
+            caption={
+              filteredAndSortedData.length > 10 ? (
+                <div className="text-foreground hover:text-foreground/80 cursor-pointer transition-colors">
+                  {isFetchingNextPage ? 'Loading more...' : 'View more'}
+                </div>
+              ) : undefined
+            }
+          />
+          <DaoList daoInfo={filteredAndSortedData} isLoading={false} />
         </>
       )}
       <MobileSearchDialog

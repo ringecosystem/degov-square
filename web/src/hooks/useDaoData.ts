@@ -57,7 +57,7 @@ export function useDaoData() {
         const proposalsCount = await getProposalsCount(dao.links.indexer);
 
         const chainId = dao.chain?.id?.toString();
-        const networkIcon = chainInfo?.[chainId ?? '']?.icon || '/example/network1.svg';
+        const networkIcon = chainInfo?.[chainId ?? '']?.icon;
 
         return {
           id: dao.code,
