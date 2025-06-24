@@ -90,7 +90,7 @@ export function useDaoData() {
   };
 
   return {
-    daoData,
+    daoData: daoData || [],
     isLoading,
     error: error?.message || null,
     refreshData
