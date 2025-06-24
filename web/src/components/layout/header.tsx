@@ -5,7 +5,7 @@ import Link from 'next/link';
 
 import { ConnectButton } from '@/components/connect-button';
 
-import { ThemeButton } from '../theme-button';
+// import { ThemeButton } from '../theme-button';
 
 export function Header() {
   return (
@@ -29,7 +29,7 @@ export function Header() {
         </Link>
         <div className="flex items-center gap-[5px] md:gap-[10px]">
           <ConnectButton />
-          <ThemeButton />
+          {/* <ThemeButton /> */}
         </div>
       </div>
     </header>
