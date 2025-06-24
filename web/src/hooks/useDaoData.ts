@@ -51,12 +51,13 @@ export function useDaoData() {
     isLoading: isLoadingProposals,
     error: proposalsError
   } = useQuery({
-    queryKey: ['dao-data', daoConfigs],
+    queryKey: ['dao-data', daoConfigs, chainInfo],
     queryFn: async (): Promise<DaoInfo[]> => {
-      const daoInfoPromises = daoConfigs.map(async (dao, index) => {
+      const daoInfoPromises = daoConfigs.map(async (dao) => {
         const proposalsCount = await getProposalsCount(dao.links.indexer);
 
         const chainId = dao.chain?.id?.toString();
+
         const networkIcon = chainInfo?.[chainId ?? '']?.icon;
 
         return {
@@ -77,7 +78,7 @@ export function useDaoData() {
 
       return Promise.all(daoInfoPromises);
     },
-    enabled: !!daoConfigs.length
+    enabled: !!daoConfigs.length && !isLoadingChains
   });
 
   const isLoading = isLoadingConfigs || isLoadingChains || isLoadingProposals;
