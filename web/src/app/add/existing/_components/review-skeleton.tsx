@@ -3,9 +3,6 @@
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 
-/**
- * 信息块骨架屏组件
- */
 function InfoBlockSkeleton({ title, rows = 3 }: { title: string; rows?: number }) {
   return (
     <div className="bg-background rounded-lg p-4">
@@ -24,9 +21,6 @@ function InfoBlockSkeleton({ title, rows = 3 }: { title: string; rows?: number }
   );
 }
 
-/**
- * Review页面的骨架屏组件
- */
 export function ReviewSkeleton() {
   return (
     <>

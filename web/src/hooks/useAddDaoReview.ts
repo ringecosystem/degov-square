@@ -78,7 +78,6 @@ export function useStaticGovernanceParams(
     }
   });
 
-  // 确保所有值都成功加载
   const isComplete = useMemo(() => {
     if (!data) return false;
     return data.every((item) => item.status === 'success');
@@ -125,7 +124,7 @@ export function useQuorum(
     chainId,
     query: {
       enabled: isEnabled,
-      staleTime: 0 // 总是重新获取最新时钟值
+      staleTime: 0
     }
   });
 
@@ -140,7 +139,7 @@ export function useQuorum(
     address: governorAddress as `0x${string}`,
     abi: governorAbi,
     functionName: 'quorum' as const,
-    args: clockData ? [BigInt(clockData)] : undefined, // 确保只在有时钟数据时传递参数
+    args: clockData ? [BigInt(clockData)] : undefined,
     chainId,
     query: {
       enabled: clockEnabled
@@ -180,10 +179,8 @@ export function useGovernanceParams(
     isComplete: isQuorumComplete
   } = useQuorum(step1Data, step2Data, enabled);
 
-  // 确保所有参数都已加载完成
   const isComplete = isStaticComplete && isQuorumComplete;
 
-  // 只有当所有数据都完全加载时才返回完整数据
   const formattedData: GovernanceParams | null = useMemo(() => {
     if (!isComplete || !staticParams || quorum === undefined) {
       return null;

@@ -41,6 +41,9 @@ importers:
       '@tanstack/react-query':
         specifier: ^5.75.5
         version: 5.75.5(react@19.1.0)
+      '@types/js-yaml':
+        specifier: ^4.0.9
+        version: 4.0.9
       bignumber.js:
         specifier: ^9.3.0
         version: 9.3.0
@@ -53,6 +56,9 @@ importers:
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
+      js-yaml:
+        specifier: ^4.1.0
+        version: 4.1.0
       lodash-es:
         specifier: ^4.17.21
         version: 4.17.21
@@ -1297,6 +1303,9 @@ packages:
 
   '@types/js-cookie@2.2.7':
     resolution: {integrity: sha512-aLkWa0C0vO5b4Sr798E26QgOkss68Un0bLjs7u9qxzPT5CG+8DuNTffWES58YzJs3hrVAOs1wonycqEBqNJubA==}
+
+  '@types/js-yaml@4.0.9':
+    resolution: {integrity: sha512-k4MGaQl5TGo/iipqb2UDG2UwjXziSWkh0uysQelTlJpX1qGlpUZYm8PnO4DxG1qBomtJUdYJ6qR6xdIah10JLg==}
 
   '@types/json-schema@7.0.15':
     resolution: {integrity: sha512-5+fP8P8MFNC+AyZCDxrB2pkZFPGzqQWUzpSeuuVLvm8VMcorNYavBqoFcxK8bQz4Qsbn4oUEEem4wDLfcysGHA==}
@@ -5481,6 +5490,8 @@ snapshots:
   '@types/estree@1.0.7': {}
 
   '@types/js-cookie@2.2.7': {}
+
+  '@types/js-yaml@4.0.9': {}
 
   '@types/json-schema@7.0.15': {}
 

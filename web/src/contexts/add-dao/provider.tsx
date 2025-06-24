@@ -18,7 +18,6 @@ export function AddDaoProvider({ children }: AddDaoProviderProps) {
   const [step1Data, setStep1Data] = useState<Step1FormValues | null>(null);
   const [step2Data, setStep2Data] = useState<Step2FormValues | null>(null);
 
-  // 各步骤的加载状态
   const [isStep1Loading, setIsStep1Loading] = useState(false);
   const [isStep2Loading, setIsStep2Loading] = useState(false);
   const [isReviewLoading, setIsReviewLoading] = useState(false);
@@ -27,7 +26,6 @@ export function AddDaoProvider({ children }: AddDaoProviderProps) {
     console.log('Step 1 Values:', values);
     setIsStep1Loading(true);
 
-    // 模拟网络请求或数据处理延迟
     setTimeout(() => {
       setStep1Data(values);
       setCurrentStep(2);
@@ -39,7 +37,6 @@ export function AddDaoProvider({ children }: AddDaoProviderProps) {
     console.log('Step 2 Values:', values);
     setIsStep2Loading(true);
 
-    // 模拟网络请求或数据处理延迟
     setTimeout(() => {
       setStep2Data(values);
       setCurrentStep(3);
@@ -55,7 +52,6 @@ export function AddDaoProvider({ children }: AddDaoProviderProps) {
 
     setIsReviewLoading(true);
 
-    // 模拟提交延迟
     setTimeout(() => {
       router.push('/add/existing/success');
       setIsReviewLoading(false);

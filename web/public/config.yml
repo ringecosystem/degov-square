@@ -1,0 +1,33 @@
+daos:
+  - name: Ring DAO
+    code: ring-dao
+    logo: https://raw.githubusercontent.com/darwinia-network/devops/refs/heads/main/assets/ringdao/ringdao-portfolio-black.svg
+    links:
+      website: https://gov.ringdao.com
+      config: https://gov.ringdao.com/degov.yml
+      indexer: https://gov.ringdao.com/indexer/graphql
+    chain:
+      id: 46
+      name: Darwinia
+
+  - name: Kton DAO
+    code: kton-dao
+    logo: https://raw.githubusercontent.com/darwinia-network/devops/refs/heads/main/assets/ktondao/ktondao-portfolio-black.svg
+    links:
+      website: https://gov.ktondao.xyz
+      config: https://gov.ktondao.xyz/degov.yml
+      indexer: https://gov.ktondao.xyz/indexer/graphql
+    chain:
+      id: 46
+      name: Darwinia
+
+  - name: RingDAO Community Guild
+    code: ringdao-guild
+    logo: https://raw.githubusercontent.com/darwinia-network/devops/refs/heads/main/assets/rcg/head.svg
+    links:
+      website: https://guild-gov.ringdao.com
+      config: https://guild-gov.ringdao.com/degov.yml
+      indexer: https://guild-gov.ringdao.com/indexer/graphql
+    chain:
+      id: 46
+      name: Darwinia
