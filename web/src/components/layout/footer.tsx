@@ -28,7 +28,7 @@ export function Footer() {
           target="_blank"
           rel="noopener noreferrer"
         >
-          <Image src="/social/x.svg" alt="GitHub" width={12} height={12} />
+          <Image src="/social/x.svg" alt="Twitter" width={12} height={12} />
         </Link>
         <Link
           href="https://t.me/DeGov_AI"
@@ -36,7 +36,7 @@ export function Footer() {
           target="_blank"
           rel="noopener noreferrer"
         >
-          <Image src="/social/telegram.svg" alt="Twitter" width={12} height={10} />
+          <Image src="/social/telegram.svg" alt="Telegram" width={12} height={10} />
         </Link>
         <Link
           href="https://github.com/ringecosystem/degov"
@@ -44,7 +44,7 @@ export function Footer() {
           target="_blank"
           rel="noopener noreferrer"
         >
-          <Image src="/social/github.svg" alt="Telegram" width={10.714} height={12.857} />
+          <Image src="/social/github.svg" alt="GitHub" width={10.714} height={12.857} />
         </Link>
       </div>
     </footer>
