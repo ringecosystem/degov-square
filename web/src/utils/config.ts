@@ -82,32 +82,3 @@ export async function getProposalsCount(indexerUrl: string): Promise<number> {
     return 0;
   }
 }
-
-export async function loadDaoData(): Promise<DaoInfo[]> {
-  try {
-    const config = await loadConfig();
-    const daoInfoPromises = config.daos.map(async (dao, index) => {
-      const proposalsCount = await getProposalsCount(dao.links.indexer);
-
-      return {
-        id: dao.code,
-        name: dao.name,
-        code: dao.code,
-        daoIcon: `/example/dao${(index % 3) + 1}.svg`,
-        network: 'Ethereum',
-        networkIcon: '/example/network1.svg',
-        proposals: proposalsCount,
-        favorite: false,
-        settable: true,
-        website: dao.links.website,
-        indexer: dao.links.indexer
-      };
-    });
-
-    const daoInfoList = await Promise.all(daoInfoPromises);
-    return daoInfoList;
-  } catch (error) {
-    console.error('Error loading DAO data:', error);
-    return [];
-  }
-}
