@@ -88,7 +88,6 @@ export function Review({ step1Data, step2Data, onSubmit, onBack }: ReviewProps) 
     });
   }, [onSubmit, confirm]);
 
-  // 当处于加载状态时，显示骨架屏
   if (isLoading) {
     return <ReviewSkeleton />;
   }

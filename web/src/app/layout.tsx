@@ -8,6 +8,7 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import { APP_NAME, APP_DESCRIPTION } from '@/config/base';
 import { ConfirmProvider } from '@/provider/confirm';
 import { DAppProvider } from '@/provider/dapp';
+import { QueryProvider } from '@/provider/query';
 import { NextThemeProvider } from '@/provider/theme';
 
 import type { Metadata } from 'next';
@@ -36,22 +37,24 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <NextThemeProvider>
-          <TooltipProvider>
-            <DAppProvider>
-              <ConfirmProvider>
-                <div className="bg-background flex min-h-dvh flex-col overflow-hidden font-sans antialiased">
-                  <Header />
-                  <main className="flex-1 py-[20px] md:py-[30px]">{children}</main>
-                  <Footer />
-                </div>
-                <ToastContainer
-                  pauseOnFocusLoss={false}
-                  theme="dark"
-                  className="w-auto text-[14px] md:w-[380px]"
-                />
-              </ConfirmProvider>
-            </DAppProvider>
-          </TooltipProvider>
+          <QueryProvider>
+            <TooltipProvider>
+              <DAppProvider>
+                <ConfirmProvider>
+                  <div className="bg-background flex min-h-dvh flex-col overflow-hidden font-sans antialiased">
+                    <Header />
+                    <main className="flex-1 py-[20px] md:py-[30px]">{children}</main>
+                    <Footer />
+                  </div>
+                  <ToastContainer
+                    pauseOnFocusLoss={false}
+                    theme="dark"
+                    className="w-auto text-[14px] md:w-[380px]"
+                  />
+                </ConfirmProvider>
+              </DAppProvider>
+            </TooltipProvider>
+          </QueryProvider>
         </NextThemeProvider>
       </body>
     </html>

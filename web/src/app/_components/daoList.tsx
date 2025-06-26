@@ -1,12 +1,11 @@
 import { Empty } from '@/components/ui/empty';
 import { Skeleton } from '@/components/ui/skeleton';
-import type { daoInfo } from '@/data/daoInfo';
+import type { DaoInfo } from '@/utils/config';
 
 import { DaoItem } from './daoItem';
 
-
 interface DaoListProps {
-  daoInfo: typeof daoInfo;
+  daoInfo: DaoInfo[];
   isLoading?: boolean;
 }
 

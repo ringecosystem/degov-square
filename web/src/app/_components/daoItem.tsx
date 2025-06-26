@@ -8,7 +8,7 @@ interface DaoItemProps {
   daoIcon: string;
   network: string;
   proposals: number;
-  id: number;
+  id: string;
 }
 export const DaoItem = ({ name, daoIcon, network, proposals, id }: DaoItemProps) => {
   return (
@@ -24,7 +24,7 @@ export const DaoItem = ({ name, daoIcon, network, proposals, id }: DaoItemProps)
       <Separator className="my-0" />
       <div className="flex items-center justify-between">
         <p className="text-[14px]">{proposals ?? 0} Proposals</p>
-        <div className="flex items-center justify-end gap-[10px]">
+        {/* <div className="flex items-center justify-end gap-[10px]">
           <Link
             href={`/setting/${id}`}
             className="cursor-pointer transition-opacity hover:opacity-80"
@@ -34,7 +34,7 @@ export const DaoItem = ({ name, daoIcon, network, proposals, id }: DaoItemProps)
           <button className="cursor-pointer transition-opacity hover:opacity-80">
             <Image src="/favorite.svg" alt="favorite" width={20} height={20} />
           </button>
-        </div>
+        </div> */}
       </div>
     </div>
   );
