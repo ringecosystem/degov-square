@@ -1,5 +1,5 @@
 daos:
-  - name: Ring DAO
+  - name: RingDAO
     code: ring-dao
     logo: https://raw.githubusercontent.com/darwinia-network/devops/refs/heads/main/assets/ringdao/ringdao-portfolio-black.svg
     links:
@@ -10,7 +10,7 @@ daos:
       id: 46
       name: Darwinia
 
-  - name: Kton DAO
+  - name: KtonDAO
     code: kton-dao
     logo: https://raw.githubusercontent.com/darwinia-network/devops/refs/heads/main/assets/ktondao/ktondao-portfolio-black.svg
     links:
