@@ -1,0 +1,29 @@
+name: Deploy staging
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: darwinia-network/devops/actions/smart-vercel@main
+        name: Deploy degov
+        with:
+          node_version: 22
+          vercel_token: ${{ secrets.VERCEL_TOKEN }}
+          vercel_group: itering
+          preview_output: true
+          alias_domain: "degov-apps-stg"
+          project_name: "degov-apps"
+          script_run: false
+          dist_path: .
+          enable_notify_slack: false
+          slack_channel: public-degov
+          slack_webhook: ${{ secrets.SLACK_INCOMING_WEBHOOK_URL }}
+

@@ -26,7 +26,6 @@ import { InputAddon } from '@/components/ui/input-addon';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 
-// 表单验证
 const formSchema = z.object({
   name: z.string().min(1, 'DAO name is required'),
   description: z.string().max(500, 'Description cannot exceed 500 characters'),
@@ -78,7 +77,7 @@ export default function BasicSettingPage() {
       console.log('Form Values:', values);
       console.log('Avatar:', avatar);
 
-      await new Promise((resolve) => setTimeout(resolve, 1000)); // 模拟API调用
+      await new Promise((resolve) => setTimeout(resolve, 1000));
 
       toast.success('Settings saved successfully');
     } catch (error) {
