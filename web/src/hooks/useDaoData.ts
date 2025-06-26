@@ -53,7 +53,7 @@ export function useDaoData() {
   } = useQuery({
     queryKey: ['dao-data', daoConfigs, chainInfo],
     queryFn: async (): Promise<DaoInfo[]> => {
-      const daoInfoPromises = daoConfigs.map(async (dao) => {
+      const daoInfoPromises = daoConfigs.map(async (dao, index) => {
         const proposalsCount = await getProposalsCount(dao.links.indexer);
 
         const chainId = dao.chain?.id?.toString();
@@ -61,7 +61,7 @@ export function useDaoData() {
         const networkIcon = chainInfo?.[chainId ?? '']?.icon;
 
         return {
-          id: dao.code,
+          id: index.toString(),
           name: dao.name,
           code: dao.code,
           daoIcon: dao.logo,

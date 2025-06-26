@@ -206,7 +206,7 @@ export default function Home() {
             columns={columns}
             dataSource={filteredAndSortedData}
             className="hidden md:block"
-            rowKey="name"
+            rowKey="id"
             isLoading={isLoading}
             emptyText="No DAOs found"
             caption={
