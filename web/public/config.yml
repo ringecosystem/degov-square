@@ -34,7 +34,7 @@ daos:
 
   - name: ENS
     code: ens-dao
-    logo: https://github.com/ringecosystem/degov-registry/blob/main/assets/daos/ens/ens-mark-Blue.svg
+    logo: https://raw.githubusercontent.com/ringecosystem/degov-registry/refs/heads/main/assets/daos/ens/ens-mark-Blue.svg
     links:
       website: https://ens.domains
       config: https://ens.degov.ai/degov.yml
@@ -45,7 +45,7 @@ daos:
 
   - name: Uniswap
     code: uniswap-dao
-    logo: https://github.com/ringecosystem/degov-registry/blob/main/assets/daos/uniswap/Uniswap_icon_pink.svg
+    logo: https://raw.githubusercontent.com/ringecosystem/degov-registry/refs/heads/main/assets/daos/uniswap/Uniswap_icon_pink.svg
     links:
       website: https://uniswap.org
       config: https://uniswap.degov.ai/degov.yml
