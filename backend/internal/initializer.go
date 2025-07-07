@@ -50,9 +50,4 @@ func initLog() {
 	logger := slog.New(zaphandler)
 
 	slog.SetDefault(logger)
-
-	slog.Debug("this is a debug log")
-	slog.Info("this is a info log")
-	slog.Warn("this is a warn log")
-	slog.Error("this is a error log")
 }
