@@ -1,7 +1,7 @@
 package main
 
 import (
-	"log"
+	"log/slog"
 	"net/http"
 	"os"
 
@@ -11,12 +11,19 @@ import (
 	"github.com/99designs/gqlgen/graphql/handler/transport"
 	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/ringecosystem/degov-apps/graph"
+	"github.com/ringecosystem/degov-apps/internal"
+	"github.com/rs/cors"
 	"github.com/vektah/gqlparser/v2/ast"
 )
 
 const defaultPort = "8080"
 
 func main() {
+	internal.AppInit()
+	startServer()
+}
+
+func startServer() {
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = defaultPort
@@ -35,10 +42,26 @@ func main() {
 		Cache: lru.New[string](100),
 	})
 
-	graphiql := playground.Handler("GraphQL playground", "/query")
-	http.Handle("/", graphiql)
-	http.Handle("/query", srv)
+	mux := http.NewServeMux()
 
-	log.Printf("connect to http://::%s/ for GraphQL playground", port)
-	log.Fatal(http.ListenAndServe(":"+port, nil))
+	graphiql := playground.Handler("GraphQL playground", "/graphql", playground.WithGraphiqlEnablePluginExplorer(true))
+	mux.Handle("/graphiql", graphiql)
+	mux.Handle("/graphql", srv)
+
+	c := cors.New(cors.Options{
+		AllowedOrigins:   []string{"*"},
+		AllowedMethods:   []string{"GET", "POST", "OPTIONS"},
+		AllowedHeaders:   []string{"Authorization", "Content-Type"},
+		AllowCredentials: true,
+		Debug:            true,
+	})
+	handler := c.Handler(mux)
+
+	slog.Info(
+		"GraphQL playground is running",
+		slog.String("listen", "http://::"+port+"/"),
+	)
+	err := http.ListenAndServe(":"+port, handler)
+	slog.Error("failed to listen server", "error", err)
+
 }
