@@ -53,7 +53,7 @@ func startServer() {
 		AllowedMethods:   []string{"GET", "POST", "OPTIONS"},
 		AllowedHeaders:   []string{"Authorization", "Content-Type"},
 		AllowCredentials: true,
-		Debug:            true,
+		Debug:            internal.GetAppEnv().IsDevelopment(),
 	})
 	handler := c.Handler(mux)
 

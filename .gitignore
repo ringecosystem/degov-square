@@ -40,3 +40,7 @@
 # typescript
 /web/*.tsbuildinfo
 /web/next-env.d.ts
+
+
+# custom
+.env
