@@ -31,3 +31,25 @@ daos:
     chain:
       id: 46
       name: Darwinia
+
+  - name: ENS
+    code: ens-dao
+    logo: https://github.com/ringecosystem/degov-registry/blob/main/assets/daos/ens/ens-mark-Blue.svg
+    links:
+      website: https://ens.domains
+      config: https://ens.degov.ai/degov.yml
+      indexer: https://ens.degov.ai/indexer/graphql
+    chain:
+      id: 1
+      name: Ethereum
+
+  - name: Uniswap
+    code: uniswap-dao
+    logo: https://github.com/ringecosystem/degov-registry/blob/main/assets/daos/uniswap/Uniswap_icon_pink.svg
+    links:
+      website: https://uniswap.org
+      config: https://uniswap.degov.ai/degov.yml
+      indexer: https://uniswap.degov.ai/indexer/graphql
+    chain:
+      id: 1
+      name: Ethereum
