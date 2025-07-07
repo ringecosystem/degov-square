@@ -58,7 +58,7 @@ func startServer() {
 	handler := c.Handler(mux)
 
 	slog.Info(
-		"GraphQL playground is running",
+		"Server is running",
 		slog.String("listen", "http://::"+port+"/"),
 	)
 	err := http.ListenAndServe(":"+port, handler)
