@@ -11,6 +11,7 @@ import (
 )
 
 func AppInit() {
+	InitIDGenerator(1)
 	loadDotEnv()
 	initLog()
 	initDB()

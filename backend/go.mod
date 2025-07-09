@@ -4,6 +4,7 @@ go 1.24.4
 
 require (
 	github.com/99designs/gqlgen v0.17.76
+	github.com/bwmarrin/snowflake v0.3.0
 	github.com/golang-migrate/migrate/v4 v4.18.1
 	github.com/joho/godotenv v1.5.1
 	github.com/rs/cors v1.11.1
