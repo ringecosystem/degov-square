@@ -2,11 +2,16 @@ services:
   db:
     image: postgres:17-alpine
     environment:
-      POSTGRES_DB: degovapps
-      POSTGRES_PASSWORD: let-me-in
+      POSTGRES_DB: degov_apps
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
     volumes:
       - ./.data/postgres:/var/lib/postgresql/data
     ports:
-      - "${DB_PORT}:5432"
-      # command: ["postgres", "-c", "log_statement=all"]
+      - "5432:5432"
     shm_size: 1gb
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5

@@ -1,0 +1,56 @@
+.PHONY: build run test clean docker-up docker-down migrate generate help
+
+help:
+	@echo "Available commands:"
+	@echo "  build       - Build the application"
+	@echo "  serve       - Build and serve the application"
+	@echo "  run         - Run the application"
+	@echo "  test        - Run tests"
+	@echo "  clean       - Clean build artifacts"
+	@echo "  docker-up   - Start Docker services"
+	@echo "  docker-down - Stop Docker services"
+	@echo "  generate    - Generate GraphQL code"
+
+build:
+	go build -o build/server .
+
+run:
+	go run server.go
+
+serve: build
+	./build/server $@
+
+test:
+	go test ./...
+
+clean:
+	rm -rf build/
+	rm -rf .data/
+
+docker-up:
+	docker-compose up -d
+
+docker-down:
+	docker-compose down
+
+generate:
+	go generate ./...
+
+deps:
+	go mod tidy
+	go mod download
+
+# start development environment
+dev: docker-up
+	@echo "Waiting for database to be ready..."
+	@sleep 5
+	@make migrate
+	@make run
+
+# complete setup for development environment
+setup: deps docker-up
+	@echo "Setting up development environment..."
+	@sleep 5
+	@make migrate
+	@echo "Development environment ready!"
+	@echo "Run 'make run' to start the application"

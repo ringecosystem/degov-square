@@ -6,11 +6,14 @@ import (
 	"github.com/joho/godotenv"
 	"go.uber.org/zap"
 	"go.uber.org/zap/exp/zapslog"
+
+	"github.com/ringecosystem/degov-apps/internal/database"
 )
 
 func AppInit() {
 	loadDotEnv()
 	initLog()
+	initDB()
 }
 
 func loadDotEnv() {
@@ -50,4 +53,13 @@ func initLog() {
 	logger := slog.New(zaphandler)
 
 	slog.SetDefault(logger)
+}
+
+func initDB() {
+	err := database.InitDB()
+	if err != nil {
+		slog.Error("Failed to initialize database", "error", err)
+		panic(err)
+	}
+	slog.Info("Database initialized successfully")
 }

@@ -6,165 +6,99 @@ package graph
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/ringecosystem/degov-apps/graph/model"
 )
 
-// CreateTodo is the resolver for the createTodo field.
-func (r *mutationResolver) CreateTodo(ctx context.Context, input model.NewTodo) (*model.Todo, error) {
-	// Mock implementation for testing
-	return &model.Todo{
-		ID:   "1",
-		Text: input.Text,
-		Done: false,
-		Priority: func() model.Priority {
-			if input.Priority != nil {
-				return *input.Priority
-			} else {
-				return model.PriorityMedium
-			}
-		}(),
+// Register is the resolver for the register field.
+func (r *mutationResolver) Register(ctx context.Context, input model.RegisterInput) (*model.AuthPayload, error) {
+	user, err := r.userService.RegisterUser(input.Username, input.Email, input.Password)
+	if err != nil {
+		return nil, err
+	}
+
+	return &model.AuthPayload{
 		User: &model.User{
-			ID:   input.UserID,
-			Name: "Mock User",
+			ID:        fmt.Sprintf("%d", user.ID),
+			Username:  user.Username,
+			Email:     user.Email,
+			CreatedAt: user.CreatedAt.Format("2006-01-02T15:04:05Z"),
+			UpdatedAt: user.UpdatedAt.Format("2006-01-02T15:04:05Z"),
 		},
-		CreatedAt: func() *string { s := "2023-01-01T00:00:00Z"; return &s }(),
+		Message: "User registered successfully",
 	}, nil
 }
 
-// UpdateTodo is the resolver for the updateTodo field.
-func (r *mutationResolver) UpdateTodo(ctx context.Context, input model.UpdateTodo) (*model.Todo, error) {
-	// Mock implementation for testing
-	return &model.Todo{
-		ID: input.ID,
-		Text: func() string {
-			if input.Text != nil {
-				return *input.Text
-			} else {
-				return "Updated Todo"
-			}
-		}(),
-		Done: func() bool {
-			if input.Done != nil {
-				return *input.Done
-			} else {
-				return false
-			}
-		}(),
-		Priority: func() model.Priority {
-			if input.Priority != nil {
-				return *input.Priority
-			} else {
-				return model.PriorityMedium
-			}
-		}(),
+// Login is the resolver for the login field.
+func (r *mutationResolver) Login(ctx context.Context, input model.LoginInput) (*model.AuthPayload, error) {
+	user, err := r.userService.LoginUser(input.Username, input.Password)
+	if err != nil {
+		return nil, err
+	}
+
+	return &model.AuthPayload{
 		User: &model.User{
-			ID:   "user1",
-			Name: "John Doe",
+			ID:        fmt.Sprintf("%d", user.ID),
+			Username:  user.Username,
+			Email:     user.Email,
+			CreatedAt: user.CreatedAt.Format("2006-01-02T15:04:05Z"),
+			UpdatedAt: user.UpdatedAt.Format("2006-01-02T15:04:05Z"),
 		},
-		CreatedAt: func() *string { s := "2023-01-01T00:00:00Z"; return &s }(),
-	}, nil
-}
-
-// DeleteTodo is the resolver for the deleteTodo field.
-func (r *mutationResolver) DeleteTodo(ctx context.Context, id string) (bool, error) {
-	// Mock implementation for testing
-	return true, nil
-}
-
-// Todos is the resolver for the todos field.
-func (r *queryResolver) Todos(ctx context.Context) ([]*model.Todo, error) {
-	// Mock implementation for testing
-	return []*model.Todo{
-		{
-			ID:       "1",
-			Text:     "Sample Todo 1",
-			Done:     false,
-			Priority: model.PriorityHigh,
-			User: &model.User{
-				ID:    "user1",
-				Name:  "John Doe",
-				Email: func() *string { s := "john@example.com"; return &s }(),
-			},
-			CreatedAt: func() *string { s := "2023-01-01T00:00:00Z"; return &s }(),
-		},
-		{
-			ID:       "2",
-			Text:     "Sample Todo 2",
-			Done:     true,
-			Priority: model.PriorityMedium,
-			User: &model.User{
-				ID:    "user2",
-				Name:  "Jane Smith",
-				Email: func() *string { s := "jane@example.com"; return &s }(),
-			},
-			CreatedAt: func() *string { s := "2023-01-02T00:00:00Z"; return &s }(),
-		},
-	}, nil
-}
-
-// Todo is the resolver for the todo field.
-func (r *queryResolver) Todo(ctx context.Context, id string) (*model.Todo, error) {
-	// Mock implementation for testing
-	return &model.Todo{
-		ID:       id,
-		Text:     "Sample Todo",
-		Done:     false,
-		Priority: model.PriorityMedium,
-		User: &model.User{
-			ID:    "user1",
-			Name:  "John Doe",
-			Email: func() *string { s := "john@example.com"; return &s }(),
-		},
-		CreatedAt: func() *string { s := "2023-01-01T00:00:00Z"; return &s }(),
+		Message: "User logged in successfully",
 	}, nil
 }
 
 // Users is the resolver for the users field.
 func (r *queryResolver) Users(ctx context.Context) ([]*model.User, error) {
-	// Mock implementation for testing
-	return []*model.User{
-		{
-			ID:    "user1",
-			Name:  "John Doe",
-			Email: func() *string { s := "john@example.com"; return &s }(),
-		},
-		{
-			ID:    "user2",
-			Name:  "Jane Smith",
-			Email: func() *string { s := "jane@example.com"; return &s }(),
-		},
-	}, nil
+	users, err := r.userService.GetUsers()
+	if err != nil {
+		return nil, err
+	}
+
+	var result []*model.User
+	for _, user := range users {
+		result = append(result, &model.User{
+			ID:        fmt.Sprintf("%d", user.ID),
+			Username:  user.Username,
+			Email:     user.Email,
+			CreatedAt: user.CreatedAt.Format("2006-01-02T15:04:05Z"),
+			UpdatedAt: user.UpdatedAt.Format("2006-01-02T15:04:05Z"),
+		})
+	}
+
+	return result, nil
 }
 
 // User is the resolver for the user field.
 func (r *queryResolver) User(ctx context.Context, id string) (*model.User, error) {
-	// Mock implementation for testing
+	var userID uint
+	if _, err := fmt.Sscanf(id, "%d", &userID); err != nil {
+		return nil, fmt.Errorf("invalid user ID: %v", err)
+	}
+
+	user, err := r.userService.GetUserByID(userID)
+	if err != nil {
+		return nil, err
+	}
+
 	return &model.User{
-		ID:    id,
-		Name:  "John Doe",
-		Email: func() *string { s := "john@example.com"; return &s }(),
+		ID:        fmt.Sprintf("%d", user.ID),
+		Username:  user.Username,
+		Email:     user.Email,
+		CreatedAt: user.CreatedAt.Format("2006-01-02T15:04:05Z"),
+		UpdatedAt: user.UpdatedAt.Format("2006-01-02T15:04:05Z"),
 	}, nil
 }
 
-// TodoUpdated is the resolver for the todoUpdated field.
-func (r *subscriptionResolver) TodoUpdated(ctx context.Context) (<-chan *model.Todo, error) {
-	// Mock implementation for testing - in real app you'd use channels
-	ch := make(chan *model.Todo, 1)
-	go func() {
-		defer close(ch)
-		ch <- &model.Todo{
-			ID:       "1",
-			Text:     "Updated Todo",
-			Done:     false,
-			Priority: model.PriorityHigh,
-			User: &model.User{
-				ID:   "user1",
-				Name: "John Doe",
-			},
-		}
-	}()
-	return ch, nil
+// Me is the resolver for the me field.
+func (r *queryResolver) Me(ctx context.Context) (*model.User, error) {
+	panic(fmt.Errorf("not implemented: Me - me"))
+}
+
+// UserRegistered is the resolver for the userRegistered field.
+func (r *subscriptionResolver) UserRegistered(ctx context.Context) (<-chan *model.User, error) {
+	panic(fmt.Errorf("not implemented: UserRegistered - userRegistered"))
 }
 
 // Mutation returns MutationResolver implementation.

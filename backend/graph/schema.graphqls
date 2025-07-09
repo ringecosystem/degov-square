@@ -1,55 +1,49 @@
-# GraphQL schema example
+# GraphQL schema for User Management
 #
 # https://gqlgen.com/getting-started/
 
-type Todo {
-  id: ID!
-  text: String!
-  done: Boolean!
-  user: User!
-  createdAt: String
-  priority: Priority!
-}
 
+### ==== entity
 type User {
   id: ID!
-  name: String!
-  email: String
-  todos: [Todo!]!
+  username: String!
+  email: String!
+  createdAt: String!
+  updatedAt: String!
 }
 
-enum Priority {
-  LOW
-  MEDIUM
-  HIGH
+type AuthPayload {
+  user: User!
+  message: String!
 }
+
+### === types
+
+input RegisterInput {
+  username: String!
+  email: String!
+  password: String!
+}
+
+input LoginInput {
+  username: String!
+  password: String!
+}
+
+
+### ==== graphql
 
 type Query {
-  todos: [Todo!]!
-  todo(id: ID!): Todo
   users: [User!]!
   user(id: ID!): User
-}
-
-input NewTodo {
-  text: String!
-  userId: String!
-  priority: Priority = MEDIUM
-}
-
-input UpdateTodo {
-  id: ID!
-  text: String
-  done: Boolean
-  priority: Priority
+  me: User
 }
 
 type Mutation {
-  createTodo(input: NewTodo!): Todo!
-  updateTodo(input: UpdateTodo!): Todo!
-  deleteTodo(id: ID!): Boolean!
+  register(input: RegisterInput!): AuthPayload!
+  login(input: LoginInput!): AuthPayload!
 }
 
 type Subscription {
-  todoUpdated: Todo!
+  userRegistered: User!
 }
