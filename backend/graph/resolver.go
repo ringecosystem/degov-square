@@ -1,7 +1,7 @@
 package graph
 
 import (
-	"github.com/ringecosystem/degov-apps/internal/services"
+	"github.com/ringecosystem/degov-apps/services"
 )
 
 // This file will not be regenerated automatically.

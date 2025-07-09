@@ -52,3 +52,8 @@ setup: deps docker-up
 	@sleep 2
 	@echo "Development environment ready!"
 	@echo "Run 'make run' to start the application"
+
+reset: docker-down clean setup serve
+	@echo "Resetting development environment..."
+	@sleep 2
+	@echo "Development environment reset!"

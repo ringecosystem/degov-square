@@ -1,13 +1,21 @@
-CREATE TABLE IF NOT EXISTS users (
-    id SERIAL PRIMARY KEY,
-    username VARCHAR(255) UNIQUE NOT NULL,
-    email VARCHAR(255) UNIQUE NOT NULL,
-    password VARCHAR(255) NOT NULL,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    deleted_at TIMESTAMP NULL
-);
+create table
+  if not exists dgv_user (
+    id varchar(50) not null,
+    address varchar(255) not null,
+    email varchar(255),
+    primary key (id)
+  );
 
-CREATE INDEX IF NOT EXISTS idx_users_deleted_at ON users(deleted_at);
-CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
-CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+create unique index uq_dgv_user_address on dgv_user (address);
+
+comment on table dgv_user is 'User table for degov apps';
+
+comment on column dgv_user.address is 'wallet address';
+
+
+
+-- create table if not exists dgv_dao(
+--   id varchar(50) not null,
+
+-- );
+
