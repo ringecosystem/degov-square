@@ -9,7 +9,7 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/ringecosystem/degov-apps/internal/database"
-	"github.com/ringecosystem/degov-apps/internal/models"
+	"github.com/ringecosystem/degov-apps/models"
 )
 
 type UserService struct {
