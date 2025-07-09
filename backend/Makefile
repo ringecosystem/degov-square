@@ -43,14 +43,12 @@ deps:
 # start development environment
 dev: docker-up
 	@echo "Waiting for database to be ready..."
-	@sleep 5
-	@make migrate
+	@sleep 2
 	@make run
 
 # complete setup for development environment
 setup: deps docker-up
 	@echo "Setting up development environment..."
-	@sleep 5
-	@make migrate
+	@sleep 2
 	@echo "Development environment ready!"
 	@echo "Run 'make run' to start the application"
