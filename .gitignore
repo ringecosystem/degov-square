@@ -46,3 +46,4 @@
 build
 dist
 target
+.data
