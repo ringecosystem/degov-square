@@ -42,7 +42,7 @@ comment on column dgv_dao.config_link is 'DAO config link';
 comment on column dgv_dao.time_sync is 'last sync time';
 
 create table
-  if not exists dgv_like_dao (
+  if not exists dgv_user_liked_dao (
     id varchar(50) not null,
     dao_code varchar(50) not null,
     user_id varchar(50) not null,
@@ -121,6 +121,7 @@ create table
   if not exists dgv_user_channel (
     id varchar(50) not null,
     user_id varchar(50) not null,
+    verified int not null default 0, -- whether the channel is verified
     channel_type varchar(50) not null, -- { EMAIL, SMS, PUSH }
     channel_value varchar(500) not null, -- email address or phone number
     payload text, -- additional data for the channel
