@@ -46,7 +46,7 @@ comment on column dgv_dao.time_syncd is 'last syncd time';
 create table
   if not exists dgv_user_liked_dao (
     id varchar(50) not null,
-    dao_code varchar(50) not null,
+    dao_code varchar(255) not null,
     user_id varchar(50) not null,
     user_address varchar(255) not null,
     ctime timestamp default now (),
@@ -69,7 +69,7 @@ create table
   if not exists dgv_user_subscribed_dao (
     id varchar(50) not null,
     chain_id int not null,
-    dao_code varchar(50) not null,
+    dao_code varchar(255) not null,
     user_id varchar(50) not null,
     user_address varchar(255) not null,
     state varchar(50) not null, -- { SUBSCRIBED, UNSUBSCRIBED }
@@ -99,7 +99,7 @@ create table
   if not exists dgv_user_subscribed_proposal (
     id varchar(50) not null,
     chain_id int not null,
-    dao_code varchar(50) not null,
+    dao_code varchar(255) not null,
     user_id varchar(50) not null,
     user_address varchar(255) not null,
     state varchar(50) not null, -- { ACTIVE, INACTIVE }
@@ -118,7 +118,7 @@ create table
     chain_id int not null,
     chain_name varchar(255) not null,
     dao_name varchar(255) not null,
-    dao_code varchar(50) not null,
+    dao_code varchar(255) not null,
     type varchar(50) not null, -- { NEW_PROPOSAL, VOTE, STATUS, VOTE_END_REMINDER }
     target_id varchar(255), -- proposal id or vote id
     user_id varchar(50) not null,
