@@ -54,17 +54,17 @@ create table
     primary key (id)
   );
 
-create unique index uq_dgv_like_dao_code_uid on dgv_like_dao (dao_code, user_id);
+create unique index uq_dgv_user_liked_dao_code_uid on dgv_user_liked_dao (dao_code, user_id);
 
-create unique index uq_dgv_like_dao_code_address on dgv_like_dao (dao_code, user_address);
+create unique index uq_dgv_user_liked_dao_code_address on dgv_user_liked_dao (dao_code, user_address);
 
-comment on table dgv_like_dao is 'DAO like table';
+comment on table dgv_user_liked_dao is 'DAO like table';
 
-comment on column dgv_like_dao.dao_code is 'DAO code';
+comment on column dgv_user_liked_dao.dao_code is 'DAO code';
 
-comment on column dgv_like_dao.user_id is 'user id';
+comment on column dgv_user_liked_dao.user_id is 'user id';
 
-comment on column dgv_like_dao.user_address is 'user address';
+comment on column dgv_user_liked_dao.user_address is 'user address';
 
 create table
   if not exists dgv_user_subscribed_dao (

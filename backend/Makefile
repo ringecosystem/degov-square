@@ -12,19 +12,19 @@ help:
 	@echo "  generate    - Generate GraphQL code"
 
 build:
-	go build -o build/server .
+	go build -o bin/server cmd/main.go
 
 run:
-	go run server.go
+	go run cmd/main.go
 
 serve: build
-	./build/server $@
+	./bin/server
 
 test:
 	go test ./...
 
 clean:
-	rm -rf build/
+	rm -rf bin/
 	rm -rf .data/
 
 docker-up:
