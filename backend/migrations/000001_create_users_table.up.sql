@@ -19,9 +19,11 @@ create table
     chain_name varchar(255) not null,
     name varchar(255) not null,
     code varchar(255) not null,
+    seq int not null default 0,
     config_link varchar(255) not null,
-    time_sync timestamp,
+    time_syncd timestamp,
     ctime timestamp default now (),
+    utime timestamp,
     primary key (id)
   );
 
@@ -39,18 +41,21 @@ comment on column dgv_dao.code is 'DAO code';
 
 comment on column dgv_dao.config_link is 'DAO config link';
 
-comment on column dgv_dao.time_sync is 'last sync time';
+comment on column dgv_dao.time_syncd is 'last syncd time';
 
 create table
   if not exists dgv_user_liked_dao (
     id varchar(50) not null,
     dao_code varchar(50) not null,
     user_id varchar(50) not null,
+    user_address varchar(255) not null,
     ctime timestamp default now (),
     primary key (id)
   );
 
-create unique index uq_dgv_like_dao on dgv_like_dao (dao_code, user_id);
+create unique index uq_dgv_like_dao_code_uid on dgv_like_dao (dao_code, user_id);
+
+create unique index uq_dgv_like_dao_code_address on dgv_like_dao (dao_code, user_address);
 
 comment on table dgv_like_dao is 'DAO like table';
 
@@ -58,29 +63,54 @@ comment on column dgv_like_dao.dao_code is 'DAO code';
 
 comment on column dgv_like_dao.user_id is 'user id';
 
+comment on column dgv_like_dao.user_address is 'user address';
+
 create table
-  if not exists dgv_user_followed_dao (
+  if not exists dgv_user_subscribed_dao (
     id varchar(50) not null,
     chain_id int not null,
     dao_code varchar(50) not null,
     user_id varchar(50) not null,
+    user_address varchar(255) not null,
+    state varchar(50) not null, -- { SUBSCRIBED, UNSUBSCRIBED }
     enable_new_proposal int not null default 1,
     enable_voting_end_reminder int not null default 0,
     ctime timestamp default now (),
     primary key (id)
   );
 
-create unique index uq_dgv_notification on dgv_notification (user_id, dao_code);
+create unique index uq_dgv_user_subscribe_uid_code on dgv_user_subscribed_dao (user_id, dao_code);
 
-comment on table dgv_notification is 'Notification settings for users';
+create unique index uq_dgv_user_subscribe_address_code on dgv_user_subscribed_dao (user_address, dao_code);
 
-comment on column dgv_notification.user_id is 'user id';
+comment on table dgv_user_subscribed_dao is 'User subscribed DAO table';
 
-comment on column dgv_notification.dao_code is 'DAO code';
+comment on column dgv_user_subscribed_dao.user_id is 'user id';
 
-comment on column dgv_notification.enable_new_proposal is 'enable new proposal notification';
+comment on column dgv_user_subscribed_dao.user_address is 'user address';
 
-comment on column dgv_notification.enable_voting_end_reminder is 'enable voting end reminder';
+comment on column dgv_user_subscribed_dao.dao_code is 'DAO code';
+
+comment on column dgv_user_subscribed_dao.enable_new_proposal is 'enable new proposal notification';
+
+comment on column dgv_user_subscribed_dao.enable_voting_end_reminder is 'enable voting end reminder';
+
+create table
+  if not exists dgv_user_subscribed_proposal (
+    id varchar(50) not null,
+    chain_id int not null,
+    dao_code varchar(50) not null,
+    user_id varchar(50) not null,
+    user_address varchar(255) not null,
+    state varchar(50) not null, -- { ACTIVE, INACTIVE }
+    proposal_id varchar(255) not null,
+    ctime timestamp default now (),
+    primary key (id)
+  );
+
+comment on table dgv_user_subscribed_proposal is 'User subscribed proposal table';
+
+comment on column dgv_user_subscribed_proposal.user_address is 'user address';
 
 create table
   if not exists dgv_notification_record (
@@ -92,6 +122,7 @@ create table
     type varchar(50) not null, -- { NEW_PROPOSAL, VOTE, STATUS, VOTE_END_REMINDER }
     target_id varchar(255), -- proposal id or vote id
     user_id varchar(50) not null,
+    user_address varchar(255) not null,
     status varchar(50) not null, -- { SENT_OK, SENT_FAIL }
     message text,
     retry_times int not null default 0, -- number of times to retry sending
@@ -121,6 +152,7 @@ create table
   if not exists dgv_user_channel (
     id varchar(50) not null,
     user_id varchar(50) not null,
+    user_address varchar(255) not null,
     verified int not null default 0, -- whether the channel is verified
     channel_type varchar(50) not null, -- { EMAIL, SMS, PUSH }
     channel_value varchar(500) not null, -- email address or phone number

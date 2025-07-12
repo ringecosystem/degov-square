@@ -22,11 +22,13 @@ type Dao {
   chainName: String!
   name: String!
   code: String!
+  seq: Int!
   configLink: String!
-  timeSync: Time
+  timeSyncd: Time
   ctime: Time!
-  likedByUsers: [UserLikedDao!]!
-  followedByUsers: [UserFollowedDao!]!
+  utime: Time
+  liked: Boolean
+  subscribed: Boolean
 }
 
 type UserLikedDao {
@@ -113,7 +115,6 @@ input GetNonceInput {
   length: Int
 }
 
-
 input LoginInput {
   message: String!
   signature: String!
@@ -124,6 +125,9 @@ input LoginInput {
 type Query {
   # Auth queries
   nonce(input: GetNonceInput!): String!
+
+  # DAO queries
+  daos: [Dao!]!
 
   # # User queries
   # users: [User!]!

@@ -70,11 +70,11 @@ func (s *AuthService) Login(input model.LoginInput) (model.LoginOutput, error) {
 	//# must open
 	nonce := message.GetNonce()
 	slog.Debug("login nonce", "nonce", nonce)
-	checkNonce := true
+	enableCheckNonce := true
 	if internal.GetAppEnv().IsDevelopment() {
-		checkNonce = internal.GetEnvString("UNSAFE_ENABLE_VERIFY_NONCE_ON_LOGIN", "true") == "true"
+		enableCheckNonce = internal.GetEnvString("UNSAFE_ENABLE_VERIFY_NONCE_ON_LOGIN", "true") == "true"
 	}
-	if checkNonce {
+	if enableCheckNonce {
 		// check nonce in cache
 		_, found := s.nonceCache.Get(nonce)
 		if !found {
