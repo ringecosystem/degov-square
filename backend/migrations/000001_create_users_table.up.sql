@@ -20,6 +20,7 @@ create table
     name varchar(255) not null,
     code varchar(255) not null,
     seq int not null default 0,
+    state varchar(50) not null, -- { ACTIVE, INACTIVE }
     config_link varchar(255) not null,
     time_syncd timestamp,
     ctime timestamp default now (),
