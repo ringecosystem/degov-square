@@ -77,8 +77,6 @@ type UserChannel {
   user: User!
 }
 
-
-
 ### === outputs
 
 type GetNonceOutput {
@@ -111,55 +109,10 @@ enum ChannelType {
 
 ### === inputs
 
-# input CreateUserInput {
-#   address: String!
-#   email: String
-# }
+input GetNonceInput {
+  length: Int
+}
 
-# input UpdateUserInput {
-#   id: ID!
-#   email: String
-# }
-
-# input CreateDaoInput {
-#   chainId: Int!
-#   chainName: String!
-#   name: String!
-#   code: String!
-#   configLink: String!
-# }
-
-# input LikeDaoInput {
-#   userId: String!
-#   daoCode: String!
-# }
-
-# input FollowDaoInput {
-#   userId: String!
-#   chainId: Int!
-#   daoCode: String!
-#   enableNewProposal: Int
-#   enableVotingEndReminder: Int
-# }
-
-# input CreateUserChannelInput {
-#   userId: String!
-#   channelType: ChannelType!
-#   channelValue: String!
-#   payload: String
-# }
-
-# input CreateNotificationRecordInput {
-#   chainId: Int!
-#   chainName: String!
-#   daoName: String!
-#   daoCode: String!
-#   type: NotificationType!
-#   targetId: String
-#   userId: String!
-#   status: NotificationStatus!
-#   message: String
-# }
 
 input LoginInput {
   message: String!
@@ -169,9 +122,8 @@ input LoginInput {
 ### ==== graphql
 
 type Query {
-
   # Auth queries
-  nonce: String!
+  nonce(input: GetNonceInput!): String!
 
   # # User queries
   # users: [User!]!

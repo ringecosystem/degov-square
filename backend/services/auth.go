@@ -4,12 +4,14 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/patrickmn/go-cache"
+	"github.com/ringecosystem/degov-apps/graph/model"
 	"github.com/ringecosystem/degov-apps/internal"
-	"github.com/ringecosystem/degov-apps/types"
+	"github.com/ringecosystem/degov-apps/internal/database"
 	"github.com/spruceid/siwe-go"
 	"gorm.io/gorm"
 )
@@ -19,18 +21,23 @@ type AuthService struct {
 	nonceCache *cache.Cache
 }
 
-func NewAuthService(db *gorm.DB) *AuthService {
+func NewAuthService() *AuthService {
 	c := cache.New(3*time.Minute, 5*time.Minute)
 
 	return &AuthService{
-		db:         db,
+		db:         database.GetDB(),
 		nonceCache: c,
 	}
 }
 
-func (s *AuthService) Nonce() (string, error) {
-	// Generate 32 random bytes
-	bytes := make([]byte, 32)
+func (s *AuthService) Nonce(input model.GetNonceInput) (string, error) {
+	var length int
+	if input.Length == nil || *input.Length < 6 {
+		length = 32
+	} else {
+		length = int(*input.Length)
+	}
+	bytes := make([]byte, length)
 	_, err := rand.Read(bytes)
 	if err != nil {
 		return "", err
@@ -43,34 +50,40 @@ func (s *AuthService) Nonce() (string, error) {
 	return nonce, nil
 }
 
-func (s *AuthService) Login(input types.LoginInput) (types.LoginOutput, error) {
+func (s *AuthService) Login(input model.LoginInput) (model.LoginOutput, error) {
 	message, err := siwe.ParseMessage(input.Message)
 	if err != nil {
 		err = fmt.Errorf("parse message err: %v", err)
-		return types.LoginOutput{}, err
+		return model.LoginOutput{}, err
 	}
 	verify, err := message.ValidNow()
 	if err != nil {
 		err = fmt.Errorf("message valid failed: %v", err)
-		return types.LoginOutput{}, err
+		return model.LoginOutput{}, err
 	}
 
 	if !verify {
 		err = fmt.Errorf("verify message fail")
-		return types.LoginOutput{}, err
+		return model.LoginOutput{}, err
 	}
 
+	//# must open
 	nonce := message.GetNonce()
-
-	// check nonce in cache
-	_, found := s.nonceCache.Get(nonce)
-	if !found {
-		err = fmt.Errorf("invalid or expired nonce")
-		return types.LoginOutput{}, err
+	slog.Debug("login nonce", "nonce", nonce)
+	checkNonce := true
+	if internal.GetAppEnv().IsDevelopment() {
+		checkNonce = internal.GetEnvString("UNSAFE_ENABLE_VERIFY_NONCE_ON_LOGIN", "true") == "true"
 	}
-
-	// After nonce verification, delete it from cache (one-time use)
-	s.nonceCache.Delete(nonce)
+	if checkNonce {
+		// check nonce in cache
+		_, found := s.nonceCache.Get(nonce)
+		if !found {
+			err = fmt.Errorf("invalid or expired nonce")
+			return model.LoginOutput{}, err
+		}
+		// After nonce verification, delete it from cache (one-time use)
+		s.nonceCache.Delete(nonce)
+	}
 
 	// Create JWT token with claims
 	claims := jwt.MapClaims{
@@ -86,10 +99,10 @@ func (s *AuthService) Login(input types.LoginInput) (types.LoginOutput, error) {
 	tokenString, err := token.SignedString(secretKey)
 	if err != nil {
 		err = fmt.Errorf("generate token failed: %v", err)
-		return types.LoginOutput{}, err
+		return model.LoginOutput{}, err
 	}
 
-	return types.LoginOutput{
+	return model.LoginOutput{
 		Token: tokenString,
 	}, nil
 }
