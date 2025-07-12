@@ -28,11 +28,30 @@ export function useChainInfo() {
       chainInfo
         ?.filter((v: any) => !!v?.evmInfo)
         .forEach((v: any) => {
+          const rawIcon = v.icon;
+          let processedIcon = rawIcon;
+
+          // Handle icon path conversion
+          if (rawIcon && typeof rawIcon === 'string') {
+            // If it's already an absolute URL, keep as is
+            if (rawIcon.startsWith('http://') || rawIcon.startsWith('https://')) {
+              processedIcon = rawIcon;
+            }
+            // If it's a relative path starting with /assets/, convert to SubWallet ChainList absolute URL
+            else if (rawIcon.startsWith('/assets/')) {
+              processedIcon = `https://raw.githubusercontent.com/Koniverse/SubWallet-ChainList/master/packages/chain-list-assets/public${rawIcon}`;
+            }
+            // For other relative paths, keep as is (might be local assets)
+            else {
+              processedIcon = rawIcon;
+            }
+          }
+
           obj[v?.evmInfo?.evmChainId] = {
             name: v.name,
             blockExplorer: v.evmInfo.blockExplorer,
             chainId: v.evmInfo.evmChainId,
-            icon: v.icon
+            icon: processedIcon
           };
         });
       return obj;
