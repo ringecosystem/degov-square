@@ -11,7 +11,9 @@ import (
 
 	"github.com/ringecosystem/degov-apps/internal"
 	"github.com/ringecosystem/degov-apps/internal/database"
+	"github.com/ringecosystem/degov-apps/internal/utils"
 	"github.com/ringecosystem/degov-apps/models"
+	"github.com/ringecosystem/degov-apps/types"
 )
 
 type DaoSyncTask struct {
@@ -20,16 +22,7 @@ type DaoSyncTask struct {
 
 // DaoRegistryConfig represents the structure of the config.yml file
 type DaoRegistryConfig map[string][]struct {
-	Name   string `yaml:"name"`
-	Code   string `yaml:"code"`
 	Config string `yaml:"config"`
-}
-
-// DaoConfig represents the structure of individual DAO config files
-type DaoConfig struct {
-	ChainID int    `yaml:"chain_id"`
-	Name    string `yaml:"name"`
-	// Add other fields from DAO config as needed
 }
 
 // NewDaoSyncTask creates a new DAO sync task
@@ -62,57 +55,46 @@ func (t *DaoSyncTask) SyncDaos() error {
 
 	slog.Info("Successfully fetched registry config", "chains", len(registryConfig))
 
-	// Get chain ID mappings
-	chainIDMap := t.getChainIDMap()
-
 	// Track active DAO codes for marking inactive ones
 	activeDaoCodes := make(map[string]bool)
 
 	// Process each chain and its DAOs
 	for chainName, daos := range registryConfig {
-		chainID, exists := chainIDMap[chainName]
-		if !exists {
-			slog.Warn("Unknown chain name, skipping", "chain", chainName)
-			continue
-		}
-
 		for _, daoInfo := range daos {
-			activeDaoCodes[daoInfo.Code] = true
-
-			// Fetch DAO config details
+			// Fetch DAO config details first to get the actual DAO information
 			daoConfig, err := t.fetchDaoConfig(daoInfo.Config)
 			if err != nil {
-				slog.Error("Failed to fetch DAO config", "dao", daoInfo.Code, "error", err)
+				slog.Error("Failed to fetch DAO config", "config_url", daoInfo.Config, "error", err)
 				continue
 			}
+
+			// Skip if essential fields are missing
+			if daoConfig.Code == "" || daoConfig.Name == "" {
+				slog.Warn("DAO config missing essential fields", "config_url", daoInfo.Config)
+				continue
+			}
+
+			activeDaoCodes[daoConfig.Code] = true
 
 			// Upsert DAO in database
 			dao := &models.Dao{
 				ID:         internal.NextIDString(),
-				ChainID:    chainID,
-				ChainName:  chainName,
-				Name:       daoInfo.Name,
-				Code:       daoInfo.Code,
+				ChainID:    daoConfig.Chain.ID,
+				ChainName:  daoConfig.Chain.Name,
+				Name:       daoConfig.Name,
+				Code:       daoConfig.Code,
 				Seq:        0,
 				State:      "ACTIVE",
 				ConfigLink: daoInfo.Config,
-				TimeSync:   timePtr(time.Now()),
-			}
-
-			// Override with config values if available
-			if daoConfig.ChainID != 0 {
-				dao.ChainID = daoConfig.ChainID
-			}
-			if daoConfig.Name != "" {
-				dao.Name = daoConfig.Name
+				TimeSyncd:  utils.TimePtrNow(),
 			}
 
 			if err := t.upsertDao(dao); err != nil {
-				slog.Error("Failed to upsert DAO", "dao", daoInfo.Code, "error", err)
+				slog.Error("Failed to upsert DAO", "dao", daoConfig.Code, "error", err)
 				continue
 			}
 
-			slog.Debug("Successfully synced DAO", "dao", daoInfo.Code, "chain", chainName)
+			slog.Debug("Successfully synced DAO", "dao", daoConfig.Code, "chain", chainName)
 		}
 	}
 
@@ -153,7 +135,7 @@ func (t *DaoSyncTask) fetchRegistryConfig() (DaoRegistryConfig, error) {
 }
 
 // fetchDaoConfig fetches and parses individual DAO configuration
-func (t *DaoSyncTask) fetchDaoConfig(configURL string) (*DaoConfig, error) {
+func (t *DaoSyncTask) fetchDaoConfig(configURL string) (*types.DaoConfig, error) {
 	resp, err := http.Get(configURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch DAO config: %w", err)
@@ -164,26 +146,13 @@ func (t *DaoSyncTask) fetchDaoConfig(configURL string) (*DaoConfig, error) {
 		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 	}
 
-	var config DaoConfig
+	var config types.DaoConfig
 	decoder := yaml.NewDecoder(resp.Body)
 	if err := decoder.Decode(&config); err != nil {
 		return nil, fmt.Errorf("failed to parse DAO config YAML: %w", err)
 	}
 
 	return &config, nil
-}
-
-// getChainIDMap returns a mapping of chain names to chain IDs
-func (t *DaoSyncTask) getChainIDMap() map[string]int {
-	return map[string]int{
-		"darwinia": 46,    // Darwinia chain ID
-		"ethereum": 1,     // Ethereum mainnet
-		"polygon":  137,   // Polygon
-		"arbitrum": 42161, // Arbitrum One
-		"optimism": 10,    // Optimism
-		"bsc":      56,    // Binance Smart Chain
-		// Add more chains as needed
-	}
 }
 
 // upsertDao inserts or updates a DAO in the database
@@ -202,7 +171,7 @@ func (t *DaoSyncTask) upsertDao(dao *models.Dao) error {
 	// Update existing DAO
 	dao.ID = existingDao.ID
 	dao.CTime = existingDao.CTime
-	dao.UTime = timePtr(time.Now())
+	dao.UTime = utils.TimePtrNow()
 
 	return t.db.Save(dao).Error
 }
@@ -218,7 +187,7 @@ func (t *DaoSyncTask) markInactiveDAOs(activeCodes map[string]bool) error {
 		if !activeCodes[dao.Code] && dao.State != "INACTIVE" {
 			slog.Info("Marking DAO as inactive", "dao", dao.Code)
 			dao.State = "INACTIVE"
-			dao.UTime = timePtr(time.Now())
+			dao.UTime = utils.TimePtrNow()
 			if err := t.db.Save(&dao).Error; err != nil {
 				slog.Error("Failed to mark DAO as inactive", "dao", dao.Code, "error", err)
 			}
@@ -226,9 +195,4 @@ func (t *DaoSyncTask) markInactiveDAOs(activeCodes map[string]bool) error {
 	}
 
 	return nil
-}
-
-// timePtr returns a pointer to the given time
-func timePtr(t time.Time) *time.Time {
-	return &t
 }

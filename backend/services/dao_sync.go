@@ -12,6 +12,7 @@ import (
 
 	"github.com/ringecosystem/degov-apps/internal"
 	"github.com/ringecosystem/degov-apps/internal/database"
+	"github.com/ringecosystem/degov-apps/internal/utils"
 	"github.com/ringecosystem/degov-apps/models"
 )
 
@@ -106,7 +107,7 @@ func (s *DaoSyncService) SyncDaos() error {
 				Seq:        0,
 				State:      "ACTIVE",
 				ConfigLink: daoInfo.Config,
-				TimeSync:   timePtr(time.Now()),
+				TimeSyncd:  utils.TimePtrNow(),
 			}
 
 			// Override with config values if available
@@ -208,7 +209,7 @@ func (s *DaoSyncService) upsertDao(dao *models.Dao) error {
 	// Update existing DAO
 	dao.ID = existingDao.ID
 	dao.CTime = existingDao.CTime
-	dao.UTime = timePtr(time.Now())
+	dao.UTime = utils.TimePtrNow()
 
 	return s.db.Save(dao).Error
 }
@@ -224,7 +225,7 @@ func (s *DaoSyncService) markInactiveDAOs(activeCodes map[string]bool) error {
 		if !activeCodes[dao.Code] && dao.State != "INACTIVE" {
 			slog.Info("Marking DAO as inactive", "dao", dao.Code)
 			dao.State = "INACTIVE"
-			dao.UTime = timePtr(time.Now())
+			dao.UTime = utils.TimePtrNow()
 			if err := s.db.Save(&dao).Error; err != nil {
 				slog.Error("Failed to mark DAO as inactive", "dao", dao.Code, "error", err)
 			}
@@ -232,9 +233,4 @@ func (s *DaoSyncService) markInactiveDAOs(activeCodes map[string]bool) error {
 	}
 
 	return nil
-}
-
-// timePtr returns a pointer to the given time
-func timePtr(t time.Time) *time.Time {
-	return &t
 }

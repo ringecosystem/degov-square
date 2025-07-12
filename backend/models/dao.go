@@ -13,7 +13,7 @@ type Dao struct {
 	Seq        int        `gorm:"column:seq;not null;default:0" json:"seq"`
 	State      string     `gorm:"column:state;type:varchar(50);not null" json:"state"`
 	ConfigLink string     `gorm:"column:config_link;type:varchar(255);not null" json:"config_link"`
-	TimeSync   *time.Time `gorm:"column:time_syncd" json:"time_syncd,omitempty"`
+	TimeSyncd  *time.Time `gorm:"column:time_syncd" json:"time_syncd,omitempty"`
 	CTime      time.Time  `gorm:"column:ctime;default:now()" json:"ctime"`
 	UTime      *time.Time `gorm:"column:utime" json:"utime,omitempty"`
 }
