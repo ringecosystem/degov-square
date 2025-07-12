@@ -47,7 +47,7 @@ dev: docker-up
 	@make run
 
 # complete setup for development environment
-setup: deps docker-up
+setup: deps generate docker-up
 	@echo "Setting up development environment..."
 	@sleep 2
 	@echo "Development environment ready!"

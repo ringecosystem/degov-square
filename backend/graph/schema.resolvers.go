@@ -11,94 +11,14 @@ import (
 	"github.com/ringecosystem/degov-apps/graph/model"
 )
 
-// Register is the resolver for the register field.
-func (r *mutationResolver) Register(ctx context.Context, input model.RegisterInput) (*model.AuthPayload, error) {
-	user, err := r.userService.RegisterUser(input.Username, input.Email, input.Password)
-	if err != nil {
-		return nil, err
-	}
-
-	return &model.AuthPayload{
-		User: &model.User{
-			ID:        fmt.Sprintf("%d", user.ID),
-			Username:  user.Username,
-			Email:     user.Email,
-			CreatedAt: user.CreatedAt.Format("2006-01-02T15:04:05Z"),
-			UpdatedAt: user.UpdatedAt.Format("2006-01-02T15:04:05Z"),
-		},
-		Message: "User registered successfully",
-	}, nil
-}
-
 // Login is the resolver for the login field.
-func (r *mutationResolver) Login(ctx context.Context, input model.LoginInput) (*model.AuthPayload, error) {
-	user, err := r.userService.LoginUser(input.Username, input.Password)
-	if err != nil {
-		return nil, err
-	}
-
-	return &model.AuthPayload{
-		User: &model.User{
-			ID:        fmt.Sprintf("%d", user.ID),
-			Username:  user.Username,
-			Email:     user.Email,
-			CreatedAt: user.CreatedAt.Format("2006-01-02T15:04:05Z"),
-			UpdatedAt: user.UpdatedAt.Format("2006-01-02T15:04:05Z"),
-		},
-		Message: "User logged in successfully",
-	}, nil
+func (r *mutationResolver) Login(ctx context.Context, input model.LoginInput) (*model.LoginOutput, error) {
+	panic(fmt.Errorf("not implemented: Login - login"))
 }
 
-// Users is the resolver for the users field.
-func (r *queryResolver) Users(ctx context.Context) ([]*model.User, error) {
-	users, err := r.userService.GetUsers()
-	if err != nil {
-		return nil, err
-	}
-
-	var result []*model.User
-	for _, user := range users {
-		result = append(result, &model.User{
-			ID:        fmt.Sprintf("%d", user.ID),
-			Username:  user.Username,
-			Email:     user.Email,
-			CreatedAt: user.CreatedAt.Format("2006-01-02T15:04:05Z"),
-			UpdatedAt: user.UpdatedAt.Format("2006-01-02T15:04:05Z"),
-		})
-	}
-
-	return result, nil
-}
-
-// User is the resolver for the user field.
-func (r *queryResolver) User(ctx context.Context, id string) (*model.User, error) {
-	var userID uint
-	if _, err := fmt.Sscanf(id, "%d", &userID); err != nil {
-		return nil, fmt.Errorf("invalid user ID: %v", err)
-	}
-
-	user, err := r.userService.GetUserByID(userID)
-	if err != nil {
-		return nil, err
-	}
-
-	return &model.User{
-		ID:        fmt.Sprintf("%d", user.ID),
-		Username:  user.Username,
-		Email:     user.Email,
-		CreatedAt: user.CreatedAt.Format("2006-01-02T15:04:05Z"),
-		UpdatedAt: user.UpdatedAt.Format("2006-01-02T15:04:05Z"),
-	}, nil
-}
-
-// Me is the resolver for the me field.
-func (r *queryResolver) Me(ctx context.Context) (*model.User, error) {
-	panic(fmt.Errorf("not implemented: Me - me"))
-}
-
-// UserRegistered is the resolver for the userRegistered field.
-func (r *subscriptionResolver) UserRegistered(ctx context.Context) (<-chan *model.User, error) {
-	panic(fmt.Errorf("not implemented: UserRegistered - userRegistered"))
+// Nonce is the resolver for the nonce field.
+func (r *queryResolver) Nonce(ctx context.Context) (string, error) {
+	panic(fmt.Errorf("not implemented: Nonce - nonce"))
 }
 
 // Mutation returns MutationResolver implementation.
@@ -107,9 +27,115 @@ func (r *Resolver) Mutation() MutationResolver { return &mutationResolver{r} }
 // Query returns QueryResolver implementation.
 func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
 
-// Subscription returns SubscriptionResolver implementation.
-func (r *Resolver) Subscription() SubscriptionResolver { return &subscriptionResolver{r} }
-
 type mutationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
+
+// !!! WARNING !!!
+// The code below was going to be deleted when updating resolvers. It has been copied here so you have
+// one last chance to move it out of harms way if you want. There are two reasons this happens:
+//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
+//    it when you're done.
+//  - You have helper methods in this file. Move them out to keep these resolver files clean.
+/*
+	func (r *mutationResolver) CreateUser(ctx context.Context, input model.CreateUserInput) (*model.User, error) {
+	user, err := r.userService.CreateUser(input.Address, input.Email)
+	if err != nil {
+		return nil, err
+	}
+
+	return &model.User{
+		ID:      user.ID,
+		Address: user.Address,
+		Email:   user.Email,
+	}, nil
+}
+func (r *mutationResolver) UpdateUser(ctx context.Context, input model.UpdateUserInput) (*model.User, error) {
+	user, err := r.userService.UpdateUser(input.ID, input.Email)
+	if err != nil {
+		return nil, err
+	}
+
+	return &model.User{
+		ID:      user.ID,
+		Address: user.Address,
+		Email:   user.Email,
+	}, nil
+}
+func (r *mutationResolver) DeleteUser(ctx context.Context, id string) (bool, error) {
+	panic(fmt.Errorf("not implemented: DeleteUser - deleteUser"))
+}
+func (r *mutationResolver) CreateDao(ctx context.Context, input model.CreateDaoInput) (*model.Dao, error) {
+	panic(fmt.Errorf("not implemented: CreateDao - createDao"))
+}
+func (r *mutationResolver) UpdateDao(ctx context.Context, id string, input model.CreateDaoInput) (*model.Dao, error) {
+	panic(fmt.Errorf("not implemented: UpdateDao - updateDao"))
+}
+func (r *mutationResolver) DeleteDao(ctx context.Context, id string) (bool, error) {
+	panic(fmt.Errorf("not implemented: DeleteDao - deleteDao"))
+}
+func (r *mutationResolver) LikeDao(ctx context.Context, input model.LikeDaoInput) (*model.UserLikedDao, error) {
+	panic(fmt.Errorf("not implemented: LikeDao - likeDao"))
+}
+func (r *mutationResolver) UnlikeDao(ctx context.Context, userID string, daoCode string) (bool, error) {
+	panic(fmt.Errorf("not implemented: UnlikeDao - unlikeDao"))
+}
+func (r *mutationResolver) FollowDao(ctx context.Context, input model.FollowDaoInput) (*model.UserFollowedDao, error) {
+	panic(fmt.Errorf("not implemented: FollowDao - followDao"))
+}
+func (r *mutationResolver) UnfollowDao(ctx context.Context, userID string, daoCode string) (bool, error) {
+	panic(fmt.Errorf("not implemented: UnfollowDao - unfollowDao"))
+}
+func (r *mutationResolver) CreateUserChannel(ctx context.Context, input model.CreateUserChannelInput) (*model.UserChannel, error) {
+	panic(fmt.Errorf("not implemented: CreateUserChannel - createUserChannel"))
+}
+func (r *mutationResolver) UpdateUserChannel(ctx context.Context, id string, input model.CreateUserChannelInput) (*model.UserChannel, error) {
+	panic(fmt.Errorf("not implemented: UpdateUserChannel - updateUserChannel"))
+}
+func (r *mutationResolver) DeleteUserChannel(ctx context.Context, id string) (bool, error) {
+	panic(fmt.Errorf("not implemented: DeleteUserChannel - deleteUserChannel"))
+}
+func (r *mutationResolver) VerifyUserChannel(ctx context.Context, id string) (*model.UserChannel, error) {
+	panic(fmt.Errorf("not implemented: VerifyUserChannel - verifyUserChannel"))
+}
+func (r *mutationResolver) CreateNotificationRecord(ctx context.Context, input model.CreateNotificationRecordInput) (*model.NotificationRecord, error) {
+	panic(fmt.Errorf("not implemented: CreateNotificationRecord - createNotificationRecord"))
+}
+func (r *queryResolver) Users(ctx context.Context) ([]*model.User, error) {
+	panic(fmt.Errorf("not implemented: Users - users"))
+}
+func (r *queryResolver) User(ctx context.Context, id string) (*model.User, error) {
+	panic(fmt.Errorf("not implemented: User - user"))
+}
+func (r *queryResolver) UserByAddress(ctx context.Context, address string) (*model.User, error) {
+	panic(fmt.Errorf("not implemented: UserByAddress - userByAddress"))
+}
+func (r *queryResolver) Daos(ctx context.Context) ([]*model.Dao, error) {
+	panic(fmt.Errorf("not implemented: Daos - daos"))
+}
+func (r *queryResolver) Dao(ctx context.Context, id string) (*model.Dao, error) {
+	panic(fmt.Errorf("not implemented: Dao - dao"))
+}
+func (r *queryResolver) DaoByCode(ctx context.Context, code string) (*model.Dao, error) {
+	panic(fmt.Errorf("not implemented: DaoByCode - daoByCode"))
+}
+func (r *queryResolver) UserLikedDaos(ctx context.Context, userID string) ([]*model.UserLikedDao, error) {
+	panic(fmt.Errorf("not implemented: UserLikedDaos - userLikedDaos"))
+}
+func (r *queryResolver) UserFollowedDaos(ctx context.Context, userID string) ([]*model.UserFollowedDao, error) {
+	panic(fmt.Errorf("not implemented: UserFollowedDaos - userFollowedDaos"))
+}
+func (r *queryResolver) NotificationRecords(ctx context.Context, userID string) ([]*model.NotificationRecord, error) {
+	panic(fmt.Errorf("not implemented: NotificationRecords - notificationRecords"))
+}
+func (r *queryResolver) UserChannels(ctx context.Context, userID string) ([]*model.UserChannel, error) {
+	panic(fmt.Errorf("not implemented: UserChannels - userChannels"))
+}
+func (r *subscriptionResolver) NotificationCreated(ctx context.Context, userID string) (<-chan *model.NotificationRecord, error) {
+	panic(fmt.Errorf("not implemented: NotificationCreated - notificationCreated"))
+}
+func (r *subscriptionResolver) DaoUpdated(ctx context.Context, daoCode string) (<-chan *model.Dao, error) {
+	panic(fmt.Errorf("not implemented: DaoUpdated - daoUpdated"))
+}
+func (r *Resolver) Subscription() SubscriptionResolver { return &subscriptionResolver{r} }
 type subscriptionResolver struct{ *Resolver }
+*/

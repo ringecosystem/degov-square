@@ -1,49 +1,229 @@
-# GraphQL schema for User Management
+# GraphQL schema for DeGov Apps
 #
 # https://gqlgen.com/getting-started/
 
+scalar Time
 
-### ==== entity
+### ==== entities
+
 type User {
   id: ID!
-  username: String!
-  email: String!
-  createdAt: String!
-  updatedAt: String!
+  address: String!
+  email: String
+  likedDaos: [UserLikedDao!]!
+  followedDaos: [UserFollowedDao!]!
+  channels: [UserChannel!]!
+  notificationRecords: [NotificationRecord!]!
 }
 
-type AuthPayload {
+type Dao {
+  id: ID!
+  chainId: Int!
+  chainName: String!
+  name: String!
+  code: String!
+  configLink: String!
+  timeSync: Time
+  ctime: Time!
+  likedByUsers: [UserLikedDao!]!
+  followedByUsers: [UserFollowedDao!]!
+}
+
+type UserLikedDao {
+  id: ID!
+  daoCode: String!
+  userId: String!
+  ctime: Time!
   user: User!
-  message: String!
+  dao: Dao!
 }
 
-### === types
-
-input RegisterInput {
-  username: String!
-  email: String!
-  password: String!
+type UserFollowedDao {
+  id: ID!
+  chainId: Int!
+  daoCode: String!
+  userId: String!
+  enableNewProposal: Int!
+  enableVotingEndReminder: Int!
+  ctime: Time!
+  user: User!
+  dao: Dao!
 }
+
+type NotificationRecord {
+  id: ID!
+  chainId: Int!
+  chainName: String!
+  daoName: String!
+  daoCode: String!
+  type: NotificationType!
+  targetId: String
+  userId: String!
+  status: NotificationStatus!
+  message: String
+  retryTimes: Int!
+  ctime: Time!
+  user: User!
+}
+
+type UserChannel {
+  id: ID!
+  userId: String!
+  verified: Int!
+  channelType: ChannelType!
+  channelValue: String!
+  payload: String
+  ctime: Time!
+  user: User!
+}
+
+
+
+### === outputs
+
+type GetNonceOutput {
+  nonce: String!
+}
+
+type LoginOutput {
+  token: String!
+}
+
+### === enums
+
+enum NotificationType {
+  NEW_PROPOSAL
+  VOTE
+  STATUS
+  VOTE_END_REMINDER
+}
+
+enum NotificationStatus {
+  SENT_OK
+  SENT_FAIL
+}
+
+enum ChannelType {
+  EMAIL
+  SMS
+  PUSH
+}
+
+### === inputs
+
+# input CreateUserInput {
+#   address: String!
+#   email: String
+# }
+
+# input UpdateUserInput {
+#   id: ID!
+#   email: String
+# }
+
+# input CreateDaoInput {
+#   chainId: Int!
+#   chainName: String!
+#   name: String!
+#   code: String!
+#   configLink: String!
+# }
+
+# input LikeDaoInput {
+#   userId: String!
+#   daoCode: String!
+# }
+
+# input FollowDaoInput {
+#   userId: String!
+#   chainId: Int!
+#   daoCode: String!
+#   enableNewProposal: Int
+#   enableVotingEndReminder: Int
+# }
+
+# input CreateUserChannelInput {
+#   userId: String!
+#   channelType: ChannelType!
+#   channelValue: String!
+#   payload: String
+# }
+
+# input CreateNotificationRecordInput {
+#   chainId: Int!
+#   chainName: String!
+#   daoName: String!
+#   daoCode: String!
+#   type: NotificationType!
+#   targetId: String
+#   userId: String!
+#   status: NotificationStatus!
+#   message: String
+# }
 
 input LoginInput {
-  username: String!
-  password: String!
+  message: String!
+  signature: String!
 }
-
 
 ### ==== graphql
 
 type Query {
-  users: [User!]!
-  user(id: ID!): User
-  me: User
+
+  # Auth queries
+  nonce: String!
+
+  # # User queries
+  # users: [User!]!
+  # user(id: ID!): User
+  # userByAddress(address: String!): User
+
+  # # DAO queries
+  # daos: [Dao!]!
+  # dao(id: ID!): Dao
+  # daoByCode(code: String!): Dao
+
+  # # User interactions
+  # userLikedDaos(userId: String!): [UserLikedDao!]!
+  # userFollowedDaos(userId: String!): [UserFollowedDao!]!
+
+  # # Notifications
+  # notificationRecords(userId: String!): [NotificationRecord!]!
+  # userChannels(userId: String!): [UserChannel!]!
 }
 
 type Mutation {
-  register(input: RegisterInput!): AuthPayload!
-  login(input: LoginInput!): AuthPayload!
+  # Auth mutations
+  login(input: LoginInput!): LoginOutput!
+
+  # # User mutations
+  # createUser(input: CreateUserInput!): User!
+  # updateUser(input: UpdateUserInput!): User!
+  # deleteUser(id: ID!): Boolean!
+
+  # # DAO mutations
+  # createDao(input: CreateDaoInput!): Dao!
+  # updateDao(id: ID!, input: CreateDaoInput!): Dao!
+  # deleteDao(id: ID!): Boolean!
+
+  # # User interactions
+  # likeDao(input: LikeDaoInput!): UserLikedDao!
+  # unlikeDao(userId: String!, daoCode: String!): Boolean!
+  # followDao(input: FollowDaoInput!): UserFollowedDao!
+  # unfollowDao(userId: String!, daoCode: String!): Boolean!
+
+  # # Notifications
+  # createUserChannel(input: CreateUserChannelInput!): UserChannel!
+  # updateUserChannel(id: ID!, input: CreateUserChannelInput!): UserChannel!
+  # deleteUserChannel(id: ID!): Boolean!
+  # verifyUserChannel(id: ID!): UserChannel!
+
+  # createNotificationRecord(
+  #   input: CreateNotificationRecordInput!
+  # ): NotificationRecord!
 }
 
-type Subscription {
-  userRegistered: User!
-}
+# type Subscription {
+#   # notificationCreated(userId: String!): NotificationRecord!
+#   # daoUpdated(daoCode: String!): Dao!
+# }

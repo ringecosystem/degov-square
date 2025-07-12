@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"log/slog"
 	"os"
 	"strings"
 )
@@ -40,22 +41,42 @@ func (e Environment) IsStaging() bool {
 
 func GetAppEnv() Environment {
 	envVars := []string{"GO_ENV", "APP_ENV"}
-
 	for _, envVar := range envVars {
 		if env := os.Getenv(envVar); env != "" {
 			return parseEnvironment(strings.ToLower(strings.TrimSpace(env)))
 		}
 	}
-
 	return Production
 }
 
 func GetLogFormat() string {
-	logFormat := os.Getenv("LOG_FORMAT")
-	if logFormat == "" {
-		logFormat = "json"
+	return GetEnvString("LOG_FORMAT", "json")
+}
+
+func GetEnvString(name string, defaultValue ...string) string {
+	value := os.Getenv(name)
+	if value == "" {
+		if len(defaultValue) > 0 {
+			return defaultValue[0]
+		}
+		return ""
 	}
-	return strings.ToLower(strings.TrimSpace(logFormat))
+	trimmed := strings.TrimSpace(value)
+	return trimmed
+}
+
+func GetEnvStringRequired(name string, defaultValue ...string) string {
+	value := os.Getenv(name)
+	if value == "" {
+		if len(defaultValue) > 0 {
+			trimmed := strings.TrimSpace(defaultValue[0])
+			return trimmed
+		}
+		slog.Error("Required environment variable is not set or empty", slog.String("name", name))
+		os.Exit(1)
+	}
+	trimmed := strings.TrimSpace(value)
+	return trimmed
 }
 
 func parseEnvironment(env string) Environment {

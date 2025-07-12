@@ -3,9 +3,7 @@ package services
 import (
 	"errors"
 	"fmt"
-	"log/slog"
 
-	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 
 	"github.com/ringecosystem/degov-apps/internal/database"
@@ -22,83 +20,105 @@ func NewUserService() *UserService {
 	}
 }
 
-func (s *UserService) RegisterUser(username, email, password string) (*models.User, error) {
-	// check if username already exists
+func (s *UserService) Nonce() (string, error) {
+	// Generate a nonce for user authentication
+	// This is a placeholder implementation; actual nonce generation logic should be added
+	return "nonce-placeholder", nil
+}
+
+func (s *UserService) CreateUser(address string, email *string) (*models.User, error) {
+	// check if address already exists
 	var existingUser models.User
-	err := s.db.Where("username = ?", username).First(&existingUser).Error
+	err := s.db.Where("address = ?", address).First(&existingUser).Error
 	if err == nil {
-		return nil, errors.New("username already exists")
+		return nil, errors.New("address already exists")
 	}
 	if !errors.Is(err, gorm.ErrRecordNotFound) {
-		return nil, fmt.Errorf("database error: %w", err)
+		return nil, fmt.Errorf("error checking existing user: %w", err)
 	}
 
-	// check if email already exists
-	err = s.db.Where("email = ?", email).First(&existingUser).Error
-	if err == nil {
-		return nil, errors.New("email already exists")
-	}
-	if !errors.Is(err, gorm.ErrRecordNotFound) {
-		return nil, fmt.Errorf("database error: %w", err)
+	// generate user ID (you might want to use UUID here)
+	userID := fmt.Sprintf("user_%d", s.generateUserID())
+
+	user := &models.User{
+		ID:      userID,
+		Address: address,
+		Email:   email,
 	}
 
-	// Hash the password
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-	if err != nil {
-		return nil, fmt.Errorf("failed to hash password: %w", err)
+	if err := s.db.Create(user).Error; err != nil {
+		return nil, fmt.Errorf("error creating user: %w", err)
 	}
 
-	// Create user
-	user := models.User{
-		Username: username,
-		Email:    email,
-		Password: string(hashedPassword),
-	}
-
-	if err := s.db.Create(&user).Error; err != nil {
-		return nil, fmt.Errorf("failed to create user: %w", err)
-	}
-
-	slog.Info("User registered successfully", slog.String("username", username), slog.String("email", email))
-	return &user, nil
+	return user, nil
 }
 
-func (s *UserService) LoginUser(username, password string) (*models.User, error) {
+func (s *UserService) GetUserByID(id string) (*models.User, error) {
 	var user models.User
-	err := s.db.Where("username = ?", username).First(&user).Error
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.New("invalid username or password")
-		}
-		return nil, fmt.Errorf("database error: %w", err)
-	}
-
-	// Compare the provided password with the hashed password in the database
-	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil {
-		return nil, errors.New("invalid username or password")
-	}
-
-	slog.Info("User logged in successfully", slog.String("username", username))
-	return &user, nil
-}
-
-func (s *UserService) GetUserByID(id uint) (*models.User, error) {
-	var user models.User
-	err := s.db.First(&user, id).Error
+	err := s.db.First(&user, "id = ?", id).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, errors.New("user not found")
 		}
-		return nil, fmt.Errorf("database error: %w", err)
+		return nil, fmt.Errorf("error finding user: %w", err)
 	}
 	return &user, nil
+}
+
+func (s *UserService) GetUserByAddress(address string) (*models.User, error) {
+	var user models.User
+	err := s.db.Where("address = ?", address).First(&user).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("user not found")
+		}
+		return nil, fmt.Errorf("error finding user: %w", err)
+	}
+	return &user, nil
+}
+
+func (s *UserService) UpdateUser(id string, email *string) (*models.User, error) {
+	var user models.User
+	err := s.db.First(&user, "id = ?", id).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("user not found")
+		}
+		return nil, fmt.Errorf("error finding user: %w", err)
+	}
+
+	user.Email = email
+
+	if err := s.db.Save(&user).Error; err != nil {
+		return nil, fmt.Errorf("error updating user: %w", err)
+	}
+
+	return &user, nil
+}
+
+func (s *UserService) DeleteUser(id string) error {
+	result := s.db.Delete(&models.User{}, "id = ?", id)
+	if result.Error != nil {
+		return fmt.Errorf("error deleting user: %w", result.Error)
+	}
+	if result.RowsAffected == 0 {
+		return errors.New("user not found")
+	}
+	return nil
 }
 
 func (s *UserService) GetUsers() ([]*models.User, error) {
 	var users []*models.User
 	err := s.db.Find(&users).Error
 	if err != nil {
-		return nil, fmt.Errorf("failed to get users: %w", err)
+		return nil, fmt.Errorf("error getting users: %w", err)
 	}
 	return users, nil
+}
+
+func (s *UserService) generateUserID() int64 {
+	// Simple implementation - in production, you'd want to use UUID or a more robust ID generation
+	var count int64
+	s.db.Model(&models.User{}).Count(&count)
+	return count + 1
 }
