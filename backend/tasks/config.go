@@ -1,9 +1,9 @@
 package tasks
 
 import (
-	"os"
-	"strconv"
 	"time"
+
+	"github.com/ringecosystem/degov-apps/internal/config"
 )
 
 // TaskConfig represents the configuration for a background task
@@ -21,45 +21,27 @@ type TaskDefinition struct {
 
 // GetTaskDefinitions returns all task definitions with their configurations
 func GetTaskDefinitions() []TaskDefinition {
+	cfg := config.GetConfig()
+
 	return []TaskDefinition{
 		{
 			Config: TaskConfig{
 				Name:     "dao-sync",
-				Interval: getEnvDuration("TASK_DAO_SYNC_INTERVAL", 5*time.Minute),
-				Enabled:  getEnvBool("TASK_DAO_SYNC_ENABLED", true),
+				Interval: cfg.GetTaskDAOSyncInterval(),
+				Enabled:  cfg.GetTaskDAOSyncEnabled(),
 			},
 			Constructor: func() Task { return NewDaoSyncTask() },
 		},
 		{
 			Config: TaskConfig{
 				Name:     "notification-cleanup",
-				Interval: getEnvDuration("TASK_NOTIFICATION_CLEANUP_INTERVAL", 30*time.Minute),
-				Enabled:  getEnvBool("TASK_NOTIFICATION_CLEANUP_ENABLED", true),
+				Interval: cfg.GetTaskNotificationCleanupInterval(),
+				Enabled:  cfg.GetTaskNotificationCleanupEnabled(),
 			},
 			Constructor: func() Task { return NewNotificationTask() },
 		},
 		// Add more task definitions here
 	}
-}
-
-// getEnvDuration gets duration from environment variable with fallback
-func getEnvDuration(key string, fallback time.Duration) time.Duration {
-	if value := os.Getenv(key); value != "" {
-		if duration, err := time.ParseDuration(value); err == nil {
-			return duration
-		}
-	}
-	return fallback
-}
-
-// getEnvBool gets boolean from environment variable with fallback
-func getEnvBool(key string, fallback bool) bool {
-	if value := os.Getenv(key); value != "" {
-		if boolVal, err := strconv.ParseBool(value); err == nil {
-			return boolVal
-		}
-	}
-	return fallback
 }
 
 // TaskRegistry holds all available task constructors (deprecated)

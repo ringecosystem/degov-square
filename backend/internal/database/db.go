@@ -3,11 +3,11 @@ package database
 import (
 	"fmt"
 	"log/slog"
-	"os"
 
 	"github.com/golang-migrate/migrate/v4"
 	migratePg "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
+	"github.com/ringecosystem/degov-apps/internal/config"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -18,15 +18,17 @@ var DB *gorm.DB
 func InitDB() error {
 	var err error
 
+	cfg := config.GetConfig()
+
 	// build database connection string
 	dsn := fmt.Sprintf(
 		"host=%s user=%s password=%s dbname=%s port=%s sslmode=%s",
-		os.Getenv("DB_HOST"),
-		os.Getenv("DB_USER"),
-		os.Getenv("DB_PASSWORD"),
-		os.Getenv("DB_NAME"),
-		os.Getenv("DB_PORT"),
-		os.Getenv("DB_SSLMODE"),
+		cfg.GetDBHost(),
+		cfg.GetDBUser(),
+		cfg.GetDBPassword(),
+		cfg.GetDBName(),
+		cfg.GetDBPort(),
+		cfg.GetDBSSLMode(),
 	)
 
 	// connect to the database

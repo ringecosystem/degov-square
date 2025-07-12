@@ -16,6 +16,7 @@ import (
 	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/ringecosystem/degov-apps/graph"
 	"github.com/ringecosystem/degov-apps/internal"
+	"github.com/ringecosystem/degov-apps/internal/config"
 	"github.com/ringecosystem/degov-apps/services"
 	"github.com/rs/cors"
 	"github.com/vektah/gqlparser/v2/ast"
@@ -50,10 +51,8 @@ func main() {
 }
 
 func startServer() {
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = defaultPort
-	}
+	cfg := config.GetConfig()
+	port := cfg.GetPort()
 
 	srv := handler.New(graph.NewExecutableSchema(graph.Config{Resolvers: graph.NewResolver()}))
 
@@ -79,7 +78,7 @@ func startServer() {
 		AllowedMethods:   []string{"GET", "POST", "OPTIONS"},
 		AllowedHeaders:   []string{"Authorization", "Content-Type"},
 		AllowCredentials: true,
-		Debug:            internal.GetAppEnv().IsDevelopment(),
+		Debug:            config.GetAppEnv().IsDevelopment(),
 	})
 	handler := c.Handler(mux)
 

@@ -10,7 +10,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/patrickmn/go-cache"
 	"github.com/ringecosystem/degov-apps/graph/model"
-	"github.com/ringecosystem/degov-apps/internal"
+	"github.com/ringecosystem/degov-apps/internal/config"
 	"github.com/ringecosystem/degov-apps/internal/database"
 	"github.com/spruceid/siwe-go"
 	"gorm.io/gorm"
@@ -71,8 +71,9 @@ func (s *AuthService) Login(input model.LoginInput) (model.LoginOutput, error) {
 	nonce := message.GetNonce()
 	slog.Debug("login nonce", "nonce", nonce)
 	enableCheckNonce := true
-	if internal.GetAppEnv().IsDevelopment() {
-		enableCheckNonce = internal.GetEnvString("UNSAFE_ENABLE_VERIFY_NONCE_ON_LOGIN", "true") == "true"
+	cfg := config.GetConfig()
+	if cfg.GetAppEnv().IsDevelopment() {
+		enableCheckNonce = cfg.GetStringWithDefault("UNSAFE_ENABLE_VERIFY_NONCE_ON_LOGIN", "true") == "true"
 	}
 	if enableCheckNonce {
 		// check nonce in cache
@@ -95,7 +96,7 @@ func (s *AuthService) Login(input model.LoginInput) (model.LoginOutput, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
 	// read secret key from environment variable
-	secretKey := []byte(internal.GetEnvStringRequired("JWT_SECRET"))
+	secretKey := []byte(config.GetStringRequired("JWT_SECRET"))
 	tokenString, err := token.SignedString(secretKey)
 	if err != nil {
 		err = fmt.Errorf("generate token failed: %v", err)
