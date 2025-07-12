@@ -57,8 +57,11 @@ func InitConfig() error {
 	// Set defaults
 	setDefaults(v)
 
-	// Read from environment variables
+	// Configure viper to read environment variables
 	v.AutomaticEnv()
+	v.AllowEmptyEnv(true)
+
+	// Set key replacer to handle case conversion
 	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 
 	globalConfig = &Config{viper: v}
@@ -92,7 +95,6 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("LOG_FORMAT", "json")
 
 	// Environment defaults
-	v.SetDefault("GO_ENV", "production")
 	v.SetDefault("APP_ENV", "production")
 
 	// Task defaults
@@ -140,10 +142,7 @@ func (c *Config) GetLogFormat() string {
 // Environment configuration methods
 func (c *Config) GetAppEnv() Environment {
 	// Try GO_ENV first, then APP_ENV
-	env := c.viper.GetString("GO_ENV")
-	if env == "" {
-		env = c.viper.GetString("APP_ENV")
-	}
+	env := c.viper.GetString("APP_ENV")
 	return parseEnvironment(strings.ToLower(strings.TrimSpace(env)))
 }
 
