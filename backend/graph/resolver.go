@@ -13,7 +13,7 @@ import (
 type Resolver struct {
 	authService *services.AuthService
 	// userService            *services.UserService
-	// daoService             *services.DaoService
+	daoService *services.DaoService
 	// userInteractionService *services.UserInteractionService
 	// notificationService    *services.NotificationService
 }
@@ -22,7 +22,7 @@ func NewResolver() *Resolver {
 	return &Resolver{
 		authService: services.NewAuthService(),
 		// userService:            services.NewUserService(),
-		// daoService:             services.NewDaoService(),
+		daoService: services.NewDaoService(),
 		// userInteractionService: services.NewUserInteractionService(),
 		// notificationService:    services.NewNotificationService(),
 	}

@@ -23,6 +23,7 @@ type Dao {
   name: String!
   code: String!
   seq: Int!
+  state: String!
   configLink: String!
   timeSyncd: Time
   ctime: Time!

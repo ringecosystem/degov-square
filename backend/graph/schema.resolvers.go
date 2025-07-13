@@ -35,7 +35,8 @@ func (r *queryResolver) Nonce(ctx context.Context, input model.GetNonceInput) (s
 
 // Daos is the resolver for the daos field.
 func (r *queryResolver) Daos(ctx context.Context) ([]*model.Dao, error) {
-	panic(fmt.Errorf("not implemented: Daos - daos"))
+	daos, err := r.daoService.GetDaos()
+	return daos, err
 }
 
 // Mutation returns MutationResolver implementation.
