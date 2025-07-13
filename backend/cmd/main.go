@@ -17,6 +17,8 @@ import (
 	"github.com/ringecosystem/degov-apps/graph"
 	"github.com/ringecosystem/degov-apps/internal"
 	"github.com/ringecosystem/degov-apps/internal/config"
+	"github.com/ringecosystem/degov-apps/internal/directives"
+	"github.com/ringecosystem/degov-apps/internal/middleware"
 	"github.com/ringecosystem/degov-apps/tasks"
 	"github.com/rs/cors"
 	"github.com/vektah/gqlparser/v2/ast"
@@ -98,7 +100,16 @@ func startServer() {
 	cfg := config.GetConfig()
 	port := cfg.GetPort()
 
-	srv := handler.New(graph.NewExecutableSchema(graph.Config{Resolvers: graph.NewResolver()}))
+	// Configure directives
+	graphqlConfig := graph.Config{
+		Resolvers: graph.NewResolver(),
+		Directives: graph.DirectiveRoot{
+			Auth:      directives.AuthDirective,
+			Authorize: directives.AuthorizeDirective,
+		},
+	}
+
+	srv := handler.New(graph.NewExecutableSchema(graphqlConfig))
 
 	srv.AddTransport(transport.Options{})
 	srv.AddTransport(transport.GET{})
@@ -111,25 +122,28 @@ func startServer() {
 		Cache: lru.New[string](100),
 	})
 
+	// Initialize authentication middleware
+	authMiddleware := middleware.NewAuthMiddleware()
+
 	mux := http.NewServeMux()
 
 	graphiql := playground.Handler("GraphQL playground", "/graphql", playground.WithGraphiqlEnablePluginExplorer(true))
 	mux.Handle("/graphiql", graphiql)
-	mux.Handle("/graphql", srv)
+	mux.Handle("/graphql", authMiddleware.HTTPMiddleware(srv))
 
-	c := cors.New(cors.Options{
+	corsHandler := cors.New(cors.Options{
 		AllowedOrigins:   []string{"*"},
 		AllowedMethods:   []string{"GET", "POST", "OPTIONS"},
 		AllowedHeaders:   []string{"Authorization", "Content-Type"},
 		AllowCredentials: true,
 		Debug:            config.GetAppEnv().IsDevelopment(),
 	})
-	handler := c.Handler(mux)
+	httpHandler := corsHandler.Handler(mux)
 
 	slog.Info(
 		"Server is running",
 		slog.String("listen", "http://::"+port+"/"),
 	)
-	err := http.ListenAndServe(":"+port, handler)
+	err := http.ListenAndServe(":"+port, httpHandler)
 	slog.Error("failed to listen server", "error", err)
 }
