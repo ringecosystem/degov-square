@@ -70,7 +70,7 @@ export interface RegistryDao {
   }>;
   apps?: Array<any>;
   tags?: string[];
-  [key: string]: any; // 兼容未来扩展
+  [key: string]: any; // For future extension compatibility
 }
 
 export type RegistryPreDao = {
@@ -82,9 +82,16 @@ export type RegistryPreDao = {
 export type RegistryConfig = Record<string, RegistryPreDao[]>;
 
 async function fetchRegistryConfig(): Promise<RegistryConfig> {
-  const res = await fetch('https://raw.githubusercontent.com/ringecosystem/degov-registry/main/config.yml');
-  const text = await res.text();
-  return yaml.load(text) as RegistryConfig;
+  try {
+    const res = await fetch('https://raw.githubusercontent.com/ringecosystem/degov-registry/main/config.yml');
+    if (!res.ok) {
+      throw new Error(`Failed to fetch registry config: ${res.status} ${res.statusText}`);
+    }
+    const text = await res.text();
+    return yaml.load(text) as RegistryConfig;
+  } catch (error) {
+    throw new Error(`Error fetching registry config: ${error instanceof Error ? error.message : String(error)}`);
+  }
 }
 
 async function fetchDaoDetail(configUrl: string): Promise<RegistryDao> {
@@ -119,6 +126,7 @@ export function useDaoConfig(): {
                 chain: detail.chain || { name: chain }, // 保证有 chain 字段
               };
             } catch (e) {
+              console.error(`Failed to fetch DAO detail for config URL: ${dao.config}`, e);
               return null;
             }
           })
