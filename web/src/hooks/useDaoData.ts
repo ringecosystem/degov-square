@@ -2,7 +2,6 @@ import { useQuery } from '@tanstack/react-query';
 
 import type { DaoInfo } from '@/utils/config';
 
-import { useChainInfo } from './useChainInfo';
 import { useDaoConfig } from './useDaoConfig';
 
 async function getProposalsCount(indexerUrl: string): Promise<number> {
@@ -44,21 +43,18 @@ async function getProposalsCount(indexerUrl: string): Promise<number> {
 
 export function useDaoData() {
   const { daoConfigs, isLoading: isLoadingConfigs, error: configError } = useDaoConfig();
-  const { chainInfo, isLoading: isLoadingChains } = useChainInfo();
 
   const {
     data: daoData = [],
     isLoading: isLoadingProposals,
     error: proposalsError
   } = useQuery({
-    queryKey: ['dao-data', daoConfigs, chainInfo],
+    queryKey: ['dao-data', daoConfigs],
     queryFn: async (): Promise<DaoInfo[]> => {
       const daoInfoPromises = daoConfigs.map(async (dao, index) => {
-        const proposalsCount = await getProposalsCount(dao.links.indexer);
+        const proposalsCount = await getProposalsCount(dao.indexer.endpoint);
 
         const chainId = dao.chain?.id?.toString();
-
-        const networkIcon = chainInfo?.[chainId ?? '']?.icon;
 
         return {
           id: index.toString(),
@@ -66,22 +62,22 @@ export function useDaoData() {
           code: dao.code,
           daoIcon: dao.logo,
           network: dao.chain?.name || 'Unknown Network',
-          networkIcon: networkIcon,
+          networkIcon: dao.chain?.logo,
           proposals: proposalsCount,
           favorite: false,
           settable: true,
-          website: dao.links.website,
-          indexer: dao.links.indexer,
+          website: dao.siteUrl || '',
+          indexer: dao.indexer?.endpoint || '',
           chainId: chainId
         };
       });
 
       return Promise.all(daoInfoPromises);
     },
-    enabled: !!daoConfigs.length && !isLoadingChains
+    enabled: !!daoConfigs.length
   });
 
-  const isLoading = isLoadingConfigs || isLoadingChains || isLoadingProposals;
+  const isLoading = isLoadingConfigs || isLoadingProposals;
   const error = configError || proposalsError;
 
   const refreshData = async () => {
