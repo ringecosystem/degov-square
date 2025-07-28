@@ -169,7 +169,11 @@ export default function Home() {
             <Button variant="outline" className="hidden rounded-[100px]" asChild>
               <Link href="/add/existing">Add Existing DAO</Link>
             </Button>
-            <Button variant="outline" className="rounded-[100px]" asChild>
+            <Button
+              variant="outline"
+              className="!border-foreground rounded-[100px] p-[10px]"
+              asChild
+            >
               <Link
                 href="https://docs.google.com/forms/u/1/d/e/1FAIpQLSdYjX87_xxTQFLl-brEj87vxU3ucH682nYy3bGUNpR4nL9HaQ/viewform"
                 target="_blank"
