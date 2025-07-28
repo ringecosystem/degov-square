@@ -26,6 +26,6 @@ export function formatNetworkName(networkName: string | undefined): string {
   if (!networkName) return 'Unknown';
 
   return networkName
-    .replace(/network/gi, '') // Remove 'network' case insensitive
+    .replace(/\bnetwork\b/gi, '') // Remove 'network' case insensitive
     .trim(); // Remove leading/trailing whitespace
 }

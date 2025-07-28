@@ -67,10 +67,10 @@ export default function Home() {
     {
       title: 'Network',
       key: 'network',
-      className: 'w-[28%] text-center',
+      className: 'w-[28%] text-left',
       render(value) {
         return (
-          <div className="flex items-center justify-center gap-[10px]">
+          <div className="flex items-center justify-start gap-[10px]">
             <Image
               src={value?.networkIcon}
               alt="network"
