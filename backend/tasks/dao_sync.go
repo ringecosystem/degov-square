@@ -2,6 +2,7 @@ package tasks
 
 import (
 	"fmt"
+	"io"
 	"log/slog"
 	"net/http"
 	"time"
@@ -110,49 +111,84 @@ func (t *DaoSyncTask) SyncDaos() error {
 		"timestamp", time.Now().Format(time.RFC3339))
 	return nil
 }
-
 // fetchRegistryConfig fetches and parses the main registry configuration
 func (t *DaoSyncTask) fetchRegistryConfig() (DaoRegistryConfig, error) {
-	const configURL = "https://raw.githubusercontent.com/ringecosystem/degov-registry/refs/heads/daos-config/config.yml"
+    const configURL = "https://raw.githubusercontent.com/ringecosystem/degov-registry/refs/heads/daos-config/config.yml"
 
-	resp, err := http.Get(configURL)
-	if err != nil {
-		return nil, fmt.Errorf("failed to fetch config: %w", err)
-	}
-	defer resp.Body.Close()
+    slog.Debug("Fetching registry config", "url", configURL)
 
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
-	}
+    resp, err := http.Get(configURL)
+    if err != nil {
+        return nil, fmt.Errorf("failed to fetch config from %s: %w", configURL, err)
+    }
+    defer resp.Body.Close()
 
-	var config DaoRegistryConfig
-	decoder := yaml.NewDecoder(resp.Body)
-	if err := decoder.Decode(&config); err != nil {
-		return nil, fmt.Errorf("failed to parse YAML: %w", err)
-	}
+    if resp.StatusCode != http.StatusOK {
+        // Read response body for additional error context
+        body, readErr := io.ReadAll(resp.Body)
+        if readErr != nil {
+            slog.Error("Failed to fetch registry config",
+                "url", configURL,
+                "status_code", resp.StatusCode,
+                "status", resp.Status,
+                "body_read_error", readErr)
+        } else {
+            slog.Error("Failed to fetch registry config",
+                "url", configURL,
+                "status_code", resp.StatusCode,
+                "status", resp.Status,
+                "response_body", string(body))
+        }
+        return nil, fmt.Errorf("failed to fetch config from %s: unexpected status %d (%s)", configURL, resp.StatusCode, resp.Status)
+    }
 
-	return config, nil
+    var config DaoRegistryConfig
+    decoder := yaml.NewDecoder(resp.Body)
+    if err := decoder.Decode(&config); err != nil {
+        return nil, fmt.Errorf("failed to parse YAML from %s: %w", configURL, err)
+    }
+
+    slog.Debug("Successfully fetched registry config", "url", configURL, "chains_count", len(config))
+    return config, nil
 }
 
 // fetchDaoConfig fetches and parses individual DAO configuration
 func (t *DaoSyncTask) fetchDaoConfig(configURL string) (*types.DaoConfig, error) {
-	resp, err := http.Get(configURL)
-	if err != nil {
-		return nil, fmt.Errorf("failed to fetch DAO config: %w", err)
-	}
-	defer resp.Body.Close()
+    slog.Debug("Fetching DAO config", "url", configURL)
 
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
-	}
+    resp, err := http.Get(configURL)
+    if err != nil {
+        return nil, fmt.Errorf("failed to fetch DAO config from %s: %w", configURL, err)
+    }
+    defer resp.Body.Close()
 
-	var config types.DaoConfig
-	decoder := yaml.NewDecoder(resp.Body)
-	if err := decoder.Decode(&config); err != nil {
-		return nil, fmt.Errorf("failed to parse DAO config YAML: %w", err)
-	}
+    if resp.StatusCode != http.StatusOK {
+        // Read response body for additional error context
+        body, readErr := io.ReadAll(resp.Body)
+        if readErr != nil {
+            slog.Error("Failed to fetch DAO config",
+                "url", configURL,
+                "status_code", resp.StatusCode,
+                "status", resp.Status,
+                "body_read_error", readErr)
+        } else {
+            slog.Error("Failed to fetch DAO config",
+                "url", configURL,
+                "status_code", resp.StatusCode,
+                "status", resp.Status,
+                "response_body", string(body))
+        }
+        return nil, fmt.Errorf("failed to fetch DAO config from %s: unexpected status %d (%s)", configURL, resp.StatusCode, resp.Status)
+    }
 
-	return &config, nil
+    var config types.DaoConfig
+    decoder := yaml.NewDecoder(resp.Body)
+    if err := decoder.Decode(&config); err != nil {
+        return nil, fmt.Errorf("failed to parse DAO config YAML from %s: %w", configURL, err)
+    }
+
+    slog.Debug("Successfully fetched DAO config", "url", configURL, "dao_code", config.Code)
+    return &config, nil
 }
 
 // upsertDao inserts or updates a DAO in the database
