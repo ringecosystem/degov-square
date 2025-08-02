@@ -1,4 +1,4 @@
-.PHONY: build run test clean docker-up docker-down migrate generate help
+.PHONY: build run test clean docker-up docker-down generate help
 
 help:
 	@echo "Available commands:"
@@ -39,12 +39,6 @@ generate:
 deps:
 	go mod tidy
 	go mod download
-
-# start development environment
-dev: docker-up
-	@echo "Waiting for database to be ready..."
-	@sleep 2
-	@make run
 
 # complete setup for development environment
 setup: deps generate docker-up
