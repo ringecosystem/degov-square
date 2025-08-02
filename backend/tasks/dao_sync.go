@@ -34,15 +34,16 @@ type DaoSyncTask struct {
 	db *gorm.DB
 }
 
-type DaoRegistryConfigResult struct {
-	RemoteLink GithubConfigLink
-	Result     DaoRegistryConfig
+// DaoRegistryConfig represents the structure of individual DAO configuration
+type DaoRegistryConfig struct {
+	Code   string   `yaml:"code"`
+	Tags   []string `yaml:"tags,omitempty"` // Optional tags field
+	Config string   `yaml:"config"`
 }
 
-// DaoRegistryConfig represents the structure of the config.yml file
-type DaoRegistryConfig map[string][]struct {
-	Code   string `yaml:"code"`
-	Config string `yaml:"config"`
+type DaoRegistryConfigResult struct {
+	RemoteLink GithubConfigLink
+	Result     map[string][]DaoRegistryConfig
 }
 
 // NewDaoSyncTask creates a new DAO sync task
@@ -102,12 +103,15 @@ func (t *DaoSyncTask) SyncDaos() error {
 }
 
 // processSingleDao processes a single DAO configuration
-func (t *DaoSyncTask) processSingleDao(remoteLink GithubConfigLink, daoInfo struct {
-	Code   string `yaml:"code"`
-	Config string `yaml:"config"`
-}, chainName string, activeDaoCodes map[string]bool) error {
+func (t *DaoSyncTask) processSingleDao(remoteLink GithubConfigLink, daoInfo DaoRegistryConfig, chainName string, activeDaoCodes map[string]bool) error {
+	configURL := daoInfo.Config
+	// Convert relative URL to absolute if needed
+	if !strings.HasPrefix(configURL, "http://") && !strings.HasPrefix(configURL, "https://") {
+		configURL = fmt.Sprintf("%s/%s", remoteLink.BaseLink, configURL)
+	}
+
 	// Fetch DAO config details
-	daoConfig, err := t.fetchDaoConfig(remoteLink, daoInfo.Config, daoInfo.Code)
+	daoConfig, err := t.fetchDaoConfig(configURL, daoInfo.Code)
 	if err != nil {
 		return fmt.Errorf("failed to fetch DAO config: %w", err)
 	}
@@ -122,14 +126,20 @@ func (t *DaoSyncTask) processSingleDao(remoteLink GithubConfigLink, daoInfo stru
 
 	// Create DAO model
 	dao := &models.Dao{
-		ID:         internal.NextIDString(),
-		ChainID:    daoConfig.Chain.ID,
-		ChainName:  daoConfig.Chain.Name,
-		Name:       daoConfig.Name,
-		Code:       daoInfo.Code,
-		Seq:        0,
-		State:      "ACTIVE",
-		ConfigLink: daoInfo.Config,
+		ID:        internal.NextIDString(),
+		ChainID:   daoConfig.Chain.ID,
+		ChainName: daoConfig.Chain.Name,
+		Name:      daoConfig.Name,
+		Code:      daoInfo.Code,
+		Seq:       0,
+		State:     "ACTIVE",
+		Tags: func() string {
+			if tagsJSON, err := json.Marshal(daoInfo.Tags); err == nil {
+				return string(tagsJSON)
+			}
+			return ""
+		}(), // Convert tags slice to JSON string
+		ConfigLink: configURL,
 		TimeSyncd:  utils.TimePtrNow(),
 	}
 
@@ -148,7 +158,7 @@ func (t *DaoSyncTask) fetchRegistryConfig() (DaoRegistryConfigResult, error) {
 	for i, configURL := range configURLs {
 		slog.Debug("Attempting to fetch registry config", "url", configURL, "attempt", i+1)
 
-		var config DaoRegistryConfig
+		var config map[string][]DaoRegistryConfig
 		if err := t.fetchAndParseYAML(configURL.ConfigLink, &config); err != nil {
 			if i == len(configURLs)-1 {
 				return DaoRegistryConfigResult{}, fmt.Errorf("failed to fetch config from all URLs: %w", err)
@@ -280,13 +290,8 @@ func (t *DaoSyncTask) getLatestTag() (string, error) {
 }
 
 // fetchDaoConfig fetches and parses individual DAO configuration
-func (t *DaoSyncTask) fetchDaoConfig(remoteConfigLink GithubConfigLink, configURL string, daoCode string) (*types.DaoConfig, error) {
+func (t *DaoSyncTask) fetchDaoConfig(configURL string, daoCode string) (*types.DaoConfig, error) {
 	slog.Debug("Fetching DAO config", "url", configURL)
-
-	// Convert relative URL to absolute if needed
-	if !strings.HasPrefix(configURL, "http://") && !strings.HasPrefix(configURL, "https://") {
-		configURL = fmt.Sprintf("%s/%s", remoteConfigLink.BaseLink, configURL)
-	}
 
 	var config types.DaoConfig
 	if err := t.fetchAndParseYAML(configURL, &config); err != nil {

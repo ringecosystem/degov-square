@@ -12,6 +12,7 @@ type Dao struct {
 	Code       string     `gorm:"column:code;type:varchar(255);not null;uniqueIndex:uq_dgv_dao_code" json:"code"`
 	Seq        int        `gorm:"column:seq;not null;default:0" json:"seq"`
 	State      string     `gorm:"column:state;type:varchar(50);not null" json:"state"`
+	Tags       string     `gorm:"column:tags;type:text" json:"tags,omitempty"` // Optional tags field
 	ConfigLink string     `gorm:"column:config_link;type:varchar(255);not null" json:"config_link"`
 	TimeSyncd  *time.Time `gorm:"column:time_syncd" json:"time_syncd,omitempty"`
 	CTime      time.Time  `gorm:"column:ctime;default:now()" json:"ctime"`

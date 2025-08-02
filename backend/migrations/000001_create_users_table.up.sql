@@ -21,6 +21,7 @@ create table
     code varchar(255) not null,
     seq int not null default 0,
     state varchar(50) not null, -- { ACTIVE, INACTIVE }
+    tags text,
     config_link varchar(255) not null,
     time_syncd timestamp,
     ctime timestamp default now (),
@@ -39,6 +40,8 @@ comment on column dgv_dao.chain_name is 'chain name';
 comment on column dgv_dao.name is 'DAO name';
 
 comment on column dgv_dao.code is 'DAO code';
+
+comment on column dgv_dao.tags is 'Optional tags for DAO categorization';
 
 comment on column dgv_dao.config_link is 'DAO config link';
 
