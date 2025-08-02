@@ -5,6 +5,7 @@ import (
 
 	"github.com/ringecosystem/degov-apps/graph/model"
 	"github.com/ringecosystem/degov-apps/internal/database"
+	"github.com/ringecosystem/degov-apps/types"
 )
 
 type DaoService struct {
@@ -45,4 +46,8 @@ func (s *DaoService) GetDaos() ([]*model.Dao, error) {
 	}
 
 	return daos, nil
+}
+
+func (s *DaoService) RefreshDaoAndConfig(input types.RefreshDaoAndConfigInput) error {
+	return nil
 }

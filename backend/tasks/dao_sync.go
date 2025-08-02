@@ -46,6 +46,11 @@ type DaoRegistryConfigResult struct {
 	Result     map[string][]DaoRegistryConfig
 }
 
+type DaoConfigResult struct {
+	Raw    string           // Original YAML content as string
+	Config *types.DaoConfig // Parsed YAML content
+}
+
 // NewDaoSyncTask creates a new DAO sync task
 func NewDaoSyncTask() *DaoSyncTask {
 	return &DaoSyncTask{
@@ -117,7 +122,7 @@ func (t *DaoSyncTask) processSingleDao(remoteLink GithubConfigLink, daoInfo DaoR
 	}
 
 	// Skip if essential fields are missing
-	if daoInfo.Code == "" || daoConfig.Name == "" {
+	if daoInfo.Code == "" || daoConfig.Config.Name == "" {
 		slog.Warn("DAO config missing essential fields", "config_url", daoInfo.Config)
 		return nil
 	}
@@ -127,9 +132,9 @@ func (t *DaoSyncTask) processSingleDao(remoteLink GithubConfigLink, daoInfo DaoR
 	// Create DAO model
 	dao := &models.Dao{
 		ID:        internal.NextIDString(),
-		ChainID:   daoConfig.Chain.ID,
-		ChainName: daoConfig.Chain.Name,
-		Name:      daoConfig.Name,
+		ChainID:   daoConfig.Config.Chain.ID,
+		ChainName: daoConfig.Config.Chain.Name,
+		Name:      daoConfig.Config.Name,
 		Code:      daoInfo.Code,
 		Seq:       0,
 		State:     "ACTIVE",
@@ -147,6 +152,11 @@ func (t *DaoSyncTask) processSingleDao(remoteLink GithubConfigLink, daoInfo DaoR
 		return fmt.Errorf("failed to upsert DAO: %w", err)
 	}
 
+	// Save DAO config to DgvDaoConfig table
+	if err := t.upsertDaoConfig(daoInfo.Code, daoConfig.Raw); err != nil {
+		return fmt.Errorf("failed to upsert DAO config: %w", err)
+	}
+
 	slog.Debug("Successfully synced DAO", "dao", daoInfo.Code, "chain", chainName)
 	return nil
 }
@@ -159,7 +169,8 @@ func (t *DaoSyncTask) fetchRegistryConfig() (DaoRegistryConfigResult, error) {
 		slog.Debug("Attempting to fetch registry config", "url", configURL, "attempt", i+1)
 
 		var config map[string][]DaoRegistryConfig
-		if err := t.fetchAndParseYAML(configURL.ConfigLink, &config); err != nil {
+		_, err := t.fetchAndParseYAML(configURL.ConfigLink, &config)
+		if err != nil {
 			if i == len(configURLs)-1 {
 				return DaoRegistryConfigResult{}, fmt.Errorf("failed to fetch config from all URLs: %w", err)
 			}
@@ -178,10 +189,10 @@ func (t *DaoSyncTask) fetchRegistryConfig() (DaoRegistryConfigResult, error) {
 }
 
 // fetchAndParseYAML fetches content from URL and parses it as YAML
-func (t *DaoSyncTask) fetchAndParseYAML(url string, target interface{}) error {
+func (t *DaoSyncTask) fetchAndParseYAML(url string, target interface{}) (string, error) {
 	resp, err := http.Get(url)
 	if err != nil {
-		return fmt.Errorf("failed to fetch from %s: %w", url, err)
+		return "", fmt.Errorf("failed to fetch from %s: %w", url, err)
 	}
 	defer resp.Body.Close()
 
@@ -192,15 +203,21 @@ func (t *DaoSyncTask) fetchAndParseYAML(url string, target interface{}) error {
 		} else {
 			slog.Error("Failed to fetch content", "url", url, "status_code", resp.StatusCode, "status", resp.Status, "response_body", string(body))
 		}
-		return fmt.Errorf("unexpected status %d (%s) from %s", resp.StatusCode, resp.Status, url)
+		return "", fmt.Errorf("unexpected status %d (%s) from %s", resp.StatusCode, resp.Status, url)
 	}
 
-	decoder := yaml.NewDecoder(resp.Body)
-	if err := decoder.Decode(target); err != nil {
-		return fmt.Errorf("failed to parse YAML from %s: %w", url, err)
+	// Read the raw content first
+	rawContent, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", fmt.Errorf("failed to read response body from %s: %w", url, err)
 	}
 
-	return nil
+	// Parse the YAML content
+	if err := yaml.Unmarshal(rawContent, target); err != nil {
+		return "", fmt.Errorf("failed to parse YAML from %s: %w", url, err)
+	}
+
+	return string(rawContent), nil
 }
 
 // buildConfigURLs constructs the list of config URLs to try based on configuration
@@ -290,16 +307,20 @@ func (t *DaoSyncTask) getLatestTag() (string, error) {
 }
 
 // fetchDaoConfig fetches and parses individual DAO configuration
-func (t *DaoSyncTask) fetchDaoConfig(configURL string, daoCode string) (*types.DaoConfig, error) {
+func (t *DaoSyncTask) fetchDaoConfig(configURL string, daoCode string) (DaoConfigResult, error) {
 	slog.Debug("Fetching DAO config", "url", configURL)
 
 	var config types.DaoConfig
-	if err := t.fetchAndParseYAML(configURL, &config); err != nil {
-		return nil, err
+	rawContent, err := t.fetchAndParseYAML(configURL, &config)
+	if err != nil {
+		return DaoConfigResult{}, err
 	}
 
 	slog.Debug("Successfully fetched DAO config", "url", configURL, "dao_code", daoCode)
-	return &config, nil
+	return DaoConfigResult{
+		Raw:    rawContent,
+		Config: &config,
+	}, nil
 }
 
 // upsertDao inserts or updates a DAO in the database
@@ -321,6 +342,31 @@ func (t *DaoSyncTask) upsertDao(dao *models.Dao) error {
 	dao.UTime = utils.TimePtrNow()
 
 	return t.db.Save(dao).Error
+}
+
+// upsertDaoConfig inserts or updates a DAO config in the database
+func (t *DaoSyncTask) upsertDaoConfig(daoCode string, rawConfig string) error {
+	var existingConfig models.DgvDaoConfig
+	result := t.db.Where("dao_code = ?", daoCode).First(&existingConfig)
+
+	if result.Error == gorm.ErrRecordNotFound {
+		// Insert new DAO config
+		config := &models.DgvDaoConfig{
+			ID:      internal.NextIDString(),
+			DaoCode: daoCode,
+			Config:  rawConfig,
+			CTime:   time.Now(),
+		}
+		return t.db.Create(config).Error
+	} else if result.Error != nil {
+		return result.Error
+	}
+
+	// Update existing DAO config
+	existingConfig.Config = rawConfig
+	existingConfig.UTime = utils.TimePtrNow()
+
+	return t.db.Save(&existingConfig).Error
 }
 
 // markInactiveDAOs marks DAOs as inactive if they're not in the active list
