@@ -3,7 +3,6 @@ package types
 // DaoConfig represents the structure of individual DAO config files
 type DaoConfig struct {
 	Name                  string `yaml:"name"`
-	Code                  string `yaml:"code"`
 	Logo                  string `yaml:"logo"`
 	SiteURL               string `yaml:"siteUrl"`
 	OffChainDiscussionURL string `yaml:"offChainDiscussionUrl"`
