@@ -10,13 +10,9 @@ import (
 	"time"
 
 	"gopkg.in/yaml.v3"
-	"gorm.io/gorm"
 
-	"github.com/ringecosystem/degov-apps/internal"
 	"github.com/ringecosystem/degov-apps/internal/config"
-	"github.com/ringecosystem/degov-apps/internal/database"
-	"github.com/ringecosystem/degov-apps/internal/utils"
-	"github.com/ringecosystem/degov-apps/models"
+	"github.com/ringecosystem/degov-apps/services"
 	"github.com/ringecosystem/degov-apps/types"
 )
 
@@ -31,7 +27,7 @@ type GithubConfigLink struct {
 }
 
 type DaoSyncTask struct {
-	db *gorm.DB
+	daoService *services.DaoService
 }
 
 // DaoRegistryConfig represents the structure of individual DAO configuration
@@ -54,7 +50,7 @@ type DaoConfigResult struct {
 // NewDaoSyncTask creates a new DAO sync task
 func NewDaoSyncTask() *DaoSyncTask {
 	return &DaoSyncTask{
-		db: database.GetDB(),
+		daoService: services.NewDaoService(),
 	}
 }
 
@@ -95,7 +91,7 @@ func (t *DaoSyncTask) SyncDaos() error {
 	}
 
 	// Mark DAOs as inactive if they're not in the current config
-	if err := t.markInactiveDAOs(activeDaoCodes); err != nil {
+	if err := t.daoService.MarkInactiveDAOs(activeDaoCodes); err != nil {
 		return fmt.Errorf("failed to mark inactive DAOs: %w", err)
 	}
 
@@ -129,31 +125,15 @@ func (t *DaoSyncTask) processSingleDao(remoteLink GithubConfigLink, daoInfo DaoR
 
 	activeDaoCodes[daoInfo.Code] = true
 
-	// Create DAO model
-	dao := &models.Dao{
-		ID:        internal.NextIDString(),
-		ChainID:   daoConfig.Config.Chain.ID,
-		ChainName: daoConfig.Config.Chain.Name,
-		Name:      daoConfig.Config.Name,
-		Code:      daoInfo.Code,
-		Seq:       0,
-		State:     "ACTIVE",
-		Tags: func() string {
-			if tagsJSON, err := json.Marshal(daoInfo.Tags); err == nil {
-				return string(tagsJSON)
-			}
-			return ""
-		}(), // Convert tags slice to JSON string
-		ConfigLink: configURL,
-		TimeSyncd:  utils.TimePtrNow(),
-	}
+	// Create DAO model using service
+	dao := t.daoService.CreateDaoFromConfig(daoInfo.Code, daoConfig.Config, daoInfo.Tags, configURL)
 
-	if err := t.upsertDao(dao); err != nil {
+	if err := t.daoService.UpsertDao(dao); err != nil {
 		return fmt.Errorf("failed to upsert DAO: %w", err)
 	}
 
 	// Save DAO config to DgvDaoConfig table
-	if err := t.upsertDaoConfig(daoInfo.Code, daoConfig.Raw); err != nil {
+	if err := t.daoService.UpsertDaoConfig(daoInfo.Code, daoConfig.Raw); err != nil {
 		return fmt.Errorf("failed to upsert DAO config: %w", err)
 	}
 
@@ -321,80 +301,4 @@ func (t *DaoSyncTask) fetchDaoConfig(configURL string, daoCode string) (DaoConfi
 		Raw:    rawContent,
 		Config: &config,
 	}, nil
-}
-
-// upsertDao inserts or updates a DAO in the database
-func (t *DaoSyncTask) upsertDao(dao *models.Dao) error {
-	var existingDao models.Dao
-	result := t.db.Where("code = ?", dao.Code).First(&existingDao)
-
-	if result.Error == gorm.ErrRecordNotFound {
-		// Insert new DAO
-		dao.CTime = time.Now()
-		return t.db.Create(dao).Error
-	} else if result.Error != nil {
-		return result.Error
-	}
-
-	// Update existing DAO
-	dao.ID = existingDao.ID
-	dao.CTime = existingDao.CTime
-	dao.UTime = utils.TimePtrNow()
-
-	return t.db.Save(dao).Error
-}
-
-// upsertDaoConfig inserts or updates a DAO config in the database
-func (t *DaoSyncTask) upsertDaoConfig(daoCode string, rawConfig string) error {
-	var existingConfig models.DgvDaoConfig
-	result := t.db.Where("dao_code = ?", daoCode).First(&existingConfig)
-
-	if result.Error == gorm.ErrRecordNotFound {
-		// Insert new DAO config
-		config := &models.DgvDaoConfig{
-			ID:      internal.NextIDString(),
-			DaoCode: daoCode,
-			Config:  rawConfig,
-			CTime:   time.Now(),
-		}
-		return t.db.Create(config).Error
-	} else if result.Error != nil {
-		return result.Error
-	}
-
-	// Update existing DAO config
-	existingConfig.Config = rawConfig
-	existingConfig.UTime = utils.TimePtrNow()
-
-	return t.db.Save(&existingConfig).Error
-}
-
-// markInactiveDAOs marks DAOs as inactive if they're not in the active list
-func (t *DaoSyncTask) markInactiveDAOs(activeCodes map[string]bool) error {
-	// Use a more efficient query to find and update inactive DAOs in one go
-	result := t.db.Model(&models.Dao{}).
-		Where("code NOT IN ? AND state != ?", getMapKeys(activeCodes), "INACTIVE").
-		Updates(map[string]interface{}{
-			"state": "INACTIVE",
-			"utime": utils.TimePtrNow(),
-		})
-
-	if result.Error != nil {
-		return result.Error
-	}
-
-	if result.RowsAffected > 0 {
-		slog.Info("Marked DAOs as inactive", "count", result.RowsAffected)
-	}
-
-	return nil
-}
-
-// getMapKeys extracts keys from a map[string]bool
-func getMapKeys(m map[string]bool) []string {
-	keys := make([]string, 0, len(m))
-	for k := range m {
-		keys = append(keys, k)
-	}
-	return keys
 }

@@ -24,11 +24,11 @@ func (Dao) TableName() string {
 }
 
 type DgvDaoConfig struct {
-	ID      string     `gorm:"column:id;type:varchar(50);primaryKey" json:"id"`
-	DaoCode string     `gorm:"column:dao_code;type:varchar(255);not null;uniqueIndex:uq_dgv_dao_config_code" json:"dao_code"`
-	Config  string     `gorm:"column:config;type:text;not null" json:"config"`
-	CTime   time.Time  `gorm:"column:ctime;default:now()" json:"ctime"`
-	UTime   *time.Time `gorm:"column:utime" json:"utime,omitempty"`
+	ID     string     `gorm:"column:id;type:varchar(50);primaryKey" json:"id"`
+	Code   string     `gorm:"column:code;type:varchar(255);not null;uniqueIndex:uq_dgv_dao_config_code" json:"dao_code"`
+	Config string     `gorm:"column:config;type:text;not null" json:"config"`
+	CTime  time.Time  `gorm:"column:ctime;default:now()" json:"ctime"`
+	UTime  *time.Time `gorm:"column:utime" json:"utime,omitempty"`
 }
 
 func (DgvDaoConfig) TableName() string {
