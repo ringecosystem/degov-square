@@ -40,6 +40,6 @@ jobs:
       - name: Check Build
         working-directory: backend
         run: |
-          make deps
           make generate
+          make deps
           make build
