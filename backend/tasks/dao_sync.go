@@ -125,17 +125,12 @@ func (t *DaoSyncTask) processSingleDao(remoteLink GithubConfigLink, daoInfo DaoR
 
 	activeDaoCodes[daoInfo.Code] = true
 
-	// Create DAO model using service
-	dao := t.daoService.CreateDaoFromConfig(daoInfo.Code, daoConfig.Config, daoInfo.Tags, configURL)
-
-	if err := t.daoService.UpsertDao(dao); err != nil {
-		return fmt.Errorf("failed to upsert DAO: %w", err)
-	}
-
-	// Save DAO config to DgvDaoConfig table
-	if err := t.daoService.UpsertDaoConfig(daoInfo.Code, daoConfig.Raw); err != nil {
-		return fmt.Errorf("failed to upsert DAO config: %w", err)
-	}
+	t.daoService.RefreshDaoAndConfig(types.RefreshDaoAndConfigInput{
+		Code:   daoInfo.Code,
+		Tags:   daoInfo.Tags,
+		Config: *daoConfig.Config,
+		Raw:    daoConfig.Raw,
+	})
 
 	slog.Debug("Successfully synced DAO", "dao", daoInfo.Code, "chain", chainName)
 	return nil

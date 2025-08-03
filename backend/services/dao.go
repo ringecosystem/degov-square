@@ -55,50 +55,63 @@ func (s *DaoService) GetDaos() ([]*model.Dao, error) {
 }
 
 func (s *DaoService) RefreshDaoAndConfig(input types.RefreshDaoAndConfigInput) error {
-	return nil
-}
-
-// UpsertDao inserts or updates a DAO in the database
-func (s *DaoService) UpsertDao(dao *models.Dao) error {
 	var existingDao models.Dao
-	result := s.db.Where("code = ?", dao.Code).First(&existingDao)
+	result := s.db.Where("code = ?", input.Code).First(&existingDao)
 
+	tagsJson := func() string {
+		if tagsJSON, err := json.Marshal(input.Tags); err == nil {
+			return string(tagsJSON)
+		}
+		return ""
+	}()
 	if result.Error == gorm.ErrRecordNotFound {
 		// Insert new DAO
-		dao.CTime = time.Now()
-		return s.db.Create(dao).Error
-	} else if result.Error != nil {
-		return result.Error
+		dao := &models.Dao{
+			ID:         internal.NextIDString(),
+			ChainID:    input.Config.Chain.ID,
+			ChainName:  input.Config.Chain.Name,
+			Name:       input.Config.Name,
+			Code:       input.Code,
+			State:      "ACTIVE",
+			Tags:       tagsJson,
+			ConfigLink: input.ConfigLink,
+			TimeSyncd:  utils.TimePtrNow(),
+		}
+		if err := s.db.Create(dao).Error; err != nil {
+			return err
+		}
+	} else {
+		// Update existing DAO
+		existingDao.ChainID = input.Config.Chain.ID
+		existingDao.ChainName = input.Config.Chain.Name
+		existingDao.Name = input.Config.Name
+		existingDao.State = "ACTIVE"
+		existingDao.Tags = tagsJson
+		existingDao.ConfigLink = input.ConfigLink
+		existingDao.UTime = utils.TimePtrNow()
+		if err := s.db.Save(&existingDao).Error; err != nil {
+			return err
+		}
 	}
 
-	// Update existing DAO
-	dao.ID = existingDao.ID
-	dao.CTime = existingDao.CTime
-	dao.UTime = utils.TimePtrNow()
-
-	return s.db.Save(dao).Error
-}
-
-// UpsertDaoConfig inserts or updates a DAO config in the database
-func (s *DaoService) UpsertDaoConfig(daoCode string, rawConfig string) error {
 	var existingConfig models.DgvDaoConfig
-	result := s.db.Where("code = ?", daoCode).First(&existingConfig)
+	r2 := s.db.Where("code = ?", input.Code).First(&existingConfig)
 
-	if result.Error == gorm.ErrRecordNotFound {
+	if r2.Error == gorm.ErrRecordNotFound {
 		// Insert new DAO config
 		config := &models.DgvDaoConfig{
 			ID:     internal.NextIDString(),
-			Code:   daoCode,
-			Config: rawConfig,
+			Code:   input.Code,
+			Config: input.Raw,
 			CTime:  time.Now(),
 		}
 		return s.db.Create(config).Error
-	} else if result.Error != nil {
-		return result.Error
+	} else if r2.Error != nil {
+		return r2.Error
 	}
 
 	// Update existing DAO config
-	existingConfig.Config = rawConfig
+	existingConfig.Config = input.Raw
 	existingConfig.UTime = utils.TimePtrNow()
 
 	return s.db.Save(&existingConfig).Error
@@ -119,27 +132,6 @@ func (s *DaoService) MarkInactiveDAOs(activeCodes map[string]bool) error {
 	}
 
 	return nil
-}
-
-// CreateDaoFromConfig creates a DAO model from config information
-func (s *DaoService) CreateDaoFromConfig(daoCode string, daoConfig *types.DaoConfig, tags []string, configURL string) *models.Dao {
-	return &models.Dao{
-		ID:        internal.NextIDString(),
-		ChainID:   daoConfig.Chain.ID,
-		ChainName: daoConfig.Chain.Name,
-		Name:      daoConfig.Name,
-		Code:      daoCode,
-		Seq:       0,
-		State:     "ACTIVE",
-		Tags: func() string {
-			if tagsJSON, err := json.Marshal(tags); err == nil {
-				return string(tagsJSON)
-			}
-			return ""
-		}(),
-		ConfigLink: configURL,
-		TimeSyncd:  utils.TimePtrNow(),
-	}
 }
 
 // getMapKeys extracts keys from a map[string]bool
