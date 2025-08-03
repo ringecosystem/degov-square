@@ -41,7 +41,7 @@ deps:
 	go mod download
 
 # complete setup for development environment
-setup: deps generate docker-up
+setup: generate deps docker-up
 	@echo "Setting up development environment..."
 	@sleep 2
 	@echo "Development environment ready!"
