@@ -7,8 +7,8 @@ import (
 
 	"gorm.io/gorm"
 
+	"github.com/ringecosystem/degov-apps/dbmodels"
 	"github.com/ringecosystem/degov-apps/internal/database"
-	"github.com/ringecosystem/degov-apps/models"
 )
 
 type NotificationService struct {
@@ -22,9 +22,9 @@ func NewNotificationService() *NotificationService {
 }
 
 // UserChannel methods
-func (s *NotificationService) CreateUserChannel(userID, channelType, channelValue string, payload *string) (*models.UserChannel, error) {
+func (s *NotificationService) CreateUserChannel(userID, channelType, channelValue string, payload *string) (*dbmodels.UserChannel, error) {
 	// check if channel already exists for user
-	var existing models.UserChannel
+	var existing dbmodels.UserChannel
 	err := s.db.Where("user_id = ? AND channel_type = ? AND channel_value = ?", userID, channelType, channelValue).First(&existing).Error
 	if err == nil {
 		return nil, errors.New("channel already exists for user")
@@ -36,7 +36,7 @@ func (s *NotificationService) CreateUserChannel(userID, channelType, channelValu
 	// generate channel ID
 	channelID := fmt.Sprintf("channel_%d", s.generateChannelID())
 
-	channel := &models.UserChannel{
+	channel := &dbmodels.UserChannel{
 		ID:           channelID,
 		UserID:       userID,
 		Verified:     0, // not verified by default
@@ -53,8 +53,8 @@ func (s *NotificationService) CreateUserChannel(userID, channelType, channelValu
 	return channel, nil
 }
 
-func (s *NotificationService) UpdateUserChannel(id, userID, channelType, channelValue string, payload *string) (*models.UserChannel, error) {
-	var channel models.UserChannel
+func (s *NotificationService) UpdateUserChannel(id, userID, channelType, channelValue string, payload *string) (*dbmodels.UserChannel, error) {
+	var channel dbmodels.UserChannel
 	err := s.db.First(&channel, "id = ?", id).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -76,7 +76,7 @@ func (s *NotificationService) UpdateUserChannel(id, userID, channelType, channel
 }
 
 func (s *NotificationService) DeleteUserChannel(id string) error {
-	result := s.db.Delete(&models.UserChannel{}, "id = ?", id)
+	result := s.db.Delete(&dbmodels.UserChannel{}, "id = ?", id)
 	if result.Error != nil {
 		return fmt.Errorf("error deleting channel: %w", result.Error)
 	}
@@ -86,8 +86,8 @@ func (s *NotificationService) DeleteUserChannel(id string) error {
 	return nil
 }
 
-func (s *NotificationService) VerifyUserChannel(id string) (*models.UserChannel, error) {
-	var channel models.UserChannel
+func (s *NotificationService) VerifyUserChannel(id string) (*dbmodels.UserChannel, error) {
+	var channel dbmodels.UserChannel
 	err := s.db.First(&channel, "id = ?", id).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -105,8 +105,8 @@ func (s *NotificationService) VerifyUserChannel(id string) (*models.UserChannel,
 	return &channel, nil
 }
 
-func (s *NotificationService) GetUserChannels(userID string) ([]*models.UserChannel, error) {
-	var channels []*models.UserChannel
+func (s *NotificationService) GetUserChannels(userID string) ([]*dbmodels.UserChannel, error) {
+	var channels []*dbmodels.UserChannel
 	err := s.db.Where("user_id = ?", userID).Find(&channels).Error
 	if err != nil {
 		return nil, fmt.Errorf("error getting user channels: %w", err)
@@ -115,11 +115,11 @@ func (s *NotificationService) GetUserChannels(userID string) ([]*models.UserChan
 }
 
 // NotificationRecord methods
-func (s *NotificationService) CreateNotificationRecord(chainID int, chainName, daoName, daoCode, notificationType, targetID, userID, status string, message *string) (*models.NotificationRecord, error) {
+func (s *NotificationService) CreateNotificationRecord(chainID int, chainName, daoName, daoCode, notificationType, targetID, userID, status string, message *string) (*dbmodels.NotificationRecord, error) {
 	// generate notification ID
 	notificationID := fmt.Sprintf("notification_%d", s.generateNotificationID())
 
-	record := &models.NotificationRecord{
+	record := &dbmodels.NotificationRecord{
 		ID:         notificationID,
 		ChainID:    chainID,
 		ChainName:  chainName,
@@ -141,8 +141,8 @@ func (s *NotificationService) CreateNotificationRecord(chainID int, chainName, d
 	return record, nil
 }
 
-func (s *NotificationService) GetNotificationRecords(userID string) ([]*models.NotificationRecord, error) {
-	var records []*models.NotificationRecord
+func (s *NotificationService) GetNotificationRecords(userID string) ([]*dbmodels.NotificationRecord, error) {
+	var records []*dbmodels.NotificationRecord
 	err := s.db.Where("user_id = ?", userID).Order("ctime DESC").Find(&records).Error
 	if err != nil {
 		return nil, fmt.Errorf("error getting notification records: %w", err)
@@ -150,8 +150,8 @@ func (s *NotificationService) GetNotificationRecords(userID string) ([]*models.N
 	return records, nil
 }
 
-func (s *NotificationService) GetNotificationRecordsByStatus(status string) ([]*models.NotificationRecord, error) {
-	var records []*models.NotificationRecord
+func (s *NotificationService) GetNotificationRecordsByStatus(status string) ([]*dbmodels.NotificationRecord, error) {
+	var records []*dbmodels.NotificationRecord
 	err := s.db.Where("status = ?", status).Order("ctime ASC").Find(&records).Error
 	if err != nil {
 		return nil, fmt.Errorf("error getting notification records by status: %w", err)
@@ -167,7 +167,7 @@ func (s *NotificationService) UpdateNotificationStatus(id, status string, messag
 		updates["message"] = *message
 	}
 
-	result := s.db.Model(&models.NotificationRecord{}).Where("id = ?", id).Updates(updates)
+	result := s.db.Model(&dbmodels.NotificationRecord{}).Where("id = ?", id).Updates(updates)
 	if result.Error != nil {
 		return fmt.Errorf("error updating notification status: %w", result.Error)
 	}
@@ -178,7 +178,7 @@ func (s *NotificationService) UpdateNotificationStatus(id, status string, messag
 }
 
 func (s *NotificationService) IncrementRetryCount(id string) error {
-	result := s.db.Model(&models.NotificationRecord{}).Where("id = ?", id).Update("retry_times", gorm.Expr("retry_times + 1"))
+	result := s.db.Model(&dbmodels.NotificationRecord{}).Where("id = ?", id).Update("retry_times", gorm.Expr("retry_times + 1"))
 	if result.Error != nil {
 		return fmt.Errorf("error incrementing retry count: %w", result.Error)
 	}
@@ -190,12 +190,12 @@ func (s *NotificationService) IncrementRetryCount(id string) error {
 
 func (s *NotificationService) generateChannelID() int64 {
 	var count int64
-	s.db.Model(&models.UserChannel{}).Count(&count)
+	s.db.Model(&dbmodels.UserChannel{}).Count(&count)
 	return count + 1
 }
 
 func (s *NotificationService) generateNotificationID() int64 {
 	var count int64
-	s.db.Model(&models.NotificationRecord{}).Count(&count)
+	s.db.Model(&dbmodels.NotificationRecord{}).Count(&count)
 	return count + 1
 }

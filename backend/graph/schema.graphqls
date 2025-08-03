@@ -43,6 +43,7 @@ type Dao {
   seq: Int!
   state: String!
   configLink: String!
+  tags: [String!]
   timeSyncd: Time
   ctime: Time!
   utime: Time
@@ -194,8 +195,8 @@ type Query {
 
   # DAO queries (no authentication required, but auth info affects result)
   daos: [Dao!]! @auth(required: false)
-  dao(id: ID!): Dao @auth(required: false)
-  daoByCode(code: String!): Dao @auth(required: false)
+  # dao(id: ID!): Dao @auth(required: false)
+  # daoByCode(code: String!): Dao @auth(required: false)
 
   # # User queries (require authentication for some)
   # users: [User!]! @auth @authorize(rule: ADMIN_ONLY)

@@ -7,6 +7,7 @@ package graph
 import (
 	"context"
 	"fmt"
+	"log/slog"
 
 	"github.com/ringecosystem/degov-apps/graph/model"
 )
@@ -39,6 +40,8 @@ func (r *queryResolver) Daos(ctx context.Context) ([]*model.Dao, error) {
 	// Check if user is authenticated to provide personalized data
 	authenticatedUser, _ := ctx.Value("authenticated_user").(string)
 
+	slog.Info("Fetching DAOs", "authenticated_user", authenticatedUser)
+
 	if authenticatedUser != "" {
 		// User is authenticated, return DAOs with personalized info (liked, subscribed, etc.)
 		// For now, just call the regular method - you can extend this later
@@ -47,16 +50,6 @@ func (r *queryResolver) Daos(ctx context.Context) ([]*model.Dao, error) {
 		// User not authenticated, return basic DAO info
 		return r.daoService.GetDaos()
 	}
-}
-
-// Dao is the resolver for the dao field.
-func (r *queryResolver) Dao(ctx context.Context, id string) (*model.Dao, error) {
-	panic(fmt.Errorf("not implemented: Dao - dao"))
-}
-
-// DaoByCode is the resolver for the daoByCode field.
-func (r *queryResolver) DaoByCode(ctx context.Context, code string) (*model.Dao, error) {
-	panic(fmt.Errorf("not implemented: DaoByCode - daoByCode"))
 }
 
 // Mutation returns MutationResolver implementation.

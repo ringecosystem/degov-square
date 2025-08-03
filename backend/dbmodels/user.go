@@ -1,4 +1,4 @@
-package models
+package dbmodels
 
 type User struct {
 	ID      string  `gorm:"column:id;type:varchar(50);primaryKey" json:"id"`

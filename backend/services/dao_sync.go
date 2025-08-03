@@ -10,10 +10,10 @@ import (
 	"gopkg.in/yaml.v3"
 	"gorm.io/gorm"
 
+	"github.com/ringecosystem/degov-apps/dbmodels"
 	"github.com/ringecosystem/degov-apps/internal"
 	"github.com/ringecosystem/degov-apps/internal/database"
 	"github.com/ringecosystem/degov-apps/internal/utils"
-	"github.com/ringecosystem/degov-apps/models"
 )
 
 type DaoSyncService struct {
@@ -98,7 +98,7 @@ func (s *DaoSyncService) SyncDaos() error {
 			}
 
 			// Upsert DAO in database
-			dao := &models.Dao{
+			dao := &dbmodels.Dao{
 				ID:         internal.NextIDString(),
 				ChainID:    chainID,
 				ChainName:  chainName,
@@ -194,8 +194,8 @@ func (s *DaoSyncService) getChainIDMap() map[string]int {
 }
 
 // upsertDao inserts or updates a DAO in the database
-func (s *DaoSyncService) upsertDao(dao *models.Dao) error {
-	var existingDao models.Dao
+func (s *DaoSyncService) upsertDao(dao *dbmodels.Dao) error {
+	var existingDao dbmodels.Dao
 	result := s.db.Where("code = ?", dao.Code).First(&existingDao)
 
 	if result.Error == gorm.ErrRecordNotFound {
@@ -216,7 +216,7 @@ func (s *DaoSyncService) upsertDao(dao *models.Dao) error {
 
 // markInactiveDAOs marks DAOs as inactive if they're not in the active list
 func (s *DaoSyncService) markInactiveDAOs(activeCodes map[string]bool) error {
-	var allDaos []models.Dao
+	var allDaos []dbmodels.Dao
 	if err := s.db.Find(&allDaos).Error; err != nil {
 		return err
 	}

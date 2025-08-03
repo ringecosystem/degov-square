@@ -6,8 +6,8 @@ import (
 
 	"gorm.io/gorm"
 
+	"github.com/ringecosystem/degov-apps/dbmodels"
 	"github.com/ringecosystem/degov-apps/internal/database"
-	"github.com/ringecosystem/degov-apps/models"
 )
 
 type UserService struct {
@@ -26,9 +26,9 @@ func (s *UserService) Nonce() (string, error) {
 	return "nonce-placeholder", nil
 }
 
-func (s *UserService) CreateUser(address string, email *string) (*models.User, error) {
+func (s *UserService) CreateUser(address string, email *string) (*dbmodels.User, error) {
 	// check if address already exists
-	var existingUser models.User
+	var existingUser dbmodels.User
 	err := s.db.Where("address = ?", address).First(&existingUser).Error
 	if err == nil {
 		return nil, errors.New("address already exists")
@@ -40,7 +40,7 @@ func (s *UserService) CreateUser(address string, email *string) (*models.User, e
 	// generate user ID (you might want to use UUID here)
 	userID := fmt.Sprintf("user_%d", s.generateUserID())
 
-	user := &models.User{
+	user := &dbmodels.User{
 		ID:      userID,
 		Address: address,
 		Email:   email,
@@ -53,8 +53,8 @@ func (s *UserService) CreateUser(address string, email *string) (*models.User, e
 	return user, nil
 }
 
-func (s *UserService) GetUserByID(id string) (*models.User, error) {
-	var user models.User
+func (s *UserService) GetUserByID(id string) (*dbmodels.User, error) {
+	var user dbmodels.User
 	err := s.db.First(&user, "id = ?", id).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -65,8 +65,8 @@ func (s *UserService) GetUserByID(id string) (*models.User, error) {
 	return &user, nil
 }
 
-func (s *UserService) GetUserByAddress(address string) (*models.User, error) {
-	var user models.User
+func (s *UserService) GetUserByAddress(address string) (*dbmodels.User, error) {
+	var user dbmodels.User
 	err := s.db.Where("address = ?", address).First(&user).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -77,8 +77,8 @@ func (s *UserService) GetUserByAddress(address string) (*models.User, error) {
 	return &user, nil
 }
 
-func (s *UserService) UpdateUser(id string, email *string) (*models.User, error) {
-	var user models.User
+func (s *UserService) UpdateUser(id string, email *string) (*dbmodels.User, error) {
+	var user dbmodels.User
 	err := s.db.First(&user, "id = ?", id).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -97,7 +97,7 @@ func (s *UserService) UpdateUser(id string, email *string) (*models.User, error)
 }
 
 func (s *UserService) DeleteUser(id string) error {
-	result := s.db.Delete(&models.User{}, "id = ?", id)
+	result := s.db.Delete(&dbmodels.User{}, "id = ?", id)
 	if result.Error != nil {
 		return fmt.Errorf("error deleting user: %w", result.Error)
 	}
@@ -107,8 +107,8 @@ func (s *UserService) DeleteUser(id string) error {
 	return nil
 }
 
-func (s *UserService) GetUsers() ([]*models.User, error) {
-	var users []*models.User
+func (s *UserService) GetUsers() ([]*dbmodels.User, error) {
+	var users []*dbmodels.User
 	err := s.db.Find(&users).Error
 	if err != nil {
 		return nil, fmt.Errorf("error getting users: %w", err)
@@ -119,6 +119,6 @@ func (s *UserService) GetUsers() ([]*models.User, error) {
 func (s *UserService) generateUserID() int64 {
 	// Simple implementation - in production, you'd want to use UUID or a more robust ID generation
 	var count int64
-	s.db.Model(&models.User{}).Count(&count)
+	s.db.Model(&dbmodels.User{}).Count(&count)
 	return count + 1
 }

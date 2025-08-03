@@ -7,8 +7,8 @@ import (
 
 	"gorm.io/gorm"
 
+	"github.com/ringecosystem/degov-apps/dbmodels"
 	"github.com/ringecosystem/degov-apps/internal/database"
-	"github.com/ringecosystem/degov-apps/models"
 )
 
 type UserInteractionService struct {
@@ -22,9 +22,9 @@ func NewUserInteractionService() *UserInteractionService {
 }
 
 // UserLikedDao methods
-func (s *UserInteractionService) LikeDao(userID, daoCode string) (*models.UserLikedDao, error) {
+func (s *UserInteractionService) LikeDao(userID, daoCode string) (*dbmodels.UserLikedDao, error) {
 	// check if already liked
-	var existing models.UserLikedDao
+	var existing dbmodels.UserLikedDao
 	err := s.db.Where("user_id = ? AND dao_code = ?", userID, daoCode).First(&existing).Error
 	if err == nil {
 		return nil, errors.New("DAO already liked by user")
@@ -36,7 +36,7 @@ func (s *UserInteractionService) LikeDao(userID, daoCode string) (*models.UserLi
 	// generate like ID
 	likeID := fmt.Sprintf("like_%d", s.generateLikeID())
 
-	like := &models.UserLikedDao{
+	like := &dbmodels.UserLikedDao{
 		ID:      likeID,
 		DaoCode: daoCode,
 		UserID:  userID,
@@ -51,7 +51,7 @@ func (s *UserInteractionService) LikeDao(userID, daoCode string) (*models.UserLi
 }
 
 func (s *UserInteractionService) UnlikeDao(userID, daoCode string) error {
-	result := s.db.Where("user_id = ? AND dao_code = ?", userID, daoCode).Delete(&models.UserLikedDao{})
+	result := s.db.Where("user_id = ? AND dao_code = ?", userID, daoCode).Delete(&dbmodels.UserLikedDao{})
 	if result.Error != nil {
 		return fmt.Errorf("error removing like: %w", result.Error)
 	}
@@ -61,8 +61,8 @@ func (s *UserInteractionService) UnlikeDao(userID, daoCode string) error {
 	return nil
 }
 
-func (s *UserInteractionService) GetUserLikedDaos(userID string) ([]*models.UserLikedDao, error) {
-	var likes []*models.UserLikedDao
+func (s *UserInteractionService) GetUserLikedDaos(userID string) ([]*dbmodels.UserLikedDao, error) {
+	var likes []*dbmodels.UserLikedDao
 	err := s.db.Where("user_id = ?", userID).Find(&likes).Error
 	if err != nil {
 		return nil, fmt.Errorf("error getting user liked DAOs: %w", err)
@@ -71,9 +71,9 @@ func (s *UserInteractionService) GetUserLikedDaos(userID string) ([]*models.User
 }
 
 // UserFollowedDao methods
-func (s *UserInteractionService) FollowDao(userID, daoCode string, chainID int, enableNewProposal, enableVotingEndReminder int) (*models.UserFollowedDao, error) {
+func (s *UserInteractionService) FollowDao(userID, daoCode string, chainID int, enableNewProposal, enableVotingEndReminder int) (*dbmodels.UserFollowedDao, error) {
 	// check if already following
-	var existing models.UserFollowedDao
+	var existing dbmodels.UserFollowedDao
 	err := s.db.Where("user_id = ? AND dao_code = ?", userID, daoCode).First(&existing).Error
 	if err == nil {
 		return nil, errors.New("DAO already followed by user")
@@ -85,7 +85,7 @@ func (s *UserInteractionService) FollowDao(userID, daoCode string, chainID int, 
 	// generate follow ID
 	followID := fmt.Sprintf("follow_%d", s.generateFollowID())
 
-	follow := &models.UserFollowedDao{
+	follow := &dbmodels.UserFollowedDao{
 		ID:                      followID,
 		ChainID:                 chainID,
 		DaoCode:                 daoCode,
@@ -103,7 +103,7 @@ func (s *UserInteractionService) FollowDao(userID, daoCode string, chainID int, 
 }
 
 func (s *UserInteractionService) UnfollowDao(userID, daoCode string) error {
-	result := s.db.Where("user_id = ? AND dao_code = ?", userID, daoCode).Delete(&models.UserFollowedDao{})
+	result := s.db.Where("user_id = ? AND dao_code = ?", userID, daoCode).Delete(&dbmodels.UserFollowedDao{})
 	if result.Error != nil {
 		return fmt.Errorf("error removing follow: %w", result.Error)
 	}
@@ -113,8 +113,8 @@ func (s *UserInteractionService) UnfollowDao(userID, daoCode string) error {
 	return nil
 }
 
-func (s *UserInteractionService) GetUserFollowedDaos(userID string) ([]*models.UserFollowedDao, error) {
-	var follows []*models.UserFollowedDao
+func (s *UserInteractionService) GetUserFollowedDaos(userID string) ([]*dbmodels.UserFollowedDao, error) {
+	var follows []*dbmodels.UserFollowedDao
 	err := s.db.Where("user_id = ?", userID).Find(&follows).Error
 	if err != nil {
 		return nil, fmt.Errorf("error getting user followed DAOs: %w", err)
@@ -122,8 +122,8 @@ func (s *UserInteractionService) GetUserFollowedDaos(userID string) ([]*models.U
 	return follows, nil
 }
 
-func (s *UserInteractionService) UpdateFollowSettings(userID, daoCode string, enableNewProposal, enableVotingEndReminder int) (*models.UserFollowedDao, error) {
-	var follow models.UserFollowedDao
+func (s *UserInteractionService) UpdateFollowSettings(userID, daoCode string, enableNewProposal, enableVotingEndReminder int) (*dbmodels.UserFollowedDao, error) {
+	var follow dbmodels.UserFollowedDao
 	err := s.db.Where("user_id = ? AND dao_code = ?", userID, daoCode).First(&follow).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -144,12 +144,12 @@ func (s *UserInteractionService) UpdateFollowSettings(userID, daoCode string, en
 
 func (s *UserInteractionService) generateLikeID() int64 {
 	var count int64
-	s.db.Model(&models.UserLikedDao{}).Count(&count)
+	s.db.Model(&dbmodels.UserLikedDao{}).Count(&count)
 	return count + 1
 }
 
 func (s *UserInteractionService) generateFollowID() int64 {
 	var count int64
-	s.db.Model(&models.UserFollowedDao{}).Count(&count)
+	s.db.Model(&dbmodels.UserFollowedDao{}).Count(&count)
 	return count + 1
 }

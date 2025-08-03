@@ -43,8 +43,6 @@ comment on column dgv_dao.code is 'DAO code';
 
 comment on column dgv_dao.tags is 'Optional tags for DAO categorization';
 
-comment on column dgv_dao.config_link is 'DAO config link';
-
 comment on column dgv_dao.time_syncd is 'last syncd time';
 
 create table

@@ -6,11 +6,11 @@ import (
 
 	"gorm.io/gorm"
 
+	"github.com/ringecosystem/degov-apps/dbmodels"
 	"github.com/ringecosystem/degov-apps/graph/model"
 	"github.com/ringecosystem/degov-apps/internal"
 	"github.com/ringecosystem/degov-apps/internal/database"
 	"github.com/ringecosystem/degov-apps/internal/utils"
-	"github.com/ringecosystem/degov-apps/models"
 	"github.com/ringecosystem/degov-apps/types"
 )
 
@@ -25,7 +25,7 @@ func NewDaoService() *DaoService {
 }
 
 func (s *DaoService) GetDaos() ([]*model.Dao, error) {
-	var dbDaos []model.Dao
+	var dbDaos []dbmodels.Dao
 	if err := s.db.Table("dgv_dao").Find(&dbDaos).Error; err != nil {
 		return nil, err
 	}
@@ -34,20 +34,33 @@ func (s *DaoService) GetDaos() ([]*model.Dao, error) {
 	for _, dbDao := range dbDaos {
 		liked := false
 		subscribed := false
+
+		// Convert tags from JSON string to string array
+		var tags []string
+		if dbDao.Tags != "" {
+			if err := json.Unmarshal([]byte(dbDao.Tags), &tags); err != nil {
+				// If JSON unmarshal fails, treat as empty array
+				tags = []string{}
+			}
+		}
+
 		dao := &model.Dao{
 			ID:         dbDao.ID,
-			ChainID:    dbDao.ChainID,
+			ChainID:    int32(dbDao.ChainID),
 			ChainName:  dbDao.ChainName,
 			Name:       dbDao.Name,
 			Code:       dbDao.Code,
+			Seq:        int32(dbDao.Seq),
 			State:      dbDao.State,
 			ConfigLink: dbDao.ConfigLink,
+			Tags:       tags,
 			TimeSyncd:  dbDao.TimeSyncd,
-			Ctime:      dbDao.Ctime,
-			Utime:      dbDao.Utime,
+			Ctime:      dbDao.CTime,
+			Utime:      dbDao.UTime,
 			Liked:      &liked,
 			Subscribed: &subscribed,
 		}
+
 		daos = append(daos, dao)
 	}
 
@@ -55,7 +68,7 @@ func (s *DaoService) GetDaos() ([]*model.Dao, error) {
 }
 
 func (s *DaoService) RefreshDaoAndConfig(input types.RefreshDaoAndConfigInput) error {
-	var existingDao models.Dao
+	var existingDao dbmodels.Dao
 	result := s.db.Where("code = ?", input.Code).First(&existingDao)
 
 	tagsJson := func() string {
@@ -66,7 +79,7 @@ func (s *DaoService) RefreshDaoAndConfig(input types.RefreshDaoAndConfigInput) e
 	}()
 	if result.Error == gorm.ErrRecordNotFound {
 		// Insert new DAO
-		dao := &models.Dao{
+		dao := &dbmodels.Dao{
 			ID:         internal.NextIDString(),
 			ChainID:    input.Config.Chain.ID,
 			ChainName:  input.Config.Chain.Name,
@@ -94,12 +107,12 @@ func (s *DaoService) RefreshDaoAndConfig(input types.RefreshDaoAndConfigInput) e
 		}
 	}
 
-	var existingConfig models.DgvDaoConfig
+	var existingConfig dbmodels.DgvDaoConfig
 	r2 := s.db.Where("code = ?", input.Code).First(&existingConfig)
 
 	if r2.Error == gorm.ErrRecordNotFound {
 		// Insert new DAO config
-		config := &models.DgvDaoConfig{
+		config := &dbmodels.DgvDaoConfig{
 			ID:     internal.NextIDString(),
 			Code:   input.Code,
 			Config: input.Raw,
@@ -120,7 +133,7 @@ func (s *DaoService) RefreshDaoAndConfig(input types.RefreshDaoAndConfigInput) e
 // MarkInactiveDAOs marks DAOs as inactive if they're not in the active list
 func (s *DaoService) MarkInactiveDAOs(activeCodes map[string]bool) error {
 	// Use a more efficient query to find and update inactive DAOs in one go
-	result := s.db.Model(&models.Dao{}).
+	result := s.db.Model(&dbmodels.Dao{}).
 		Where("code NOT IN ? AND state != ?", getMapKeys(activeCodes), "INACTIVE").
 		Updates(map[string]interface{}{
 			"state": "INACTIVE",
