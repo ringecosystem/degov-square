@@ -49,6 +49,17 @@ type Dao {
   utime: Time
   liked: Boolean
   subscribed: Boolean
+  chips: [DaoChip!]
+}
+
+type DaoChip {
+  id: ID!
+  daoCode: String!
+  chipCode: String!
+  value: String!
+  additional: String
+  ctime: Time!
+  utime: Time
 }
 
 # type UserLikedDao {

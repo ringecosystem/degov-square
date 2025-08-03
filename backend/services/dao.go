@@ -26,7 +26,18 @@ func NewDaoService() *DaoService {
 
 func (s *DaoService) GetDaos() ([]*model.Dao, error) {
 	var dbDaos []dbmodels.Dao
-	if err := s.db.Table("dgv_dao").Find(&dbDaos).Error; err != nil {
+	if err := s.db.Table("dgv_dao").Where("state = ?", "ACTIVE").Find(&dbDaos).Order("seq asc").Error; err != nil {
+		return nil, err
+	}
+
+	// Extract dao codes from dbDaos
+	var daoCodes []string
+	for _, dao := range dbDaos {
+		daoCodes = append(daoCodes, dao.Code)
+	}
+
+	var dbChips []dbmodels.DgvDaoChip
+	if err := s.db.Table("dgv_dao_chip").Where("dao_code IN ?", daoCodes).Find(&dbChips).Error; err != nil {
 		return nil, err
 	}
 
@@ -44,6 +55,23 @@ func (s *DaoService) GetDaos() ([]*model.Dao, error) {
 			}
 		}
 
+		// Find chips for this DAO
+		var chips []*model.DaoChip
+		for _, dbChip := range dbChips {
+			if dbChip.DaoCode == dbDao.Code {
+				chip := &model.DaoChip{
+					ID:         dbChip.ID,
+					DaoCode:    dbChip.DaoCode,
+					ChipCode:   dbChip.ChipCode,
+					Value:      dbChip.Value,
+					Additional: &dbChip.Additional,
+					Ctime:      dbChip.CTime,
+					Utime:      dbChip.UTime,
+				}
+				chips = append(chips, chip)
+			}
+		}
+
 		dao := &model.Dao{
 			ID:         dbDao.ID,
 			ChainID:    int32(dbDao.ChainID),
@@ -58,6 +86,7 @@ func (s *DaoService) GetDaos() ([]*model.Dao, error) {
 			Utime:      dbDao.UTime,
 			Liked:      &liked,
 			Subscribed: &subscribed,
+			Chips:      chips,
 		}
 
 		daos = append(daos, dao)
