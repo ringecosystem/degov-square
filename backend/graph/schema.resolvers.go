@@ -9,7 +9,6 @@ import (
 	"fmt"
 
 	"github.com/ringecosystem/degov-apps/graph/model"
-	"github.com/ringecosystem/degov-apps/internal/middleware"
 )
 
 // Login is the resolver for the login field.
@@ -20,233 +19,6 @@ func (r *mutationResolver) Login(ctx context.Context, input model.LoginInput) (*
 	}
 
 	return &output, nil
-}
-
-// CreateUser is the resolver for the createUser field.
-func (r *mutationResolver) CreateUser(ctx context.Context, input model.CreateUserInput) (*model.User, error) {
-	// Require authentication
-	claims, err := middleware.RequireAuth(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("authentication required: %v", err)
-	}
-
-	// Optional: Add additional authorization logic here
-	// For example, only allow users to create their own user record
-	if claims.Address != input.Address {
-		return nil, fmt.Errorf("permission denied: can only create user for your own address")
-	}
-
-	// Implementation would go here
-	panic(fmt.Errorf("not implemented: CreateUser - createUser"))
-}
-
-// UpdateUser is the resolver for the updateUser field.
-func (r *mutationResolver) UpdateUser(ctx context.Context, input model.UpdateUserInput) (*model.User, error) {
-	// Require authentication
-	_, err := middleware.RequireAuth(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("authentication required: %v", err)
-	}
-
-	// Implementation would go here
-	panic(fmt.Errorf("not implemented: UpdateUser - updateUser"))
-}
-
-// DeleteUser is the resolver for the deleteUser field.
-func (r *mutationResolver) DeleteUser(ctx context.Context, id string) (bool, error) {
-	// Require authentication
-	_, err := middleware.RequireAuth(ctx)
-	if err != nil {
-		return false, fmt.Errorf("authentication required: %v", err)
-	}
-
-	// Implementation would go here
-	panic(fmt.Errorf("not implemented: DeleteUser - deleteUser"))
-}
-
-// CreateDao is the resolver for the createDao field.
-func (r *mutationResolver) CreateDao(ctx context.Context, input model.CreateDaoInput) (*model.Dao, error) {
-	// Require authentication
-	_, err := middleware.RequireAuth(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("authentication required: %v", err)
-	}
-
-	// Implementation would go here
-	panic(fmt.Errorf("not implemented: CreateDao - createDao"))
-}
-
-// UpdateDao is the resolver for the updateDao field.
-func (r *mutationResolver) UpdateDao(ctx context.Context, id string, input model.CreateDaoInput) (*model.Dao, error) {
-	// Require authentication
-	_, err := middleware.RequireAuth(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("authentication required: %v", err)
-	}
-
-	// Implementation would go here
-	panic(fmt.Errorf("not implemented: UpdateDao - updateDao"))
-}
-
-// DeleteDao is the resolver for the deleteDao field.
-func (r *mutationResolver) DeleteDao(ctx context.Context, id string) (bool, error) {
-	// Require authentication
-	_, err := middleware.RequireAuth(ctx)
-	if err != nil {
-		return false, fmt.Errorf("authentication required: %v", err)
-	}
-
-	// Implementation would go here
-	panic(fmt.Errorf("not implemented: DeleteDao - deleteDao"))
-}
-
-// LikeDao is the resolver for the likeDao field.
-func (r *mutationResolver) LikeDao(ctx context.Context, input model.LikeDaoInput) (*model.UserLikedDao, error) {
-	// Require authentication
-	claims, err := middleware.RequireAuth(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("authentication required: %v", err)
-	}
-
-	// Ensure user can only like DAOs for their own account
-	if claims.Address != input.UserID {
-		return nil, fmt.Errorf("permission denied: can only like DAOs for your own account")
-	}
-
-	// Implementation would go here
-	panic(fmt.Errorf("not implemented: LikeDao - likeDao"))
-}
-
-// UnlikeDao is the resolver for the unlikeDao field.
-func (r *mutationResolver) UnlikeDao(ctx context.Context, userID string, daoCode string) (bool, error) {
-	// Require authentication
-	claims, err := middleware.RequireAuth(ctx)
-	if err != nil {
-		return false, fmt.Errorf("authentication required: %v", err)
-	}
-
-	// Ensure user can only unlike DAOs for their own account
-	if claims.Address != userID {
-		return false, fmt.Errorf("permission denied: can only unlike DAOs for your own account")
-	}
-
-	// Implementation would go here
-	panic(fmt.Errorf("not implemented: UnlikeDao - unlikeDao"))
-}
-
-// FollowDao is the resolver for the followDao field.
-func (r *mutationResolver) FollowDao(ctx context.Context, input model.FollowDaoInput) (*model.UserFollowedDao, error) {
-	// Require authentication
-	claims, err := middleware.RequireAuth(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("authentication required: %v", err)
-	}
-
-	// Ensure user can only follow DAOs for their own account
-	if claims.Address != input.UserID {
-		return nil, fmt.Errorf("permission denied: can only follow DAOs for your own account")
-	}
-
-	// Implementation would go here
-	panic(fmt.Errorf("not implemented: FollowDao - followDao"))
-}
-
-// UnfollowDao is the resolver for the unfollowDao field.
-func (r *mutationResolver) UnfollowDao(ctx context.Context, userID string, daoCode string) (bool, error) {
-	// Require authentication
-	claims, err := middleware.RequireAuth(ctx)
-	if err != nil {
-		return false, fmt.Errorf("authentication required: %v", err)
-	}
-
-	// Ensure user can only unfollow DAOs for their own account
-	if claims.Address != userID {
-		return false, fmt.Errorf("permission denied: can only unfollow DAOs for your own account")
-	}
-
-	// Implementation would go here
-	panic(fmt.Errorf("not implemented: UnfollowDao - unfollowDao"))
-}
-
-// CreateUserChannel is the resolver for the createUserChannel field.
-func (r *mutationResolver) CreateUserChannel(ctx context.Context, input model.CreateUserChannelInput) (*model.UserChannel, error) {
-	// Require authentication
-	claims, err := middleware.RequireAuth(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("authentication required: %v", err)
-	}
-
-	// Ensure user can only create channels for their own account
-	if claims.Address != input.UserID {
-		return nil, fmt.Errorf("permission denied: can only create channels for your own account")
-	}
-
-	// Implementation would go here
-	panic(fmt.Errorf("not implemented: CreateUserChannel - createUserChannel"))
-}
-
-// UpdateUserChannel is the resolver for the updateUserChannel field.
-func (r *mutationResolver) UpdateUserChannel(ctx context.Context, id string, input model.CreateUserChannelInput) (*model.UserChannel, error) {
-	// Require authentication
-	claims, err := middleware.RequireAuth(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("authentication required: %v", err)
-	}
-
-	// Ensure user can only update channels for their own account
-	if claims.Address != input.UserID {
-		return nil, fmt.Errorf("permission denied: can only update channels for your own account")
-	}
-
-	// Implementation would go here
-	panic(fmt.Errorf("not implemented: UpdateUserChannel - updateUserChannel"))
-}
-
-// DeleteUserChannel is the resolver for the deleteUserChannel field.
-func (r *mutationResolver) DeleteUserChannel(ctx context.Context, id string) (bool, error) {
-	// Require authentication
-	_, err := middleware.RequireAuth(ctx)
-	if err != nil {
-		return false, fmt.Errorf("authentication required: %v", err)
-	}
-
-	// Additional authorization logic would be needed here to ensure
-	// user can only delete their own channels
-
-	// Implementation would go here
-	panic(fmt.Errorf("not implemented: DeleteUserChannel - deleteUserChannel"))
-}
-
-// VerifyUserChannel is the resolver for the verifyUserChannel field.
-func (r *mutationResolver) VerifyUserChannel(ctx context.Context, id string) (*model.UserChannel, error) {
-	// Require authentication
-	_, err := middleware.RequireAuth(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("authentication required: %v", err)
-	}
-
-	// Additional authorization logic would be needed here to ensure
-	// user can only verify their own channels
-
-	// Implementation would go here
-	panic(fmt.Errorf("not implemented: VerifyUserChannel - verifyUserChannel"))
-}
-
-// CreateNotificationRecord is the resolver for the createNotificationRecord field.
-func (r *mutationResolver) CreateNotificationRecord(ctx context.Context, input model.CreateNotificationRecordInput) (*model.NotificationRecord, error) {
-	// Require authentication
-	claims, err := middleware.RequireAuth(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("authentication required: %v", err)
-	}
-
-	// Ensure user can only create notifications for their own account
-	if claims.Address != input.UserID {
-		return nil, fmt.Errorf("permission denied: can only create notifications for your own account")
-	}
-
-	// Implementation would go here
-	panic(fmt.Errorf("not implemented: CreateNotificationRecord - createNotificationRecord"))
 }
 
 // Nonce is the resolver for the nonce field.
@@ -287,7 +59,219 @@ func (r *queryResolver) DaoByCode(ctx context.Context, code string) (*model.Dao,
 	panic(fmt.Errorf("not implemented: DaoByCode - daoByCode"))
 }
 
-// Users is the resolver for the users field.
+// Mutation returns MutationResolver implementation.
+func (r *Resolver) Mutation() MutationResolver { return &mutationResolver{r} }
+
+// Query returns QueryResolver implementation.
+func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
+
+type mutationResolver struct{ *Resolver }
+type queryResolver struct{ *Resolver }
+
+// !!! WARNING !!!
+// The code below was going to be deleted when updating resolvers. It has been copied here so you have
+// one last chance to move it out of harms way if you want. There are two reasons this happens:
+//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
+//    it when you're done.
+//  - You have helper methods in this file. Move them out to keep these resolver files clean.
+/*
+	func (r *mutationResolver) CreateUser(ctx context.Context, input model.CreateUserInput) (*model.User, error) {
+	// Require authentication
+	claims, err := middleware.RequireAuth(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("authentication required: %v", err)
+	}
+
+	// Optional: Add additional authorization logic here
+	// For example, only allow users to create their own user record
+	if claims.Address != input.Address {
+		return nil, fmt.Errorf("permission denied: can only create user for your own address")
+	}
+
+	// Implementation would go here
+	panic(fmt.Errorf("not implemented: CreateUser - createUser"))
+}
+func (r *mutationResolver) UpdateUser(ctx context.Context, input model.UpdateUserInput) (*model.User, error) {
+	// Require authentication
+	_, err := middleware.RequireAuth(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("authentication required: %v", err)
+	}
+
+	// Implementation would go here
+	panic(fmt.Errorf("not implemented: UpdateUser - updateUser"))
+}
+func (r *mutationResolver) DeleteUser(ctx context.Context, id string) (bool, error) {
+	// Require authentication
+	_, err := middleware.RequireAuth(ctx)
+	if err != nil {
+		return false, fmt.Errorf("authentication required: %v", err)
+	}
+
+	// Implementation would go here
+	panic(fmt.Errorf("not implemented: DeleteUser - deleteUser"))
+}
+func (r *mutationResolver) CreateDao(ctx context.Context, input model.CreateDaoInput) (*model.Dao, error) {
+	// Require authentication
+	_, err := middleware.RequireAuth(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("authentication required: %v", err)
+	}
+
+	// Implementation would go here
+	panic(fmt.Errorf("not implemented: CreateDao - createDao"))
+}
+func (r *mutationResolver) UpdateDao(ctx context.Context, id string, input model.CreateDaoInput) (*model.Dao, error) {
+	// Require authentication
+	_, err := middleware.RequireAuth(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("authentication required: %v", err)
+	}
+
+	// Implementation would go here
+	panic(fmt.Errorf("not implemented: UpdateDao - updateDao"))
+}
+func (r *mutationResolver) DeleteDao(ctx context.Context, id string) (bool, error) {
+	// Require authentication
+	_, err := middleware.RequireAuth(ctx)
+	if err != nil {
+		return false, fmt.Errorf("authentication required: %v", err)
+	}
+
+	// Implementation would go here
+	panic(fmt.Errorf("not implemented: DeleteDao - deleteDao"))
+}
+func (r *mutationResolver) LikeDao(ctx context.Context, input model.LikeDaoInput) (*model.UserLikedDao, error) {
+	// Require authentication
+	claims, err := middleware.RequireAuth(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("authentication required: %v", err)
+	}
+
+	// Ensure user can only like DAOs for their own account
+	if claims.Address != input.UserID {
+		return nil, fmt.Errorf("permission denied: can only like DAOs for your own account")
+	}
+
+	// Implementation would go here
+	panic(fmt.Errorf("not implemented: LikeDao - likeDao"))
+}
+func (r *mutationResolver) UnlikeDao(ctx context.Context, userID string, daoCode string) (bool, error) {
+	// Require authentication
+	claims, err := middleware.RequireAuth(ctx)
+	if err != nil {
+		return false, fmt.Errorf("authentication required: %v", err)
+	}
+
+	// Ensure user can only unlike DAOs for their own account
+	if claims.Address != userID {
+		return false, fmt.Errorf("permission denied: can only unlike DAOs for your own account")
+	}
+
+	// Implementation would go here
+	panic(fmt.Errorf("not implemented: UnlikeDao - unlikeDao"))
+}
+func (r *mutationResolver) FollowDao(ctx context.Context, input model.FollowDaoInput) (*model.UserFollowedDao, error) {
+	// Require authentication
+	claims, err := middleware.RequireAuth(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("authentication required: %v", err)
+	}
+
+	// Ensure user can only follow DAOs for their own account
+	if claims.Address != input.UserID {
+		return nil, fmt.Errorf("permission denied: can only follow DAOs for your own account")
+	}
+
+	// Implementation would go here
+	panic(fmt.Errorf("not implemented: FollowDao - followDao"))
+}
+func (r *mutationResolver) UnfollowDao(ctx context.Context, userID string, daoCode string) (bool, error) {
+	// Require authentication
+	claims, err := middleware.RequireAuth(ctx)
+	if err != nil {
+		return false, fmt.Errorf("authentication required: %v", err)
+	}
+
+	// Ensure user can only unfollow DAOs for their own account
+	if claims.Address != userID {
+		return false, fmt.Errorf("permission denied: can only unfollow DAOs for your own account")
+	}
+
+	// Implementation would go here
+	panic(fmt.Errorf("not implemented: UnfollowDao - unfollowDao"))
+}
+func (r *mutationResolver) CreateUserChannel(ctx context.Context, input model.CreateUserChannelInput) (*model.UserChannel, error) {
+	// Require authentication
+	claims, err := middleware.RequireAuth(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("authentication required: %v", err)
+	}
+
+	// Ensure user can only create channels for their own account
+	if claims.Address != input.UserID {
+		return nil, fmt.Errorf("permission denied: can only create channels for your own account")
+	}
+
+	// Implementation would go here
+	panic(fmt.Errorf("not implemented: CreateUserChannel - createUserChannel"))
+}
+func (r *mutationResolver) UpdateUserChannel(ctx context.Context, id string, input model.CreateUserChannelInput) (*model.UserChannel, error) {
+	// Require authentication
+	claims, err := middleware.RequireAuth(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("authentication required: %v", err)
+	}
+
+	// Ensure user can only update channels for their own account
+	if claims.Address != input.UserID {
+		return nil, fmt.Errorf("permission denied: can only update channels for your own account")
+	}
+
+	// Implementation would go here
+	panic(fmt.Errorf("not implemented: UpdateUserChannel - updateUserChannel"))
+}
+func (r *mutationResolver) DeleteUserChannel(ctx context.Context, id string) (bool, error) {
+	// Require authentication
+	_, err := middleware.RequireAuth(ctx)
+	if err != nil {
+		return false, fmt.Errorf("authentication required: %v", err)
+	}
+
+	// Additional authorization logic would be needed here to ensure
+	// user can only delete their own channels
+
+	// Implementation would go here
+	panic(fmt.Errorf("not implemented: DeleteUserChannel - deleteUserChannel"))
+}
+func (r *mutationResolver) VerifyUserChannel(ctx context.Context, id string) (*model.UserChannel, error) {
+	// Require authentication
+	_, err := middleware.RequireAuth(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("authentication required: %v", err)
+	}
+
+	// Additional authorization logic would be needed here to ensure
+	// user can only verify their own channels
+
+	// Implementation would go here
+	panic(fmt.Errorf("not implemented: VerifyUserChannel - verifyUserChannel"))
+}
+func (r *mutationResolver) CreateNotificationRecord(ctx context.Context, input model.CreateNotificationRecordInput) (*model.NotificationRecord, error) {
+	// Require authentication
+	claims, err := middleware.RequireAuth(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("authentication required: %v", err)
+	}
+
+	// Ensure user can only create notifications for their own account
+	if claims.Address != input.UserID {
+		return nil, fmt.Errorf("permission denied: can only create notifications for your own account")
+	}
+
+	// Implementation would go here
+	panic(fmt.Errorf("not implemented: CreateNotificationRecord - createNotificationRecord"))
+}
 func (r *queryResolver) Users(ctx context.Context) ([]*model.User, error) {
 	// Require authentication - this is admin only functionality
 	_, err := middleware.RequireAuth(ctx)
@@ -301,8 +285,6 @@ func (r *queryResolver) Users(ctx context.Context) ([]*model.User, error) {
 	// Implementation would go here
 	panic(fmt.Errorf("not implemented: Users - users"))
 }
-
-// User is the resolver for the user field.
 func (r *queryResolver) User(ctx context.Context, id string) (*model.User, error) {
 	// Optional authentication - public profiles may be viewable
 	// but private data requires authentication
@@ -316,8 +298,6 @@ func (r *queryResolver) User(ctx context.Context, id string) (*model.User, error
 	// Implementation would go here
 	panic(fmt.Errorf("not implemented: User - user"))
 }
-
-// UserByAddress is the resolver for the userByAddress field.
 func (r *queryResolver) UserByAddress(ctx context.Context, address string) (*model.User, error) {
 	// Optional authentication - similar to User query
 	isAuthenticated := middleware.IsAuthenticated(ctx)
@@ -330,8 +310,6 @@ func (r *queryResolver) UserByAddress(ctx context.Context, address string) (*mod
 	// Implementation would go here
 	panic(fmt.Errorf("not implemented: UserByAddress - userByAddress"))
 }
-
-// Me is the resolver for the me field.
 func (r *queryResolver) Me(ctx context.Context) (*model.User, error) {
 	// Always require authentication for "me" query
 	claims, err := middleware.RequireAuth(ctx)
@@ -346,8 +324,6 @@ func (r *queryResolver) Me(ctx context.Context) (*model.User, error) {
 	_ = userAddress
 	panic(fmt.Errorf("not implemented: Me - me"))
 }
-
-// UserLikedDaos is the resolver for the userLikedDaos field.
 func (r *queryResolver) UserLikedDaos(ctx context.Context, userID string) ([]*model.UserLikedDao, error) {
 	// Require authentication
 	claims, err := middleware.RequireAuth(ctx)
@@ -363,8 +339,6 @@ func (r *queryResolver) UserLikedDaos(ctx context.Context, userID string) ([]*mo
 	// Implementation would go here
 	panic(fmt.Errorf("not implemented: UserLikedDaos - userLikedDaos"))
 }
-
-// UserFollowedDaos is the resolver for the userFollowedDaos field.
 func (r *queryResolver) UserFollowedDaos(ctx context.Context, userID string) ([]*model.UserFollowedDao, error) {
 	// Require authentication
 	claims, err := middleware.RequireAuth(ctx)
@@ -380,8 +354,6 @@ func (r *queryResolver) UserFollowedDaos(ctx context.Context, userID string) ([]
 	// Implementation would go here
 	panic(fmt.Errorf("not implemented: UserFollowedDaos - userFollowedDaos"))
 }
-
-// NotificationRecords is the resolver for the notificationRecords field.
 func (r *queryResolver) NotificationRecords(ctx context.Context, userID string) ([]*model.NotificationRecord, error) {
 	// Require authentication
 	claims, err := middleware.RequireAuth(ctx)
@@ -397,8 +369,6 @@ func (r *queryResolver) NotificationRecords(ctx context.Context, userID string) 
 	// Implementation would go here
 	panic(fmt.Errorf("not implemented: NotificationRecords - notificationRecords"))
 }
-
-// UserChannels is the resolver for the userChannels field.
 func (r *queryResolver) UserChannels(ctx context.Context, userID string) ([]*model.UserChannel, error) {
 	// Require authentication
 	claims, err := middleware.RequireAuth(ctx)
@@ -414,12 +384,4 @@ func (r *queryResolver) UserChannels(ctx context.Context, userID string) ([]*mod
 	// Implementation would go here
 	panic(fmt.Errorf("not implemented: UserChannels - userChannels"))
 }
-
-// Mutation returns MutationResolver implementation.
-func (r *Resolver) Mutation() MutationResolver { return &mutationResolver{r} }
-
-// Query returns QueryResolver implementation.
-func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
-
-type mutationResolver struct{ *Resolver }
-type queryResolver struct{ *Resolver }
+*/
