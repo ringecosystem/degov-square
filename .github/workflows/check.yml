@@ -4,15 +4,11 @@ on:
   pull_request:
 
 jobs:
-  check:
-    name: Check
+  check-web:
+    name: Check Web
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        package:
-          - web
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
 
       - name: Setup NodeJS
         uses: actions/setup-node@v4
@@ -24,11 +20,26 @@ jobs:
           version: 9
 
       - name: Install deps
+        working-directory: web
         run: |
-          cd ${{ matrix.package }}
           pnpm install
 
       - name: Check Build
+        working-directory: web
         run: |
-          cd ${{ matrix.package }}
           pnpm build
+
+  check-backend:
+    name: Check Backend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+
+      - name: Check Build
+        working-directory: backend
+        run: |
+          make generate
+          make deps
+          make build

@@ -1,0 +1,144 @@
+package services
+
+import (
+	"encoding/json"
+	"time"
+
+	"gorm.io/gorm"
+
+	"github.com/ringecosystem/degov-apps/graph/model"
+	"github.com/ringecosystem/degov-apps/internal"
+	"github.com/ringecosystem/degov-apps/internal/database"
+	"github.com/ringecosystem/degov-apps/internal/utils"
+	"github.com/ringecosystem/degov-apps/models"
+	"github.com/ringecosystem/degov-apps/types"
+)
+
+type DaoService struct {
+	db *gorm.DB
+}
+
+func NewDaoService() *DaoService {
+	return &DaoService{
+		db: database.GetDB(),
+	}
+}
+
+func (s *DaoService) GetDaos() ([]*model.Dao, error) {
+	var dbDaos []model.Dao
+	if err := s.db.Table("dgv_dao").Find(&dbDaos).Error; err != nil {
+		return nil, err
+	}
+
+	var daos []*model.Dao
+	for _, dbDao := range dbDaos {
+		liked := false
+		subscribed := false
+		dao := &model.Dao{
+			ID:         dbDao.ID,
+			ChainID:    dbDao.ChainID,
+			ChainName:  dbDao.ChainName,
+			Name:       dbDao.Name,
+			Code:       dbDao.Code,
+			State:      dbDao.State,
+			ConfigLink: dbDao.ConfigLink,
+			TimeSyncd:  dbDao.TimeSyncd,
+			Ctime:      dbDao.Ctime,
+			Utime:      dbDao.Utime,
+			Liked:      &liked,
+			Subscribed: &subscribed,
+		}
+		daos = append(daos, dao)
+	}
+
+	return daos, nil
+}
+
+func (s *DaoService) RefreshDaoAndConfig(input types.RefreshDaoAndConfigInput) error {
+	var existingDao models.Dao
+	result := s.db.Where("code = ?", input.Code).First(&existingDao)
+
+	tagsJson := func() string {
+		if tagsJSON, err := json.Marshal(input.Tags); err == nil {
+			return string(tagsJSON)
+		}
+		return ""
+	}()
+	if result.Error == gorm.ErrRecordNotFound {
+		// Insert new DAO
+		dao := &models.Dao{
+			ID:         internal.NextIDString(),
+			ChainID:    input.Config.Chain.ID,
+			ChainName:  input.Config.Chain.Name,
+			Name:       input.Config.Name,
+			Code:       input.Code,
+			State:      "ACTIVE",
+			Tags:       tagsJson,
+			ConfigLink: input.ConfigLink,
+			TimeSyncd:  utils.TimePtrNow(),
+		}
+		if err := s.db.Create(dao).Error; err != nil {
+			return err
+		}
+	} else {
+		// Update existing DAO
+		existingDao.ChainID = input.Config.Chain.ID
+		existingDao.ChainName = input.Config.Chain.Name
+		existingDao.Name = input.Config.Name
+		existingDao.State = "ACTIVE"
+		existingDao.Tags = tagsJson
+		existingDao.ConfigLink = input.ConfigLink
+		existingDao.UTime = utils.TimePtrNow()
+		if err := s.db.Save(&existingDao).Error; err != nil {
+			return err
+		}
+	}
+
+	var existingConfig models.DgvDaoConfig
+	r2 := s.db.Where("code = ?", input.Code).First(&existingConfig)
+
+	if r2.Error == gorm.ErrRecordNotFound {
+		// Insert new DAO config
+		config := &models.DgvDaoConfig{
+			ID:     internal.NextIDString(),
+			Code:   input.Code,
+			Config: input.Raw,
+			CTime:  time.Now(),
+		}
+		return s.db.Create(config).Error
+	} else if r2.Error != nil {
+		return r2.Error
+	}
+
+	// Update existing DAO config
+	existingConfig.Config = input.Raw
+	existingConfig.UTime = utils.TimePtrNow()
+
+	return s.db.Save(&existingConfig).Error
+}
+
+// MarkInactiveDAOs marks DAOs as inactive if they're not in the active list
+func (s *DaoService) MarkInactiveDAOs(activeCodes map[string]bool) error {
+	// Use a more efficient query to find and update inactive DAOs in one go
+	result := s.db.Model(&models.Dao{}).
+		Where("code NOT IN ? AND state != ?", getMapKeys(activeCodes), "INACTIVE").
+		Updates(map[string]interface{}{
+			"state": "INACTIVE",
+			"utime": utils.TimePtrNow(),
+		})
+
+	if result.Error != nil {
+		return result.Error
+	}
+
+	return nil
+}
+
+// getMapKeys extracts keys from a map[string]bool
+func getMapKeys(m map[string]bool) []string {
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	return keys
+}
