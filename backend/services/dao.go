@@ -52,7 +52,6 @@ func (s *DaoService) GetDaos() ([]*model.Dao, error) {
 			Code:       dbDao.Code,
 			Seq:        int32(dbDao.Seq),
 			State:      dbDao.State,
-			ConfigLink: dbDao.ConfigLink,
 			Tags:       tags,
 			TimeSyncd:  dbDao.TimeSyncd,
 			Ctime:      dbDao.CTime,
@@ -71,12 +70,7 @@ func (s *DaoService) RefreshDaoAndConfig(input types.RefreshDaoAndConfigInput) e
 	var existingDao dbmodels.Dao
 	result := s.db.Where("code = ?", input.Code).First(&existingDao)
 
-	tagsJson := func() string {
-		if tagsJSON, err := json.Marshal(input.Tags); err == nil {
-			return string(tagsJSON)
-		}
-		return ""
-	}()
+	tagsJson := utils.ToJSON(input.Tags)
 	if result.Error == gorm.ErrRecordNotFound {
 		// Insert new DAO
 		dao := &dbmodels.Dao{
@@ -108,15 +102,15 @@ func (s *DaoService) RefreshDaoAndConfig(input types.RefreshDaoAndConfigInput) e
 	}
 
 	var existingConfig dbmodels.DgvDaoConfig
-	r2 := s.db.Where("code = ?", input.Code).First(&existingConfig)
+	r2 := s.db.Where("dao_code = ?", input.Code).First(&existingConfig)
 
 	if r2.Error == gorm.ErrRecordNotFound {
 		// Insert new DAO config
 		config := &dbmodels.DgvDaoConfig{
-			ID:     internal.NextIDString(),
-			Code:   input.Code,
-			Config: input.Raw,
-			CTime:  time.Now(),
+			ID:      internal.NextIDString(),
+			DaoCode: input.Code,
+			Config:  input.Raw,
+			CTime:   time.Now(),
 		}
 		return s.db.Create(config).Error
 	} else if r2.Error != nil {
@@ -154,4 +148,45 @@ func getMapKeys(m map[string]bool) []string {
 		keys = append(keys, k)
 	}
 	return keys
+}
+
+type DaoChipService struct {
+	db *gorm.DB
+}
+
+func NewDaoChipService() *DaoChipService {
+	return &DaoChipService{
+		db: database.GetDB(),
+	}
+}
+
+func (s *DaoChipService) StoreChipAgent(input types.StoreDaoChipInput) error {
+	chipCode := "AGENT"
+	var existingChip dbmodels.DgvDaoChip
+	result := s.db.Where("dao_code = ? AND chip_code = ?", input.Code, chipCode).First(&existingChip)
+	if result.Error == gorm.ErrRecordNotFound {
+		// Insert new chip
+		chip := &dbmodels.DgvDaoChip{
+			ID:         internal.NextIDString(),
+			DaoCode:    input.Code,
+			ChipCode:   chipCode,
+			Value:      "ENABLED",
+			Additional: utils.ToJSON(input.AgentConfig),
+			CTime:      time.Now(),
+		}
+		if err := s.db.Create(chip).Error; err != nil {
+			return err
+		}
+		return nil
+	}
+	if result.Error != nil {
+		return result.Error
+	}
+	existingChip.Value = "ENABLED"
+	existingChip.Additional = utils.ToJSON(input.AgentConfig)
+	existingChip.UTime = utils.TimePtrNow()
+	if err := s.db.Save(&existingChip).Error; err != nil {
+		return err
+	}
+	return nil
 }

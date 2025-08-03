@@ -27,7 +27,8 @@ type GithubConfigLink struct {
 }
 
 type DaoSyncTask struct {
-	daoService *services.DaoService
+	daoService     *services.DaoService
+	daoChipService *services.DaoChipService
 }
 
 // DaoRegistryConfig represents the structure of individual DAO configuration
@@ -50,7 +51,8 @@ type DaoConfigResult struct {
 // NewDaoSyncTask creates a new DAO sync task
 func NewDaoSyncTask() *DaoSyncTask {
 	return &DaoSyncTask{
-		daoService: services.NewDaoService(),
+		daoService:     services.NewDaoService(),
+		daoChipService: services.NewDaoChipService(),
 	}
 }
 
@@ -80,12 +82,22 @@ func (t *DaoSyncTask) SyncDaos() error {
 	// Track active DAO codes for marking inactive ones
 	activeDaoCodes := make(map[string]bool)
 
+	agentDaos, adErr := t.agentDaos()
+	if adErr != nil {
+		// return fmt.Errorf("failed to fetch agent DAOs: %w", err)
+		slog.Warn("Failed to fetch agent DAOs, continuing without them", "error", adErr)
+	}
+
 	// Process each chain and its DAOs
 	for chainName, daos := range registryConfigResult.Result {
 		for _, daoInfo := range daos {
-			if err := t.processSingleDao(registryConfigResult.RemoteLink, daoInfo, chainName, activeDaoCodes); err != nil {
+			_, err := t.processSingleDao(registryConfigResult.RemoteLink, daoInfo, chainName, activeDaoCodes)
+			if err != nil {
 				slog.Error("Failed to process DAO", "dao", daoInfo.Code, "chain", chainName, "error", err)
 				continue
+			}
+			if adErr == nil {
+				t.processChip(agentDaos, daoInfo)
 			}
 		}
 	}
@@ -104,7 +116,7 @@ func (t *DaoSyncTask) SyncDaos() error {
 }
 
 // processSingleDao processes a single DAO configuration
-func (t *DaoSyncTask) processSingleDao(remoteLink GithubConfigLink, daoInfo DaoRegistryConfig, chainName string, activeDaoCodes map[string]bool) error {
+func (t *DaoSyncTask) processSingleDao(remoteLink GithubConfigLink, daoInfo DaoRegistryConfig, chainName string, activeDaoCodes map[string]bool) (types.DaoConfig, error) {
 	configURL := daoInfo.Config
 	// Convert relative URL to absolute if needed
 	if !strings.HasPrefix(configURL, "http://") && !strings.HasPrefix(configURL, "https://") {
@@ -114,13 +126,13 @@ func (t *DaoSyncTask) processSingleDao(remoteLink GithubConfigLink, daoInfo DaoR
 	// Fetch DAO config details
 	daoConfig, err := t.fetchDaoConfig(configURL, daoInfo.Code)
 	if err != nil {
-		return fmt.Errorf("failed to fetch DAO config: %w", err)
+		return types.DaoConfig{}, fmt.Errorf("failed to fetch DAO config: %w", err)
 	}
 
 	// Skip if essential fields are missing
 	if daoInfo.Code == "" || daoConfig.Config.Name == "" {
 		slog.Warn("DAO config missing essential fields", "config_url", daoInfo.Config)
-		return nil
+		return types.DaoConfig{}, fmt.Errorf("missing essential fields in DAO config for code: %s", daoInfo.Code)
 	}
 
 	activeDaoCodes[daoInfo.Code] = true
@@ -134,7 +146,50 @@ func (t *DaoSyncTask) processSingleDao(remoteLink GithubConfigLink, daoInfo DaoR
 	})
 
 	slog.Debug("Successfully synced DAO", "dao", daoInfo.Code, "chain", chainName)
-	return nil
+
+	return *daoConfig.Config, nil
+}
+
+func (t *DaoSyncTask) processChip(agentDaos []types.AgentDaoConfig, daoInfo DaoRegistryConfig) {
+	for _, agentDao := range agentDaos {
+		if agentDao.Code != daoInfo.Code {
+			continue
+		}
+		chipInput := types.StoreDaoChipInput{
+			Code:        daoInfo.Code,
+			AgentConfig: agentDao,
+		}
+		err := t.daoChipService.StoreChipAgent(chipInput)
+		if err != nil {
+			// return fmt.Errorf("failed to store chip for DAO %s: %w", daoInfo.Code, err)
+			slog.Warn("Failed to store chip for DAO", "dao", daoInfo.Code, "error", err)
+		} else {
+			slog.Info("Stored chip for DAO", "dao", daoInfo.Code, "agent_config", agentDao)
+		}
+	}
+
+}
+
+func (t *DaoSyncTask) agentDaos() ([]types.AgentDaoConfig, error) {
+	resp, err := http.Get("https://agent.degov.ai/degov/daos")
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch agent DAOs: %w", err)
+	}
+	defer resp.Body.Close()
+
+	var agentDaos types.Resp[[]types.AgentDaoConfig]
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read agent DAOs response body: %w", err)
+	}
+	if err := json.Unmarshal(body, &agentDaos); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal agent DAOs: %w", err)
+	}
+	if agentDaos.Code != 0 {
+		return nil, fmt.Errorf("agent DAOs response error: %s", agentDaos.Message)
+	}
+
+	return agentDaos.Data, nil
 }
 
 // fetchRegistryConfig fetches and parses the main registry configuration

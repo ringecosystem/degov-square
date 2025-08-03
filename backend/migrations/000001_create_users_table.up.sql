@@ -46,16 +46,30 @@ comment on column dgv_dao.tags is 'Optional tags for DAO categorization';
 comment on column dgv_dao.time_syncd is 'last syncd time';
 
 create table
+  if not exists dgv_dao_chip (
+    id varchar(50) not null,
+    dao_code varchar(255) not null,
+    chip_code varchar(255) not null,
+    value varchar(255) not null,
+    additional text,
+    ctime timestamp default now (),
+    utime timestamp,
+    primary key (id)
+  );
+
+create index idx_dgv_dao_chip_dao_code on dgv_dao_chip (dao_code);
+
+create table
   if not exists dgv_dao_config (
     id varchar(50) not null,
-    code varchar(255) not null,
+    dao_code varchar(255) not null,
     config text not null,
     ctime timestamp default now (),
     utime timestamp,
     primary key (id)
   );
 
-create unique index uq_dgv_dao_config_code on dgv_dao_config (code);
+create unique index uq_dgv_dao_config_code on dgv_dao_config (dao_code);
 
 comment on table dgv_dao_config is 'DAO config table';
 

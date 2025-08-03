@@ -8,6 +8,11 @@ type RefreshDaoAndConfigInput struct {
 	Raw        string    `json:"raw"`
 }
 
+type StoreDaoChipInput struct {
+	Code        string         `json:"code"`
+	AgentConfig AgentDaoConfig `json:"agentConfig"`
+}
+
 // DaoConfig represents the structure of individual DAO config files
 type DaoConfig struct {
 	Name                  string `yaml:"name"`
