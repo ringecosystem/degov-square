@@ -24,15 +24,15 @@ enum AuthRule {
 
 ### ==== entities
 
-type User {
-  id: ID!
-  address: String!
-  email: String
-  likedDaos: [UserLikedDao!]!
-  followedDaos: [UserFollowedDao!]!
-  channels: [UserChannel!]!
-  notificationRecords: [NotificationRecord!]!
-}
+# type User {
+#   id: ID!
+#   address: String!
+#   email: String
+#   likedDaos: [UserLikedDao!]!
+#   followedDaos: [UserFollowedDao!]!
+#   channels: [UserChannel!]!
+#   notificationRecords: [NotificationRecord!]!
+# }
 
 type Dao {
   id: ID!
@@ -50,53 +50,53 @@ type Dao {
   subscribed: Boolean
 }
 
-type UserLikedDao {
-  id: ID!
-  daoCode: String!
-  userId: String!
-  ctime: Time!
-  user: User!
-  dao: Dao!
-}
+# type UserLikedDao {
+#   id: ID!
+#   daoCode: String!
+#   userId: String!
+#   ctime: Time!
+#   user: User!
+#   dao: Dao!
+# }
 
-type UserFollowedDao {
-  id: ID!
-  chainId: Int!
-  daoCode: String!
-  userId: String!
-  enableNewProposal: Int!
-  enableVotingEndReminder: Int!
-  ctime: Time!
-  user: User!
-  dao: Dao!
-}
+# type UserFollowedDao {
+#   id: ID!
+#   chainId: Int!
+#   daoCode: String!
+#   userId: String!
+#   enableNewProposal: Int!
+#   enableVotingEndReminder: Int!
+#   ctime: Time!
+#   user: User!
+#   dao: Dao!
+# }
 
-type NotificationRecord {
-  id: ID!
-  chainId: Int!
-  chainName: String!
-  daoName: String!
-  daoCode: String!
-  type: NotificationType!
-  targetId: String
-  userId: String!
-  status: NotificationStatus!
-  message: String
-  retryTimes: Int!
-  ctime: Time!
-  user: User!
-}
+# type NotificationRecord {
+#   id: ID!
+#   chainId: Int!
+#   chainName: String!
+#   daoName: String!
+#   daoCode: String!
+#   type: NotificationType!
+#   targetId: String
+#   userId: String!
+#   status: NotificationStatus!
+#   message: String
+#   retryTimes: Int!
+#   ctime: Time!
+#   user: User!
+# }
 
-type UserChannel {
-  id: ID!
-  userId: String!
-  verified: Int!
-  channelType: ChannelType!
-  channelValue: String!
-  payload: String
-  ctime: Time!
-  user: User!
-}
+# type UserChannel {
+#   id: ID!
+#   userId: String!
+#   verified: Int!
+#   channelType: ChannelType!
+#   channelValue: String!
+#   payload: String
+#   ctime: Time!
+#   user: User!
+# }
 
 ### === outputs
 
