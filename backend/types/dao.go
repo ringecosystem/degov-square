@@ -6,10 +6,10 @@ type RefreshDaoAndConfigInput struct {
 	ConfigLink            string    `json:"configLink"`
 	Config                DaoConfig `json:"config"`
 	Raw                   string    `json:"raw"`
-	MetricsCountProposals int       `json:"metricsCountProposals"`
-	MetricsCountMembers   int       `json:"metricsCountMembers"`
-	MetricsSumPower       string    `json:"metricsSumPower"`
-	MetricsCountVote      int       `json:"metricsCountVote"`
+	MetricsCountProposals *int      `json:"metricsCountProposals,omitempty"`
+	MetricsCountMembers   *int      `json:"metricsCountMembers,omitempty"`
+	MetricsSumPower       *string   `json:"metricsSumPower,omitempty"`
+	MetricsCountVote      *int      `json:"metricsCountVote,omitempty"`
 }
 
 type StoreDaoChipInput struct {

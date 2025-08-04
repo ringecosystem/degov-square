@@ -1,6 +1,7 @@
 package tasks
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -11,6 +12,7 @@ import (
 
 	"gopkg.in/yaml.v3"
 
+	"github.com/ringecosystem/degov-apps/internal"
 	"github.com/ringecosystem/degov-apps/internal/config"
 	"github.com/ringecosystem/degov-apps/services"
 	"github.com/ringecosystem/degov-apps/types"
@@ -137,14 +139,35 @@ func (t *DaoSyncTask) processSingleDao(remoteLink GithubConfigLink, daoInfo DaoR
 
 	activeDaoCodes[daoInfo.Code] = true
 
-	t.daoService.RefreshDaoAndConfig(types.RefreshDaoAndConfigInput{
-		Code:           daoInfo.Code,
-		Tags:           daoInfo.Tags,
-		ConfigLink:     configURL,
-		Config:         *daoConfig.Config,
-		Raw:            daoConfig.Raw,
-		CountProposals: 0,
-	})
+	indexer := internal.NewDegovIndexer(daoConfig.Config.Indexer.Endpoint)
+
+	// Query data metrics from the indexer with timeout
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	// Prepare base input
+	input := types.RefreshDaoAndConfigInput{
+		Code:       daoInfo.Code,
+		Tags:       daoInfo.Tags,
+		ConfigLink: configURL,
+		Config:     *daoConfig.Config,
+		Raw:        daoConfig.Raw,
+	}
+
+	// Try to get metrics data
+	metrics, err := indexer.QueryGlobalDataMetrics(ctx)
+	if err != nil {
+		slog.Warn("Failed to query data metrics", "dao", daoInfo.Code, "error", err)
+		// Metrics fields will be nil, indicating no update needed
+	} else if metrics != nil {
+		// Set metrics data if available
+		input.MetricsCountProposals = &metrics.ProposalsCount
+		input.MetricsCountMembers = &metrics.MemberCount
+		input.MetricsSumPower = &metrics.PowerSum
+		input.MetricsCountVote = &metrics.VotesCount
+	}
+
+	t.daoService.RefreshDaoAndConfig(input)
 
 	slog.Debug("Successfully synced DAO", "dao", daoInfo.Code, "chain", chainName)
 

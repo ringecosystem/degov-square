@@ -214,10 +214,10 @@ func (s *DaoService) RefreshDaoAndConfig(input types.RefreshDaoAndConfigInput) e
 			Tags:                  tagsJson,
 			ConfigLink:            input.ConfigLink,
 			TimeSyncd:             utils.TimePtrNow(),
-			MetricsCountProposals: input.MetricsCountProposals,
-			MetricsCountMembers:   input.MetricsCountMembers,
-			MetricsSumPower:       input.MetricsSumPower,
-			MetricsCountVote:      input.MetricsCountVote,
+			MetricsCountProposals: *input.MetricsCountProposals,
+			MetricsCountMembers:   *input.MetricsCountMembers,
+			MetricsSumPower:       *input.MetricsSumPower,
+			MetricsCountVote:      *input.MetricsCountVote,
 		}
 		if err := s.db.Create(dao).Error; err != nil {
 			return err
@@ -232,10 +232,20 @@ func (s *DaoService) RefreshDaoAndConfig(input types.RefreshDaoAndConfigInput) e
 		existingDao.ConfigLink = input.ConfigLink
 		existingDao.UTime = utils.TimePtrNow()
 		existingDao.TimeSyncd = utils.TimePtrNow()
-		existingDao.MetricsCountProposals = input.MetricsCountProposals
-		existingDao.MetricsCountMembers = input.MetricsCountMembers
-		existingDao.MetricsSumPower = input.MetricsSumPower
-		existingDao.MetricsCountVote = input.MetricsCountVote
+
+		// Only update metrics if they are provided (not nil)
+		if input.MetricsCountProposals != nil {
+			existingDao.MetricsCountProposals = *input.MetricsCountProposals
+		}
+		if input.MetricsCountMembers != nil {
+			existingDao.MetricsCountMembers = *input.MetricsCountMembers
+		}
+		if input.MetricsSumPower != nil {
+			existingDao.MetricsSumPower = *input.MetricsSumPower
+		}
+		if input.MetricsCountVote != nil {
+			existingDao.MetricsCountVote = *input.MetricsCountVote
+		}
 		if err := s.db.Save(&existingDao).Error; err != nil {
 			return err
 		}
