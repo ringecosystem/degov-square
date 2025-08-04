@@ -90,7 +90,7 @@ func (d *DaoRoute) ConfigHandler(w http.ResponseWriter, r *http.Request) {
 	} else {
 		// Default YAML format
 		responseContent = []byte(daoConfig.Config)
-		contentType = "application/yaml"
+		contentType = "text/yaml"
 	}
 
 	w.Header().Set("Content-Type", contentType)
