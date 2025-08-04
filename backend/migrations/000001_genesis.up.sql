@@ -207,3 +207,17 @@ comment on column dgv_user_channel.channel_type is 'notification channel type';
 comment on column dgv_user_channel.channel_value is 'notification channel value (email or phone)';
 
 comment on column dgv_user_channel.payload is 'additional data for the channel';
+
+create table
+  if not exists dgv_proposal_tracking (
+    id varchar(50) not null,
+    dao_code varchar(255) not null,
+    proposal_link varchar(255) not null, -- link to the proposal
+    proposal_id varchar(255) not null,
+    state varchar(50) not null, -- { Pending, Active, Canceled, Defeated, Succeeded, Queued, Executed, Expired }
+    ctime timestamp default now (),
+    utime timestamp,
+    primary key (id)
+  );
+
+comment on table dgv_proposal_tracking is 'DAO proposal tracking table';
