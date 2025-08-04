@@ -6,7 +6,7 @@ import (
 
 	"gorm.io/gorm"
 
-	"github.com/ringecosystem/degov-apps/internal/database"
+	"github.com/ringecosystem/degov-apps/database"
 )
 
 type NotificationTask struct {

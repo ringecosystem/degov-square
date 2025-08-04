@@ -6,10 +6,10 @@ import (
 
 	"gorm.io/gorm"
 
-	"github.com/ringecosystem/degov-apps/dbmodels"
-	"github.com/ringecosystem/degov-apps/graph/model"
+	"github.com/ringecosystem/degov-apps/database"
+	dbmodels "github.com/ringecosystem/degov-apps/database/models"
+	gqlmodels "github.com/ringecosystem/degov-apps/graph/models"
 	"github.com/ringecosystem/degov-apps/internal"
-	"github.com/ringecosystem/degov-apps/internal/database"
 	"github.com/ringecosystem/degov-apps/internal/utils"
 	"github.com/ringecosystem/degov-apps/types"
 )
@@ -24,7 +24,7 @@ func NewDaoService() *DaoService {
 	}
 }
 
-func (s *DaoService) GetDaos() ([]*model.Dao, error) {
+func (s *DaoService) GetDaos() ([]*gqlmodels.Dao, error) {
 	var dbDaos []dbmodels.Dao
 	if err := s.db.Table("dgv_dao").Where("state = ?", "ACTIVE").Find(&dbDaos).Order("seq asc").Error; err != nil {
 		return nil, err
@@ -41,7 +41,7 @@ func (s *DaoService) GetDaos() ([]*model.Dao, error) {
 		return nil, err
 	}
 
-	var daos []*model.Dao
+	var daos []*gqlmodels.Dao
 	for _, dbDao := range dbDaos {
 		liked := false
 		subscribed := false
@@ -56,10 +56,10 @@ func (s *DaoService) GetDaos() ([]*model.Dao, error) {
 		}
 
 		// Find chips for this DAO
-		var chips []*model.DaoChip
+		var chips []*gqlmodels.DaoChip
 		for _, dbChip := range dbChips {
 			if dbChip.DaoCode == dbDao.Code {
-				chip := &model.DaoChip{
+				chip := &gqlmodels.DaoChip{
 					ID:         dbChip.ID,
 					DaoCode:    dbChip.DaoCode,
 					ChipCode:   dbChip.ChipCode,
@@ -72,7 +72,7 @@ func (s *DaoService) GetDaos() ([]*model.Dao, error) {
 			}
 		}
 
-		dao := &model.Dao{
+		dao := &gqlmodels.Dao{
 			ID:         dbDao.ID,
 			ChainID:    int32(dbDao.ChainID),
 			ChainName:  dbDao.ChainName,

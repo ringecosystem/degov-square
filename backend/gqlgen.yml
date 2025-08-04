@@ -27,8 +27,8 @@ exec:
 
 # Where should any generated models go?
 model:
-  filename: graph/model/models_gen.go
-  package: model
+  filename: graph/models/models_gen.go
+  package: gqlmodels
 
   # Optional: Pass in a path to a new gotpl template to use for generating the models
   # model_template: [your/path/model.gotpl]

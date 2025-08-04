@@ -9,11 +9,11 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/ringecosystem/degov-apps/graph/model"
+	gqlmodels "github.com/ringecosystem/degov-apps/graph/models"
 )
 
 // Login is the resolver for the login field.
-func (r *mutationResolver) Login(ctx context.Context, input model.LoginInput) (*model.LoginOutput, error) {
+func (r *mutationResolver) Login(ctx context.Context, input gqlmodels.LoginInput) (*gqlmodels.LoginOutput, error) {
 	output, err := r.authService.Login(input)
 	if err != nil {
 		return nil, fmt.Errorf("login failed: %v", err)
@@ -23,7 +23,7 @@ func (r *mutationResolver) Login(ctx context.Context, input model.LoginInput) (*
 }
 
 // Nonce is the resolver for the nonce field.
-func (r *queryResolver) Nonce(ctx context.Context, input model.GetNonceInput) (string, error) {
+func (r *queryResolver) Nonce(ctx context.Context, input gqlmodels.GetNonceInput) (string, error) {
 	nonce, err := r.authService.Nonce(input)
 	if err != nil {
 		return "", err
@@ -35,7 +35,7 @@ func (r *queryResolver) Nonce(ctx context.Context, input model.GetNonceInput) (s
 }
 
 // Daos is the resolver for the daos field.
-func (r *queryResolver) Daos(ctx context.Context) ([]*model.Dao, error) {
+func (r *queryResolver) Daos(ctx context.Context) ([]*gqlmodels.Dao, error) {
 	authenticatedUser, err := r.authUtils.GetUser(ctx)
 	slog.Info("Fetching DAOs", "authenticated_user", authenticatedUser)
 

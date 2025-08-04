@@ -10,9 +10,9 @@ import (
 	"gopkg.in/yaml.v3"
 	"gorm.io/gorm"
 
-	"github.com/ringecosystem/degov-apps/dbmodels"
+	"github.com/ringecosystem/degov-apps/database"
+	dbmodels "github.com/ringecosystem/degov-apps/database/models"
 	"github.com/ringecosystem/degov-apps/internal"
-	"github.com/ringecosystem/degov-apps/internal/database"
 	"github.com/ringecosystem/degov-apps/internal/utils"
 )
 

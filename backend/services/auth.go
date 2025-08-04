@@ -9,10 +9,10 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/patrickmn/go-cache"
-	"github.com/ringecosystem/degov-apps/dbmodels"
-	"github.com/ringecosystem/degov-apps/graph/model"
+	"github.com/ringecosystem/degov-apps/database"
+	dbmodels "github.com/ringecosystem/degov-apps/database/models"
+	gqlmodels "github.com/ringecosystem/degov-apps/graph/models"
 	"github.com/ringecosystem/degov-apps/internal/config"
-	"github.com/ringecosystem/degov-apps/internal/database"
 	"github.com/ringecosystem/degov-apps/types"
 	"github.com/spruceid/siwe-go"
 	"gorm.io/gorm"
@@ -34,7 +34,7 @@ func NewAuthService() *AuthService {
 	}
 }
 
-func (s *AuthService) Nonce(input model.GetNonceInput) (string, error) {
+func (s *AuthService) Nonce(input gqlmodels.GetNonceInput) (string, error) {
 	var length int
 	if input.Length == nil || *input.Length < 6 {
 		length = 32
@@ -54,21 +54,21 @@ func (s *AuthService) Nonce(input model.GetNonceInput) (string, error) {
 	return nonce, nil
 }
 
-func (s *AuthService) Login(input model.LoginInput) (model.LoginOutput, error) {
+func (s *AuthService) Login(input gqlmodels.LoginInput) (gqlmodels.LoginOutput, error) {
 	message, err := siwe.ParseMessage(input.Message)
 	if err != nil {
 		err = fmt.Errorf("parse message err: %v", err)
-		return model.LoginOutput{}, err
+		return gqlmodels.LoginOutput{}, err
 	}
 	verify, err := message.ValidNow()
 	if err != nil {
 		err = fmt.Errorf("message valid failed: %v", err)
-		return model.LoginOutput{}, err
+		return gqlmodels.LoginOutput{}, err
 	}
 
 	if !verify {
 		err = fmt.Errorf("verify message fail")
-		return model.LoginOutput{}, err
+		return gqlmodels.LoginOutput{}, err
 	}
 
 	//# must open
@@ -84,7 +84,7 @@ func (s *AuthService) Login(input model.LoginInput) (model.LoginOutput, error) {
 		_, found := s.nonceCache.Get(nonce)
 		if !found {
 			err = fmt.Errorf("invalid or expired nonce")
-			return model.LoginOutput{}, err
+			return gqlmodels.LoginOutput{}, err
 		}
 		// After nonce verification, delete it from cache (one-time use)
 		s.nonceCache.Delete(nonce)
@@ -95,7 +95,7 @@ func (s *AuthService) Login(input model.LoginInput) (model.LoginOutput, error) {
 	})
 	if err != nil {
 		err = fmt.Errorf("modify user failed: %v", err)
-		return model.LoginOutput{}, err
+		return gqlmodels.LoginOutput{}, err
 	}
 
 	useSessInfo := types.UserSessInfo{
@@ -120,10 +120,10 @@ func (s *AuthService) Login(input model.LoginInput) (model.LoginOutput, error) {
 	tokenString, err := token.SignedString(secretKey)
 	if err != nil {
 		err = fmt.Errorf("generate token failed: %v", err)
-		return model.LoginOutput{}, err
+		return gqlmodels.LoginOutput{}, err
 	}
 
-	return model.LoginOutput{
+	return gqlmodels.LoginOutput{
 		Token: tokenString,
 	}, nil
 }

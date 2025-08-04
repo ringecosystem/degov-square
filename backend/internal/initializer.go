@@ -7,8 +7,8 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/exp/zapslog"
 
+	"github.com/ringecosystem/degov-apps/database"
 	"github.com/ringecosystem/degov-apps/internal/config"
-	"github.com/ringecosystem/degov-apps/internal/database"
 )
 
 func AppInit() {

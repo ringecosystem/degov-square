@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/99designs/gqlgen/graphql"
-	"github.com/ringecosystem/degov-apps/graph/model"
+	gqlmodels "github.com/ringecosystem/degov-apps/graph/models"
 	"github.com/ringecosystem/degov-apps/internal/middleware"
 	"github.com/ringecosystem/degov-apps/types"
 )
@@ -39,7 +39,7 @@ func AuthDirective(ctx context.Context, obj interface{}, next graphql.Resolver, 
 }
 
 // AuthorizeDirective handles @authorize directive
-func AuthorizeDirective(ctx context.Context, obj interface{}, next graphql.Resolver, rule model.AuthRule) (interface{}, error) {
+func AuthorizeDirective(ctx context.Context, obj interface{}, next graphql.Resolver, rule gqlmodels.AuthRule) (interface{}, error) {
 	// Get authenticated user
 	claims, err := middleware.RequireAuth(ctx)
 	if err != nil {
@@ -48,19 +48,19 @@ func AuthorizeDirective(ctx context.Context, obj interface{}, next graphql.Resol
 
 	user := claims.User
 	switch rule {
-	case model.AuthRuleOwnerOnly:
+	case gqlmodels.AuthRuleOwnerOnly:
 		// For OWNER_ONLY, we need to extract the resource owner from the arguments
 		// This is a simplified implementation - in practice, you might need more sophisticated logic
 		// return authorizeOwnerOnly(ctx, claims, obj, next)
 		return next(ctx)
 
-	case model.AuthRuleAdminOnly:
+	case gqlmodels.AuthRuleAdminOnly:
 		// Check if user is admin (you'll need to implement this based on your user model)
 		if !isAdmin(user.Address) {
 			return nil, fmt.Errorf("admin privileges required")
 		}
 
-	case model.AuthRulePublic:
+	case gqlmodels.AuthRulePublic:
 		// Public access - no additional authorization needed
 		break
 
