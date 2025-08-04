@@ -1,11 +1,24 @@
 package types
 
 type RefreshDaoAndConfigInput struct {
-	Code       string    `json:"code"`
-	Tags       []string  `json:"tags"`
-	ConfigLink string    `json:"configLink"`
-	Config     DaoConfig `json:"config"`
-	Raw        string    `json:"raw"`
+	Code                  string    `json:"code"`
+	Tags                  []string  `json:"tags"`
+	ConfigLink            string    `json:"configLink"`
+	Config                DaoConfig `json:"config"`
+	Raw                   string    `json:"raw"`
+	MetricsCountProposals *int      `json:"metricsCountProposals,omitempty"`
+	MetricsCountMembers   *int      `json:"metricsCountMembers,omitempty"`
+	MetricsSumPower       *string   `json:"metricsSumPower,omitempty"`
+	MetricsCountVote      *int      `json:"metricsCountVote,omitempty"`
+}
+
+type StoreDaoChipInput struct {
+	Code        string         `json:"code"`
+	AgentConfig AgentDaoConfig `json:"agentConfig"`
+}
+
+type ListDaosInput struct {
+	Codes *[]string `json:"codes"`
 }
 
 // DaoConfig represents the structure of individual DAO config files

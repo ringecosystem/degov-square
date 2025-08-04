@@ -3,6 +3,8 @@ create table
     id varchar(50) not null,
     address varchar(255) not null,
     email varchar(255),
+    ctime timestamp default now (),
+    utime timestamp,
     primary key (id)
   );
 
@@ -20,10 +22,15 @@ create table
     name varchar(255) not null,
     code varchar(255) not null,
     seq int not null default 0,
+    endpoint varchar(255) not null, -- website endpoint
     state varchar(50) not null, -- { ACTIVE, INACTIVE }
     tags text,
     config_link varchar(255) not null,
     time_syncd timestamp,
+    metrics_count_proposals int not null default 0,
+    metrics_count_members int not null default 0,
+    metrics_sum_power varchar(255) not null default '0',
+    metrics_count_vote int not null default 0,
     ctime timestamp default now (),
     utime timestamp,
     primary key (id)
@@ -43,21 +50,33 @@ comment on column dgv_dao.code is 'DAO code';
 
 comment on column dgv_dao.tags is 'Optional tags for DAO categorization';
 
-comment on column dgv_dao.config_link is 'DAO config link';
-
 comment on column dgv_dao.time_syncd is 'last syncd time';
+
+create table
+  if not exists dgv_dao_chip (
+    id varchar(50) not null,
+    dao_code varchar(255) not null,
+    chip_code varchar(255) not null,
+    value varchar(255) not null,
+    additional text,
+    ctime timestamp default now (),
+    utime timestamp,
+    primary key (id)
+  );
+
+create index idx_dgv_dao_chip_dao_code on dgv_dao_chip (dao_code);
 
 create table
   if not exists dgv_dao_config (
     id varchar(50) not null,
-    code varchar(255) not null,
+    dao_code varchar(255) not null,
     config text not null,
     ctime timestamp default now (),
     utime timestamp,
     primary key (id)
   );
 
-create unique index uq_dgv_dao_config_code on dgv_dao_config (code);
+create unique index uq_dgv_dao_config_code on dgv_dao_config (dao_code);
 
 comment on table dgv_dao_config is 'DAO config table';
 

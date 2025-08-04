@@ -9,28 +9,32 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/patrickmn/go-cache"
-	"github.com/ringecosystem/degov-apps/graph/model"
+	"github.com/ringecosystem/degov-apps/database"
+	dbmodels "github.com/ringecosystem/degov-apps/database/models"
+	gqlmodels "github.com/ringecosystem/degov-apps/graph/models"
 	"github.com/ringecosystem/degov-apps/internal/config"
-	"github.com/ringecosystem/degov-apps/internal/database"
+	"github.com/ringecosystem/degov-apps/types"
 	"github.com/spruceid/siwe-go"
 	"gorm.io/gorm"
 )
 
 type AuthService struct {
-	db         *gorm.DB
-	nonceCache *cache.Cache
+	db          *gorm.DB
+	nonceCache  *cache.Cache
+	userService *UserService
 }
 
 func NewAuthService() *AuthService {
 	c := cache.New(3*time.Minute, 5*time.Minute)
 
 	return &AuthService{
-		db:         database.GetDB(),
-		nonceCache: c,
+		db:          database.GetDB(),
+		nonceCache:  c,
+		userService: NewUserService(),
 	}
 }
 
-func (s *AuthService) Nonce(input model.GetNonceInput) (string, error) {
+func (s *AuthService) Nonce(input gqlmodels.GetNonceInput) (string, error) {
 	var length int
 	if input.Length == nil || *input.Length < 6 {
 		length = 32
@@ -50,21 +54,21 @@ func (s *AuthService) Nonce(input model.GetNonceInput) (string, error) {
 	return nonce, nil
 }
 
-func (s *AuthService) Login(input model.LoginInput) (model.LoginOutput, error) {
+func (s *AuthService) Login(input gqlmodels.LoginInput) (gqlmodels.LoginOutput, error) {
 	message, err := siwe.ParseMessage(input.Message)
 	if err != nil {
 		err = fmt.Errorf("parse message err: %v", err)
-		return model.LoginOutput{}, err
+		return gqlmodels.LoginOutput{}, err
 	}
 	verify, err := message.ValidNow()
 	if err != nil {
 		err = fmt.Errorf("message valid failed: %v", err)
-		return model.LoginOutput{}, err
+		return gqlmodels.LoginOutput{}, err
 	}
 
 	if !verify {
 		err = fmt.Errorf("verify message fail")
-		return model.LoginOutput{}, err
+		return gqlmodels.LoginOutput{}, err
 	}
 
 	//# must open
@@ -80,17 +84,33 @@ func (s *AuthService) Login(input model.LoginInput) (model.LoginOutput, error) {
 		_, found := s.nonceCache.Get(nonce)
 		if !found {
 			err = fmt.Errorf("invalid or expired nonce")
-			return model.LoginOutput{}, err
+			return gqlmodels.LoginOutput{}, err
 		}
 		// After nonce verification, delete it from cache (one-time use)
 		s.nonceCache.Delete(nonce)
 	}
 
+	user, err := s.userService.Modify(dbmodels.User{
+		Address: message.GetAddress().Hex(),
+	})
+	if err != nil {
+		err = fmt.Errorf("modify user failed: %v", err)
+		return gqlmodels.LoginOutput{}, err
+	}
+
+	useSessInfo := types.UserSessInfo{
+		Id:      user.ID,
+		Address: user.Address,
+		Email:   user.Email,
+		CTime:   user.CTime,
+		UTime:   user.UTime,
+	}
+
 	// Create JWT token with claims
 	claims := jwt.MapClaims{
-		"address": message.GetAddress().Hex(),
-		"exp":     time.Now().Add(24 * time.Hour).Unix(),
-		"iat":     time.Now().Unix(),
+		"user": useSessInfo,
+		"exp":  time.Now().Add(24 * time.Hour).Unix(),
+		"iat":  time.Now().Unix(),
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
@@ -100,10 +120,10 @@ func (s *AuthService) Login(input model.LoginInput) (model.LoginOutput, error) {
 	tokenString, err := token.SignedString(secretKey)
 	if err != nil {
 		err = fmt.Errorf("generate token failed: %v", err)
-		return model.LoginOutput{}, err
+		return gqlmodels.LoginOutput{}, err
 	}
 
-	return model.LoginOutput{
+	return gqlmodels.LoginOutput{
 		Token: tokenString,
 	}, nil
 }

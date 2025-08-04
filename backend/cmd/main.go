@@ -19,6 +19,7 @@ import (
 	"github.com/ringecosystem/degov-apps/internal/config"
 	"github.com/ringecosystem/degov-apps/internal/directives"
 	"github.com/ringecosystem/degov-apps/internal/middleware"
+	"github.com/ringecosystem/degov-apps/routes"
 	"github.com/ringecosystem/degov-apps/tasks"
 	"github.com/rs/cors"
 	"github.com/vektah/gqlparser/v2/ast"
@@ -109,27 +110,43 @@ func startServer() {
 		},
 	}
 
-	srv := handler.New(graph.NewExecutableSchema(graphqlConfig))
+	gqlSrv := handler.New(graph.NewExecutableSchema(graphqlConfig))
 
-	srv.AddTransport(transport.Options{})
-	srv.AddTransport(transport.GET{})
-	srv.AddTransport(transport.POST{})
+	gqlSrv.AddTransport(transport.Options{})
+	gqlSrv.AddTransport(transport.GET{})
+	gqlSrv.AddTransport(transport.POST{})
 
-	srv.SetQueryCache(lru.New[*ast.QueryDocument](1000))
+	gqlSrv.SetQueryCache(lru.New[*ast.QueryDocument](1000))
 
-	srv.Use(extension.Introspection{})
-	srv.Use(extension.AutomaticPersistedQuery{
+	gqlSrv.Use(extension.Introspection{})
+	gqlSrv.Use(extension.AutomaticPersistedQuery{
 		Cache: lru.New[string](100),
 	})
 
-	// Initialize authentication middleware
-	authMiddleware := middleware.NewAuthMiddleware()
+	// Create middleware chain including auth middleware
+	middlewareChain := middleware.NewChain(
+		middleware.RecoveryMiddleware(), // Recovery should be first
+		middleware.LoggingMiddleware(),  // Logging
+		// middleware.SecurityHeadersMiddleware(),      // Security headers
+		middleware.NewDegovMiddleware().Middleware(),
+		middleware.NewAuthMiddleware().Middleware(), // Authentication
+	)
 
 	mux := http.NewServeMux()
 
 	graphiql := playground.Handler("GraphQL playground", "/graphql", playground.WithGraphiqlEnablePluginExplorer(true))
 	mux.Handle("/graphiql", graphiql)
-	mux.Handle("/graphql", authMiddleware.HTTPMiddleware(srv))
+
+	// Apply complete middleware chain to GraphQL endpoint
+	graphqlHandler := middlewareChain.Then(gqlSrv)
+	mux.Handle("/graphql", graphqlHandler)
+
+	// Create DAO route handler
+	daoRoute := routes.NewDaoRoute()
+
+	// Support both patterns: /dao/config and /dao/config/{dao}
+	mux.Handle("/dao/config", middlewareChain.Then(http.HandlerFunc(daoRoute.ConfigHandler)))
+	mux.Handle("/dao/config/{dao}", middlewareChain.Then(http.HandlerFunc(daoRoute.ConfigHandler)))
 
 	corsHandler := cors.New(cors.Options{
 		AllowedOrigins:   []string{"*"},

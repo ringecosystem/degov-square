@@ -1,6 +1,7 @@
 package tasks
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -11,6 +12,7 @@ import (
 
 	"gopkg.in/yaml.v3"
 
+	"github.com/ringecosystem/degov-apps/internal"
 	"github.com/ringecosystem/degov-apps/internal/config"
 	"github.com/ringecosystem/degov-apps/services"
 	"github.com/ringecosystem/degov-apps/types"
@@ -27,7 +29,8 @@ type GithubConfigLink struct {
 }
 
 type DaoSyncTask struct {
-	daoService *services.DaoService
+	daoService     *services.DaoService
+	daoChipService *services.DaoChipService
 }
 
 // DaoRegistryConfig represents the structure of individual DAO configuration
@@ -50,7 +53,8 @@ type DaoConfigResult struct {
 // NewDaoSyncTask creates a new DAO sync task
 func NewDaoSyncTask() *DaoSyncTask {
 	return &DaoSyncTask{
-		daoService: services.NewDaoService(),
+		daoService:     services.NewDaoService(),
+		daoChipService: services.NewDaoChipService(),
 	}
 }
 
@@ -80,12 +84,22 @@ func (t *DaoSyncTask) SyncDaos() error {
 	// Track active DAO codes for marking inactive ones
 	activeDaoCodes := make(map[string]bool)
 
+	agentDaos, adErr := t.agentDaos()
+	if adErr != nil {
+		// return fmt.Errorf("failed to fetch agent DAOs: %w", err)
+		slog.Warn("Failed to fetch agent DAOs, continuing without them", "error", adErr)
+	}
+
 	// Process each chain and its DAOs
 	for chainName, daos := range registryConfigResult.Result {
 		for _, daoInfo := range daos {
-			if err := t.processSingleDao(registryConfigResult.RemoteLink, daoInfo, chainName, activeDaoCodes); err != nil {
+			_, err := t.processSingleDao(registryConfigResult.RemoteLink, daoInfo, chainName, activeDaoCodes)
+			if err != nil {
 				slog.Error("Failed to process DAO", "dao", daoInfo.Code, "chain", chainName, "error", err)
 				continue
+			}
+			if adErr == nil {
+				t.processChip(agentDaos, daoInfo)
 			}
 		}
 	}
@@ -104,7 +118,7 @@ func (t *DaoSyncTask) SyncDaos() error {
 }
 
 // processSingleDao processes a single DAO configuration
-func (t *DaoSyncTask) processSingleDao(remoteLink GithubConfigLink, daoInfo DaoRegistryConfig, chainName string, activeDaoCodes map[string]bool) error {
+func (t *DaoSyncTask) processSingleDao(remoteLink GithubConfigLink, daoInfo DaoRegistryConfig, chainName string, activeDaoCodes map[string]bool) (types.DaoConfig, error) {
 	configURL := daoInfo.Config
 	// Convert relative URL to absolute if needed
 	if !strings.HasPrefix(configURL, "http://") && !strings.HasPrefix(configURL, "https://") {
@@ -114,26 +128,154 @@ func (t *DaoSyncTask) processSingleDao(remoteLink GithubConfigLink, daoInfo DaoR
 	// Fetch DAO config details
 	daoConfig, err := t.fetchDaoConfig(configURL, daoInfo.Code)
 	if err != nil {
-		return fmt.Errorf("failed to fetch DAO config: %w", err)
+		return types.DaoConfig{}, fmt.Errorf("failed to fetch DAO config: %w", err)
 	}
 
 	// Skip if essential fields are missing
 	if daoInfo.Code == "" || daoConfig.Config.Name == "" {
 		slog.Warn("DAO config missing essential fields", "config_url", daoInfo.Config)
-		return nil
+		return types.DaoConfig{}, fmt.Errorf("missing essential fields in DAO config for code: %s", daoInfo.Code)
 	}
 
 	activeDaoCodes[daoInfo.Code] = true
 
-	t.daoService.RefreshDaoAndConfig(types.RefreshDaoAndConfigInput{
-		Code:   daoInfo.Code,
-		Tags:   daoInfo.Tags,
-		Config: *daoConfig.Config,
-		Raw:    daoConfig.Raw,
-	})
+	indexer := internal.NewDegovIndexer(daoConfig.Config.Indexer.Endpoint)
+
+	// Query data metrics from the indexer with timeout
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	// Prepare base input
+	input := types.RefreshDaoAndConfigInput{
+		Code:       daoInfo.Code,
+		Tags:       daoInfo.Tags,
+		ConfigLink: configURL,
+		Config:     *daoConfig.Config,
+		Raw:        daoConfig.Raw,
+	}
+
+	// Try to get metrics data
+	metrics, err := indexer.QueryGlobalDataMetrics(ctx)
+	if err != nil {
+		slog.Warn("Failed to query data metrics", "dao", daoInfo.Code, "error", err)
+		// Metrics fields will be nil, indicating no update needed
+	} else if metrics != nil {
+		// Set metrics data if available
+		input.MetricsCountProposals = &metrics.ProposalsCount
+		input.MetricsCountMembers = &metrics.MemberCount
+		input.MetricsSumPower = &metrics.PowerSum
+		input.MetricsCountVote = &metrics.VotesCount
+	}
+
+	t.daoService.RefreshDaoAndConfig(input)
 
 	slog.Debug("Successfully synced DAO", "dao", daoInfo.Code, "chain", chainName)
-	return nil
+
+	return *daoConfig.Config, nil
+}
+
+func (t *DaoSyncTask) processChip(agentDaos []types.AgentDaoConfig, daoInfo DaoRegistryConfig) {
+	for _, agentDao := range agentDaos {
+		if agentDao.Code != daoInfo.Code {
+			continue
+		}
+		chipInput := types.StoreDaoChipInput{
+			Code:        daoInfo.Code,
+			AgentConfig: agentDao,
+		}
+		err := t.daoChipService.StoreChipAgent(chipInput)
+		if err != nil {
+			// return fmt.Errorf("failed to store chip for DAO %s: %w", daoInfo.Code, err)
+			slog.Warn("Failed to store chip for DAO", "dao", daoInfo.Code, "error", err)
+		} else {
+			slog.Info("Stored chip for DAO", "dao", daoInfo.Code, "agent_config", agentDao)
+		}
+	}
+
+}
+
+func (t *DaoSyncTask) agentDaos() ([]types.AgentDaoConfig, error) {
+	const (
+		maxRetries = 3
+		baseDelay  = time.Second
+		timeout    = 15 * time.Second
+	)
+
+	// Create HTTP client with timeout
+	client := &http.Client{
+		Timeout: timeout,
+	}
+
+	var lastErr error
+	for attempt := 0; attempt < maxRetries; attempt++ {
+		if attempt > 0 {
+			// Exponential backoff: wait baseDelay * 2^(attempt-1)
+			delay := baseDelay * time.Duration(1<<(attempt-1))
+			slog.Debug("Retrying agent DAOs fetch", "attempt", attempt+1, "delay", delay)
+			time.Sleep(delay)
+		}
+
+		// Create request with context for timeout
+		ctx, cancel := context.WithTimeout(context.Background(), timeout)
+		req, err := http.NewRequestWithContext(ctx, "GET", "https://agent.degov.ai/degov/daos", nil)
+		cancel() // Cancel immediately after creating request
+		if err != nil {
+			lastErr = fmt.Errorf("failed to create request: %w", err)
+			continue
+		}
+
+		// Set User-Agent header for better API compatibility
+		req.Header.Set("User-Agent", "degov-apps/1.0")
+
+		resp, err := client.Do(req)
+		if err != nil {
+			lastErr = fmt.Errorf("failed to fetch agent DAOs (attempt %d/%d): %w", attempt+1, maxRetries, err)
+			slog.Warn("Failed to fetch agent DAOs", "attempt", attempt+1, "error", err)
+			continue
+		}
+		defer resp.Body.Close()
+
+		// Check for HTTP errors
+		if resp.StatusCode != http.StatusOK {
+			body, readErr := io.ReadAll(resp.Body)
+			if readErr != nil {
+				lastErr = fmt.Errorf("HTTP %d from agent DAOs API (attempt %d/%d), failed to read error body: %w",
+					resp.StatusCode, attempt+1, maxRetries, readErr)
+			} else {
+				lastErr = fmt.Errorf("HTTP %d from agent DAOs API (attempt %d/%d): %s",
+					resp.StatusCode, attempt+1, maxRetries, string(body))
+			}
+			slog.Warn("Agent DAOs API returned error", "attempt", attempt+1, "status_code", resp.StatusCode, "body", string(body))
+			continue
+		}
+
+		var agentDaos types.Resp[[]types.AgentDaoConfig]
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			lastErr = fmt.Errorf("failed to read agent DAOs response body (attempt %d/%d): %w", attempt+1, maxRetries, err)
+			slog.Warn("Failed to read response body", "attempt", attempt+1, "error", err)
+			continue
+		}
+
+		if err := json.Unmarshal(body, &agentDaos); err != nil {
+			lastErr = fmt.Errorf("failed to unmarshal agent DAOs (attempt %d/%d): %w", attempt+1, maxRetries, err)
+			slog.Warn("Failed to unmarshal response", "attempt", attempt+1, "error", err)
+			continue
+		}
+
+		if agentDaos.Code != 0 {
+			lastErr = fmt.Errorf("agent DAOs response error (attempt %d/%d): %s", attempt+1, maxRetries, agentDaos.Message)
+			slog.Warn("Agent DAOs API returned error response", "attempt", attempt+1, "code", agentDaos.Code, "message", agentDaos.Message)
+			continue
+		}
+
+		// Success - return the data
+		slog.Info("Successfully fetched agent DAOs", "count", len(agentDaos.Data), "attempt", attempt+1)
+		return agentDaos.Data, nil
+	}
+
+	// All retries failed
+	return nil, fmt.Errorf("failed to fetch agent DAOs after %d attempts: %w", maxRetries, lastErr)
 }
 
 // fetchRegistryConfig fetches and parses the main registry configuration

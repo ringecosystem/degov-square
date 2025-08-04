@@ -8,11 +8,12 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/ringecosystem/degov-apps/graph/model"
+	gqlmodels "github.com/ringecosystem/degov-apps/graph/models"
+	"github.com/ringecosystem/degov-apps/types"
 )
 
 // Login is the resolver for the login field.
-func (r *mutationResolver) Login(ctx context.Context, input model.LoginInput) (*model.LoginOutput, error) {
+func (r *mutationResolver) Login(ctx context.Context, input gqlmodels.LoginInput) (*gqlmodels.LoginOutput, error) {
 	output, err := r.authService.Login(input)
 	if err != nil {
 		return nil, fmt.Errorf("login failed: %v", err)
@@ -21,8 +22,18 @@ func (r *mutationResolver) Login(ctx context.Context, input model.LoginInput) (*
 	return &output, nil
 }
 
+// ModifyLikeDao is the resolver for the modifyLikeDao field.
+func (r *mutationResolver) ModifyLikeDao(ctx context.Context, input gqlmodels.ModifyLikeDaoInput) (bool, error) {
+	user, _ := r.authUtils.GetUser(ctx)
+	result, err := r.userInteractionService.ModifyLikeDao(types.BasicInput[gqlmodels.ModifyLikeDaoInput]{
+		User:  user,
+		Input: input,
+	})
+	return result, err
+}
+
 // Nonce is the resolver for the nonce field.
-func (r *queryResolver) Nonce(ctx context.Context, input model.GetNonceInput) (string, error) {
+func (r *queryResolver) Nonce(ctx context.Context, input gqlmodels.GetNonceInput) (string, error) {
 	nonce, err := r.authService.Nonce(input)
 	if err != nil {
 		return "", err
@@ -34,29 +45,41 @@ func (r *queryResolver) Nonce(ctx context.Context, input model.GetNonceInput) (s
 }
 
 // Daos is the resolver for the daos field.
-func (r *queryResolver) Daos(ctx context.Context) ([]*model.Dao, error) {
-	// @auth(required: false) allows this to work for both authenticated and unauthenticated users
-	// Check if user is authenticated to provide personalized data
-	authenticatedUser, _ := ctx.Value("authenticated_user").(string)
+func (r *queryResolver) Daos(ctx context.Context) ([]*gqlmodels.Dao, error) {
+	user, _ := r.authUtils.GetUser(ctx)
 
-	if authenticatedUser != "" {
-		// User is authenticated, return DAOs with personalized info (liked, subscribed, etc.)
-		// For now, just call the regular method - you can extend this later
-		return r.daoService.GetDaos()
-	} else {
-		// User not authenticated, return basic DAO info
-		return r.daoService.GetDaos()
-	}
+	// User is authenticated, return DAOs with personalized info (liked, subscribed, etc.)
+	// For now, just call the regular method - you can extend this later
+	return r.daoService.ListDaos(types.BasicInput[*types.ListDaosInput]{
+		User:  user,
+		Input: nil,
+	})
 }
 
-// Dao is the resolver for the dao field.
-func (r *queryResolver) Dao(ctx context.Context, id string) (*model.Dao, error) {
-	panic(fmt.Errorf("not implemented: Dao - dao"))
+// LikedDaos is the resolver for the likedDaos field.
+func (r *queryResolver) LikedDaos(ctx context.Context) ([]*gqlmodels.Dao, error) {
+	user, _ := r.authUtils.GetUser(ctx)
+	return r.userLikedService.LikedDaos(types.BasicInput[*string]{
+		User:  user,
+		Input: nil,
+	})
 }
 
-// DaoByCode is the resolver for the daoByCode field.
-func (r *queryResolver) DaoByCode(ctx context.Context, code string) (*model.Dao, error) {
-	panic(fmt.Errorf("not implemented: DaoByCode - daoByCode"))
+// SubscribedDaos is the resolver for the subscribedDaos field.
+func (r *queryResolver) SubscribedDaos(ctx context.Context) ([]*gqlmodels.Dao, error) {
+	user, _ := r.authUtils.GetUser(ctx)
+	return r.userSubscribedService.SubscribedDaos(types.BasicInput[*string]{
+		User:  user,
+		Input: nil,
+	})
+}
+
+// DaoConfig is the resolver for the daoConfig field.
+func (r *queryResolver) DaoConfig(ctx context.Context, input *gqlmodels.GetDaoConfigInput) (string, error) {
+	return r.daoConfigService.RawConfig(gqlmodels.GetDaoConfigInput{
+		DaoCode: input.DaoCode,
+		Format:  input.Format,
+	})
 }
 
 // Mutation returns MutationResolver implementation.
