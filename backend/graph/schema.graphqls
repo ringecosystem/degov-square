@@ -42,7 +42,6 @@ type Dao {
   code: String!
   seq: Int!
   state: String!
-  configLink: String!
   tags: [String!]
   timeSyncd: Time
   ctime: Time!
