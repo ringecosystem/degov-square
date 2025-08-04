@@ -124,9 +124,10 @@ func startServer() {
 
 	// Create middleware chain including auth middleware
 	middlewareChain := middleware.NewChain(
-		middleware.RecoveryMiddleware(),             // Recovery should be first
-		middleware.LoggingMiddleware(),              // Logging
+		middleware.RecoveryMiddleware(), // Recovery should be first
+		middleware.LoggingMiddleware(),  // Logging
 		// middleware.SecurityHeadersMiddleware(),      // Security headers
+		middleware.NewDegovMiddleware().Middleware(),
 		middleware.NewAuthMiddleware().Middleware(), // Authentication
 	)
 

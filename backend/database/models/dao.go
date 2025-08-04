@@ -11,6 +11,7 @@ type Dao struct {
 	Name                  string     `gorm:"column:name;type:varchar(255);not null" json:"name"`
 	Code                  string     `gorm:"column:code;type:varchar(255);not null;uniqueIndex:uq_dgv_dao_code" json:"code"`
 	Seq                   int        `gorm:"column:seq;not null;default:0" json:"seq"`
+	Endpoint              string     `gorm:"column:endpoint;type:varchar(255);not null" json:"endpoint"` // Website endpoint
 	State                 string     `gorm:"column:state;type:varchar(50);not null" json:"state"`
 	Tags                  string     `gorm:"column:tags;type:text" json:"tags,omitempty"` // Optional tags field
 	ConfigLink            string     `gorm:"column:config_link;type:varchar(255);not null" json:"config_link"`

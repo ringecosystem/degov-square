@@ -7,7 +7,7 @@ import (
 )
 
 type DegovMiddleware struct {
-	daoService *services.DaoService // Assuming DaoService is defined elsewhere
+	daoService *services.DaoService
 }
 
 func NewDegovMiddleware() *DegovMiddleware {

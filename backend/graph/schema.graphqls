@@ -48,6 +48,7 @@ type Dao {
   name: String!
   code: String!
   seq: Int!
+  endpoint: String! # Website endpoint
   state: String!
   tags: [String!]
   timeSyncd: Time

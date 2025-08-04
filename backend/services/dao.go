@@ -38,6 +38,7 @@ func (s *DaoService) convertToGqlDao(dbDao dbmodels.Dao) *gqlmodels.Dao {
 		ChainName:             dbDao.ChainName,
 		Name:                  dbDao.Name,
 		Code:                  dbDao.Code,
+		Endpoint:              dbDao.Endpoint,
 		State:                 dbDao.State,
 		Tags:                  tags,
 		TimeSyncd:             dbDao.TimeSyncd,
@@ -209,6 +210,7 @@ func (s *DaoService) RefreshDaoAndConfig(input types.RefreshDaoAndConfigInput) e
 			ChainName:             input.Config.Chain.Name,
 			Name:                  input.Config.Name,
 			Code:                  input.Code,
+			Endpoint:              input.Config.SiteURL,
 			State:                 "ACTIVE",
 			Tags:                  tagsJson,
 			ConfigLink:            input.ConfigLink,
@@ -226,6 +228,7 @@ func (s *DaoService) RefreshDaoAndConfig(input types.RefreshDaoAndConfigInput) e
 		existingDao.ChainID = input.Config.Chain.ID
 		existingDao.ChainName = input.Config.Chain.Name
 		existingDao.Name = input.Config.Name
+		existingDao.Endpoint = input.Config.SiteURL
 		existingDao.State = "ACTIVE"
 		existingDao.Tags = tagsJson
 		existingDao.ConfigLink = input.ConfigLink

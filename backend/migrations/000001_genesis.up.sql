@@ -22,6 +22,7 @@ create table
     name varchar(255) not null,
     code varchar(255) not null,
     seq int not null default 0,
+    endpoint varchar(255) not null, -- website endpoint
     state varchar(50) not null, -- { ACTIVE, INACTIVE }
     tags text,
     config_link varchar(255) not null,
