@@ -34,16 +34,17 @@ func (s *DaoService) convertToGqlDao(dbDao dbmodels.Dao) *gqlmodels.Dao {
 	}
 
 	return &gqlmodels.Dao{
-		ID:        dbDao.ID,
-		ChainID:   int32(dbDao.ChainID),
-		ChainName: dbDao.ChainName,
-		Name:      dbDao.Name,
-		Code:      dbDao.Code,
-		State:     dbDao.State,
-		Tags:      tags,
-		TimeSyncd: dbDao.TimeSyncd,
-		Ctime:     dbDao.CTime,
-		Utime:     dbDao.UTime,
+		ID:             dbDao.ID,
+		ChainID:        int32(dbDao.ChainID),
+		ChainName:      dbDao.ChainName,
+		Name:           dbDao.Name,
+		Code:           dbDao.Code,
+		State:          dbDao.State,
+		Tags:           tags,
+		TimeSyncd:      dbDao.TimeSyncd,
+		CountProposals: int32(dbDao.CountProposals),
+		Ctime:          dbDao.CTime,
+		Utime:          dbDao.UTime,
 	}
 }
 

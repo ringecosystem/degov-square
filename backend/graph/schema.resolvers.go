@@ -46,8 +46,7 @@ func (r *queryResolver) Nonce(ctx context.Context, input gqlmodels.GetNonceInput
 
 // Daos is the resolver for the daos field.
 func (r *queryResolver) Daos(ctx context.Context) ([]*gqlmodels.Dao, error) {
-	user, err := r.authUtils.GetUser(ctx)
-	fmt.Println("err:", err)
+	user, _ := r.authUtils.GetUser(ctx)
 
 	// User is authenticated, return DAOs with personalized info (liked, subscribed, etc.)
 	// For now, just call the regular method - you can extend this later

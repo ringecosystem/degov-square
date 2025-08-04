@@ -51,6 +51,7 @@ type Dao {
   state: String!
   tags: [String!]
   timeSyncd: Time
+  countProposals: Int!
   ctime: Time!
   utime: Time
   liked: Boolean
