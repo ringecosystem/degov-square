@@ -8,11 +8,12 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/ringecosystem/degov-apps/internal/config"
+	"github.com/ringecosystem/degov-apps/types"
 )
 
 // AuthClaims represents the JWT claims structure
 type AuthClaims struct {
-	Address string `json:"address"`
+	User *types.UserSessInfo `json:"user"`
 	jwt.RegisteredClaims
 }
 

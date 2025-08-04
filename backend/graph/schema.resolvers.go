@@ -36,20 +36,17 @@ func (r *queryResolver) Nonce(ctx context.Context, input model.GetNonceInput) (s
 
 // Daos is the resolver for the daos field.
 func (r *queryResolver) Daos(ctx context.Context) ([]*model.Dao, error) {
-	// @auth(required: false) allows this to work for both authenticated and unauthenticated users
-	// Check if user is authenticated to provide personalized data
-	authenticatedUser, _ := ctx.Value("authenticated_user").(string)
-
+	authenticatedUser, err := r.authUtils.GetUser(ctx)
 	slog.Info("Fetching DAOs", "authenticated_user", authenticatedUser)
 
-	if authenticatedUser != "" {
-		// User is authenticated, return DAOs with personalized info (liked, subscribed, etc.)
-		// For now, just call the regular method - you can extend this later
-		return r.daoService.GetDaos()
-	} else {
+	fmt.Println("err:", err)
+	if err != nil {
 		// User not authenticated, return basic DAO info
 		return r.daoService.GetDaos()
 	}
+	// User is authenticated, return DAOs with personalized info (liked, subscribed, etc.)
+	// For now, just call the regular method - you can extend this later
+	return r.daoService.GetDaos()
 }
 
 // Mutation returns MutationResolver implementation.

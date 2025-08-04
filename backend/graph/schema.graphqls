@@ -24,15 +24,17 @@ enum AuthRule {
 
 ### ==== entities
 
-# type User {
-#   id: ID!
-#   address: String!
-#   email: String
-#   likedDaos: [UserLikedDao!]!
-#   followedDaos: [UserFollowedDao!]!
-#   channels: [UserChannel!]!
-#   notificationRecords: [NotificationRecord!]!
-# }
+type User {
+  id: ID!
+  address: String!
+  email: String
+  # likedDaos: [UserLikedDao!]!
+  # followedDaos: [UserFollowedDao!]!
+  # channels: [UserChannel!]!
+  # notificationRecords: [NotificationRecord!]!
+  ctime: Time!
+  utime: Time
+}
 
 type Dao {
   id: ID!
@@ -166,10 +168,9 @@ input LoginInput {
 #   configLink: String!
 # }
 
-# input LikeDaoInput {
-#   daoCode: String!
-#   userId: String!
-# }
+input LikeDaoInput {
+  daoCode: String!
+}
 
 # input FollowDaoInput {
 #   chainId: Int!

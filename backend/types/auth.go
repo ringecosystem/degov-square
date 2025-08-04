@@ -1,10 +1,13 @@
 package types
 
-// type LoginInput struct {
-// 	Message   string `json:"message"`
-// 	Signature string `json:"signature"`
-// }
+import "time"
 
-// type LoginOutput struct {
-// 	Token string `json:"token"`
-// }
+type AuthenticatedUserKeyType struct{}
+
+type UserSessInfo struct {
+	Id      string     `json:"id"`
+	Address string     `json:"address"`
+	Email   *string    `json:"email,omitempty"`
+	CTime   time.Time  `json:"ctime"`
+	UTime   *time.Time `json:"utime"`
+}

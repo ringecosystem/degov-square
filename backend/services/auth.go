@@ -9,24 +9,28 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/patrickmn/go-cache"
+	"github.com/ringecosystem/degov-apps/dbmodels"
 	"github.com/ringecosystem/degov-apps/graph/model"
 	"github.com/ringecosystem/degov-apps/internal/config"
 	"github.com/ringecosystem/degov-apps/internal/database"
+	"github.com/ringecosystem/degov-apps/types"
 	"github.com/spruceid/siwe-go"
 	"gorm.io/gorm"
 )
 
 type AuthService struct {
-	db         *gorm.DB
-	nonceCache *cache.Cache
+	db          *gorm.DB
+	nonceCache  *cache.Cache
+	userService *UserService
 }
 
 func NewAuthService() *AuthService {
 	c := cache.New(3*time.Minute, 5*time.Minute)
 
 	return &AuthService{
-		db:         database.GetDB(),
-		nonceCache: c,
+		db:          database.GetDB(),
+		nonceCache:  c,
+		userService: NewUserService(),
 	}
 }
 
@@ -86,11 +90,27 @@ func (s *AuthService) Login(input model.LoginInput) (model.LoginOutput, error) {
 		s.nonceCache.Delete(nonce)
 	}
 
+	user, err := s.userService.Modify(dbmodels.User{
+		Address: message.GetAddress().Hex(),
+	})
+	if err != nil {
+		err = fmt.Errorf("modify user failed: %v", err)
+		return model.LoginOutput{}, err
+	}
+
+	useSessInfo := types.UserSessInfo{
+		Id:      user.ID,
+		Address: user.Address,
+		Email:   user.Email,
+		CTime:   user.CTime,
+		UTime:   user.UTime,
+	}
+
 	// Create JWT token with claims
 	claims := jwt.MapClaims{
-		"address": message.GetAddress().Hex(),
-		"exp":     time.Now().Add(24 * time.Hour).Unix(),
-		"iat":     time.Now().Unix(),
+		"user": useSessInfo,
+		"exp":  time.Now().Add(24 * time.Hour).Unix(),
+		"iat":  time.Now().Unix(),
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
