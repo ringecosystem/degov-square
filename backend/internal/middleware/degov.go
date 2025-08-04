@@ -145,7 +145,8 @@ func (m *DegovMiddleware) getDaosFromCache() []DaoEndpoint {
 	}
 
 	// store in cache with 15 seconds TTL
-	m.daoCache.Set("daos", daos, 15*time.Second)
+	// store in cache with default expiration
+	m.daoCache.Set(daosCacheKey, daos, cache.DefaultExpiration)
 
 	return daos
 }
