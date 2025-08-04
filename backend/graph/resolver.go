@@ -3,7 +3,7 @@
 package graph
 
 import (
-	"github.com/ringecosystem/degov-apps/internal/utils"
+	"github.com/ringecosystem/degov-apps/internal/middleware"
 	"github.com/ringecosystem/degov-apps/services"
 )
 
@@ -12,7 +12,7 @@ import (
 // It serves as dependency injection for your app, add any dependencies you require here.
 
 type Resolver struct {
-	authUtils *utils.AuthUtils
+	authUtils *middleware.AuthUtils
 
 	authService            *services.AuthService
 	daoService             *services.DaoService
@@ -21,7 +21,7 @@ type Resolver struct {
 
 func NewResolver() *Resolver {
 	return &Resolver{
-		authUtils: utils.NewAuthUtils(),
+		authUtils: middleware.NewAuthUtils(),
 
 		authService:            services.NewAuthService(),
 		daoService:             services.NewDaoService(),
