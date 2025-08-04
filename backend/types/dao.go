@@ -1,12 +1,15 @@
 package types
 
 type RefreshDaoAndConfigInput struct {
-	Code           string    `json:"code"`
-	Tags           []string  `json:"tags"`
-	ConfigLink     string    `json:"configLink"`
-	Config         DaoConfig `json:"config"`
-	Raw            string    `json:"raw"`
-	CountProposals int       `json:"countProposals"`
+	Code                  string    `json:"code"`
+	Tags                  []string  `json:"tags"`
+	ConfigLink            string    `json:"configLink"`
+	Config                DaoConfig `json:"config"`
+	Raw                   string    `json:"raw"`
+	MetricsCountProposals int       `json:"metricsCountProposals"`
+	MetricsCountMembers   int       `json:"metricsCountMembers"`
+	MetricsSumPower       string    `json:"metricsSumPower"`
+	MetricsCountVote      int       `json:"metricsCountVote"`
 }
 
 type StoreDaoChipInput struct {

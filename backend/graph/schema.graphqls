@@ -51,7 +51,10 @@ type Dao {
   state: String!
   tags: [String!]
   timeSyncd: Time
-  countProposals: Int!
+  metricsCountProposals: Int!
+  metricsCountMembers: Int!
+  metricsSumPower: String!
+  metricsCountVote: Int!
   ctime: Time!
   utime: Time
   liked: Boolean

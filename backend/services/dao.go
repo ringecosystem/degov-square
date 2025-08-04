@@ -34,17 +34,20 @@ func (s *DaoService) convertToGqlDao(dbDao dbmodels.Dao) *gqlmodels.Dao {
 	}
 
 	return &gqlmodels.Dao{
-		ID:             dbDao.ID,
-		ChainID:        int32(dbDao.ChainID),
-		ChainName:      dbDao.ChainName,
-		Name:           dbDao.Name,
-		Code:           dbDao.Code,
-		State:          dbDao.State,
-		Tags:           tags,
-		TimeSyncd:      dbDao.TimeSyncd,
-		CountProposals: int32(dbDao.CountProposals),
-		Ctime:          dbDao.CTime,
-		Utime:          dbDao.UTime,
+		ID:                    dbDao.ID,
+		ChainID:               int32(dbDao.ChainID),
+		ChainName:             dbDao.ChainName,
+		Name:                  dbDao.Name,
+		Code:                  dbDao.Code,
+		State:                 dbDao.State,
+		Tags:                  tags,
+		TimeSyncd:             dbDao.TimeSyncd,
+		MetricsCountProposals: int32(dbDao.MetricsCountProposals),
+		MetricsCountMembers:   int32(dbDao.MetricsCountMembers),
+		MetricsSumPower:       dbDao.MetricsSumPower,
+		MetricsCountVote:      int32(dbDao.MetricsCountVote),
+		Ctime:                 dbDao.CTime,
+		Utime:                 dbDao.UTime,
 	}
 }
 
@@ -202,16 +205,19 @@ func (s *DaoService) RefreshDaoAndConfig(input types.RefreshDaoAndConfigInput) e
 	if result.Error == gorm.ErrRecordNotFound {
 		// Insert new DAO
 		dao := &dbmodels.Dao{
-			ID:             internal.NextIDString(),
-			ChainID:        input.Config.Chain.ID,
-			ChainName:      input.Config.Chain.Name,
-			Name:           input.Config.Name,
-			Code:           input.Code,
-			State:          "ACTIVE",
-			Tags:           tagsJson,
-			ConfigLink:     input.ConfigLink,
-			TimeSyncd:      utils.TimePtrNow(),
-			CountProposals: input.CountProposals,
+			ID:                    internal.NextIDString(),
+			ChainID:               input.Config.Chain.ID,
+			ChainName:             input.Config.Chain.Name,
+			Name:                  input.Config.Name,
+			Code:                  input.Code,
+			State:                 "ACTIVE",
+			Tags:                  tagsJson,
+			ConfigLink:            input.ConfigLink,
+			TimeSyncd:             utils.TimePtrNow(),
+			MetricsCountProposals: input.MetricsCountProposals,
+			MetricsCountMembers:   input.MetricsCountMembers,
+			MetricsSumPower:       input.MetricsSumPower,
+			MetricsCountVote:      input.MetricsCountVote,
 		}
 		if err := s.db.Create(dao).Error; err != nil {
 			return err
@@ -226,7 +232,10 @@ func (s *DaoService) RefreshDaoAndConfig(input types.RefreshDaoAndConfigInput) e
 		existingDao.ConfigLink = input.ConfigLink
 		existingDao.UTime = utils.TimePtrNow()
 		existingDao.TimeSyncd = utils.TimePtrNow()
-		existingDao.CountProposals = input.CountProposals
+		existingDao.MetricsCountProposals = input.MetricsCountProposals
+		existingDao.MetricsCountMembers = input.MetricsCountMembers
+		existingDao.MetricsSumPower = input.MetricsSumPower
+		existingDao.MetricsCountVote = input.MetricsCountVote
 		if err := s.db.Save(&existingDao).Error; err != nil {
 			return err
 		}
