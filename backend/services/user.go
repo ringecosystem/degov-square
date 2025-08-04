@@ -9,6 +9,7 @@ import (
 
 	"github.com/ringecosystem/degov-apps/database"
 	dbmodels "github.com/ringecosystem/degov-apps/database/models"
+	"github.com/ringecosystem/degov-apps/internal"
 )
 
 type UserService struct {
@@ -30,7 +31,7 @@ func (s *UserService) Modify(input dbmodels.User) (*dbmodels.User, error) {
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		// Address does not exist, create new user
 		user := &dbmodels.User{
-			ID:      input.ID,
+			ID:      internal.NextIDString(),
 			Address: address,
 			Email:   input.Email,
 		}
