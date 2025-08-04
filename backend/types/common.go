@@ -43,3 +43,8 @@ func RespWithError(code int, msg ...string) Resp[any] {
 		Data:    nil,
 	}
 }
+
+type BasicInput[T any] struct {
+	User  *UserSessInfo
+	Input T
+}

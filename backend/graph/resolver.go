@@ -12,21 +12,19 @@ import (
 // It serves as dependency injection for your app, add any dependencies you require here.
 
 type Resolver struct {
-	authService *services.AuthService
-	// userService            *services.UserService
-	daoService *services.DaoService
-	authUtils  *utils.AuthUtils
-	// userInteractionService *services.UserInteractionService
-	// notificationService    *services.NotificationService
+	authUtils *utils.AuthUtils
+
+	authService            *services.AuthService
+	daoService             *services.DaoService
+	userInteractionService *services.UserInteractionService
 }
 
 func NewResolver() *Resolver {
 	return &Resolver{
-		authService: services.NewAuthService(),
-		// userService:            services.NewUserService(),
-		daoService: services.NewDaoService(),
-		authUtils:  utils.NewAuthUtils(),
-		// userInteractionService: services.NewUserInteractionService(),
-		// notificationService:    services.NewNotificationService(),
+		authUtils: utils.NewAuthUtils(),
+
+		authService:            services.NewAuthService(),
+		daoService:             services.NewDaoService(),
+		userInteractionService: services.NewUserInteractionService(),
 	}
 }

@@ -22,6 +22,11 @@ enum AuthRule {
   PUBLIC         # Public access (no auth required)
 }
 
+enum LikeAction {
+  LIKE
+  UNLIKE
+}
+
 ### ==== entities
 
 type User {
@@ -168,8 +173,9 @@ input LoginInput {
 #   configLink: String!
 # }
 
-input LikeDaoInput {
+input ModifyLikeDaoInput {
   daoCode: String!
+  action: LikeAction!
 }
 
 # input FollowDaoInput {
@@ -180,23 +186,6 @@ input LikeDaoInput {
 #   enableVotingEndReminder: Int!
 # }
 
-# input CreateUserChannelInput {
-#   userId: String!
-#   channelType: ChannelType!
-#   channelValue: String!
-#   payload: String
-# }
-
-# input CreateNotificationRecordInput {
-#   chainId: Int!
-#   chainName: String!
-#   daoName: String!
-#   daoCode: String!
-#   type: NotificationType!
-#   targetId: String
-#   userId: String!
-#   message: String
-# }
 
 ### ==== graphql
 
@@ -219,40 +208,17 @@ type Query {
   # userLikedDaos(userId: String!): [UserLikedDao!]! @auth @authorize(rule: OWNER_ONLY)
   # userFollowedDaos(userId: String!): [UserFollowedDao!]! @auth @authorize(rule: OWNER_ONLY)
 
-  # # Notifications (require authentication)
-  # notificationRecords(userId: String!): [NotificationRecord!]! @auth @authorize(rule: OWNER_ONLY)
-  # userChannels(userId: String!): [UserChannel!]! @auth @authorize(rule: OWNER_ONLY)
 }
 
 type Mutation {
   # Auth mutations
   login(input: LoginInput!): LoginOutput!
 
-  # # User mutations (require authentication)
-  # createUser(input: CreateUserInput!): User! @auth @authorize(rule: OWNER_ONLY)
-  # updateUser(input: UpdateUserInput!): User! @auth @authorize(rule: OWNER_ONLY)
-  # deleteUser(id: ID!): Boolean! @auth @authorize(rule: OWNER_ONLY)
-
-  # # DAO mutations (require authentication)
-  # createDao(input: CreateDaoInput!): Dao! @auth
-  # updateDao(id: ID!, input: CreateDaoInput!): Dao! @auth
-  # deleteDao(id: ID!): Boolean! @auth
-
-  # # User interactions (require authentication)
-  # likeDao(input: LikeDaoInput!): UserLikedDao! @auth @authorize(rule: OWNER_ONLY)
-  # unlikeDao(userId: String!, daoCode: String!): Boolean! @auth @authorize(rule: OWNER_ONLY)
+  # User interactions
+  modifyLikeDao(input: ModifyLikeDaoInput!): Boolean! @auth
   # followDao(input: FollowDaoInput!): UserFollowedDao! @auth @authorize(rule: OWNER_ONLY)
   # unfollowDao(userId: String!, daoCode: String!): Boolean! @auth @authorize(rule: OWNER_ONLY)
 
-  # # Notifications (require authentication)
-  # createUserChannel(input: CreateUserChannelInput!): UserChannel! @auth @authorize(rule: OWNER_ONLY)
-  # updateUserChannel(id: ID!, input: CreateUserChannelInput!): UserChannel! @auth @authorize(rule: OWNER_ONLY)
-  # deleteUserChannel(id: ID!): Boolean! @auth @authorize(rule: OWNER_ONLY)
-  # verifyUserChannel(id: ID!): UserChannel! @auth @authorize(rule: OWNER_ONLY)
-
-  # createNotificationRecord(
-  #   input: CreateNotificationRecordInput!
-  # ): NotificationRecord! @auth @authorize(rule: OWNER_ONLY)
 }
 
 # type Subscription {

@@ -10,6 +10,7 @@ import (
 	"log/slog"
 
 	gqlmodels "github.com/ringecosystem/degov-apps/graph/models"
+	"github.com/ringecosystem/degov-apps/types"
 )
 
 // Login is the resolver for the login field.
@@ -20,6 +21,16 @@ func (r *mutationResolver) Login(ctx context.Context, input gqlmodels.LoginInput
 	}
 
 	return &output, nil
+}
+
+// ModifyLikeDao is the resolver for the modifyLikeDao field.
+func (r *mutationResolver) ModifyLikeDao(ctx context.Context, input gqlmodels.ModifyLikeDaoInput) (bool, error) {
+	user, _ := r.authUtils.GetUser(ctx)
+	result, err := r.userInteractionService.ModifyLikeDao(types.BasicInput[gqlmodels.ModifyLikeDaoInput]{
+		User:  user,
+		Input: input,
+	})
+	return result, err
 }
 
 // Nonce is the resolver for the nonce field.

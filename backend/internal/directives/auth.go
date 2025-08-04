@@ -7,7 +7,6 @@ import (
 	"github.com/99designs/gqlgen/graphql"
 	gqlmodels "github.com/ringecosystem/degov-apps/graph/models"
 	"github.com/ringecosystem/degov-apps/internal/middleware"
-	"github.com/ringecosystem/degov-apps/types"
 )
 
 // AuthDirective handles @auth directive
@@ -24,16 +23,17 @@ func AuthDirective(ctx context.Context, obj interface{}, next graphql.Resolver, 
 		if err != nil {
 			return nil, fmt.Errorf("authentication required: %v", err)
 		}
-	} else {
-		// Authentication is optional - just extract user info if available
-		// This allows resolvers to provide personalized data when user is authenticated
-		// but still work for unauthenticated users
-		claims, ok := middleware.GetUserFromContext(ctx)
-		if ok && claims != nil {
-			// User is authenticated, add user info to context for resolver to use
-			ctx = context.WithValue(ctx, types.AuthenticatedUserKeyType{}, claims.User)
-		}
 	}
+	// else {
+	// 	// Authentication is optional - just extract user info if available
+	// 	// This allows resolvers to provide personalized data when user is authenticated
+	// 	// but still work for unauthenticated users
+	// 	claims, ok := middleware.GetUserFromContext(ctx)
+	// 	if ok && claims != nil {
+	// 		// User is authenticated, add user info to context for resolver to use
+	// 		ctx = context.WithValue(ctx, types.AuthenticatedUserKeyType{}, claims.User)
+	// 	}
+	// }
 
 	return next(ctx)
 }
