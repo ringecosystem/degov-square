@@ -26,6 +26,7 @@ create table
     tags text,
     config_link varchar(255) not null,
     time_syncd timestamp,
+    count_proposals int not null default 0,
     ctime timestamp default now (),
     utime timestamp,
     primary key (id)

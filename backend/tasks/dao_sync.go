@@ -138,11 +138,12 @@ func (t *DaoSyncTask) processSingleDao(remoteLink GithubConfigLink, daoInfo DaoR
 	activeDaoCodes[daoInfo.Code] = true
 
 	t.daoService.RefreshDaoAndConfig(types.RefreshDaoAndConfigInput{
-		Code:       daoInfo.Code,
-		Tags:       daoInfo.Tags,
-		ConfigLink: configURL,
-		Config:     *daoConfig.Config,
-		Raw:        daoConfig.Raw,
+		Code:           daoInfo.Code,
+		Tags:           daoInfo.Tags,
+		ConfigLink:     configURL,
+		Config:         *daoConfig.Config,
+		Raw:            daoConfig.Raw,
+		CountProposals: 0,
 	})
 
 	slog.Debug("Successfully synced DAO", "dao", daoInfo.Code, "chain", chainName)

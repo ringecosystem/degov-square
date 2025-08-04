@@ -201,15 +201,16 @@ func (s *DaoService) RefreshDaoAndConfig(input types.RefreshDaoAndConfigInput) e
 	if result.Error == gorm.ErrRecordNotFound {
 		// Insert new DAO
 		dao := &dbmodels.Dao{
-			ID:         internal.NextIDString(),
-			ChainID:    input.Config.Chain.ID,
-			ChainName:  input.Config.Chain.Name,
-			Name:       input.Config.Name,
-			Code:       input.Code,
-			State:      "ACTIVE",
-			Tags:       tagsJson,
-			ConfigLink: input.ConfigLink,
-			TimeSyncd:  utils.TimePtrNow(),
+			ID:             internal.NextIDString(),
+			ChainID:        input.Config.Chain.ID,
+			ChainName:      input.Config.Chain.Name,
+			Name:           input.Config.Name,
+			Code:           input.Code,
+			State:          "ACTIVE",
+			Tags:           tagsJson,
+			ConfigLink:     input.ConfigLink,
+			TimeSyncd:      utils.TimePtrNow(),
+			CountProposals: input.CountProposals,
 		}
 		if err := s.db.Create(dao).Error; err != nil {
 			return err
@@ -223,6 +224,8 @@ func (s *DaoService) RefreshDaoAndConfig(input types.RefreshDaoAndConfigInput) e
 		existingDao.Tags = tagsJson
 		existingDao.ConfigLink = input.ConfigLink
 		existingDao.UTime = utils.TimePtrNow()
+		existingDao.TimeSyncd = utils.TimePtrNow()
+		existingDao.CountProposals = input.CountProposals
 		if err := s.db.Save(&existingDao).Error; err != nil {
 			return err
 		}
