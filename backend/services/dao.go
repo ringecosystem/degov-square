@@ -5,6 +5,7 @@ import (
 	"errors"
 	"time"
 
+	"gopkg.in/yaml.v3"
 	"gorm.io/gorm"
 
 	"github.com/ringecosystem/degov-apps/database"
@@ -322,6 +323,32 @@ func (s *DaoConfigService) Inspect(daoCode string) (*dbmodels.DgvDaoConfig, erro
 		return nil, err
 	}
 	return &config, nil
+}
+
+func (s *DaoConfigService) RawConfig(input types.RawDaoConfigInput) (string, error) {
+	daoConfig, err := s.Inspect(input.Code)
+	if err != nil {
+		return "", err
+	}
+
+	if input.Format == "json" {
+		// Convert YAML to JSON
+		var yamlData interface{}
+		err := yaml.Unmarshal([]byte(daoConfig.Config), &yamlData)
+		if err != nil {
+			return "", errors.New("failed to convert YAML to JSON")
+		}
+
+		jsonData, err := json.MarshalIndent(yamlData, "", "  ")
+		if err != nil {
+			return "", errors.New("failed to convert YAML to JSON")
+		}
+
+		return string(jsonData), nil
+	} else {
+		// Default to YAML format
+		return daoConfig.Config, nil
+	}
 }
 
 type UserLikedDaoService struct {

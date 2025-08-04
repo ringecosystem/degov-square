@@ -17,6 +17,11 @@ type StoreDaoChipInput struct {
 	AgentConfig AgentDaoConfig `json:"agentConfig"`
 }
 
+type RawDaoConfigInput struct {
+	Code   string `json:"code"`
+	Format string `json:"format"`
+}
+
 // DaoConfig represents the structure of individual DAO config files
 type DaoConfig struct {
 	Name                  string `yaml:"name"`

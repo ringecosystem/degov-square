@@ -1,22 +1,28 @@
 package routes
 
 import (
-	"encoding/json"
 	"net/http"
+	"time"
 
+	"github.com/patrickmn/go-cache"
 	"github.com/ringecosystem/degov-apps/internal/middleware"
 	"github.com/ringecosystem/degov-apps/services"
-	"gopkg.in/yaml.v3"
+	"github.com/ringecosystem/degov-apps/types"
 )
 
 type DaoRoute struct {
 	daoConfigService *services.DaoConfigService
+	configCache      *cache.Cache
 }
 
 // NewDaoRoute creates a new DAO route handler
 func NewDaoRoute() *DaoRoute {
+	// Create cache with 15 seconds TTL and 30 seconds cleanup interval
+	c := cache.New(15*time.Second, 30*time.Second)
+
 	return &DaoRoute{
 		daoConfigService: services.NewDaoConfigService(),
+		configCache:      c,
 	}
 }
 
@@ -61,39 +67,41 @@ func (d *DaoRoute) ConfigHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	daoConfig, err := d.daoConfigService.Inspect(daoCode)
+	// Create cache key based on dao code and format
+	cacheKey := daoCode + ":" + format
+
+	var contentType string
+	if format == "json" {
+		contentType = "application/json"
+	} else {
+		contentType = "text/yaml"
+	}
+	w.Header().Set("Content-Type", contentType)
+
+	// Try to get from cache first
+	if cached, found := d.configCache.Get(cacheKey); found {
+		if responseContent, ok := cached.(string); ok {
+			w.Header().Set("X-Cache", "HIT")
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte(responseContent))
+			return
+		}
+	}
+
+	// Cache miss, fetch from service
+	responseContent, err := d.daoConfigService.RawConfig(types.RawDaoConfigInput{
+		Code:   daoCode,
+		Format: format,
+	})
 	if err != nil {
 		http.Error(w, "Failed to retrieve DAO configuration", http.StatusInternalServerError)
 		return
 	}
 
-	var responseContent []byte
-	var contentType string
+	// Store in cache
+	d.configCache.Set(cacheKey, responseContent, cache.DefaultExpiration)
 
-	if format == "json" {
-		// Convert YAML to JSON
-		var yamlData interface{}
-		err := yaml.Unmarshal([]byte(daoConfig.Config), &yamlData)
-		if err != nil {
-			http.Error(w, "Failed to parse YAML configuration", http.StatusInternalServerError)
-			return
-		}
-
-		jsonData, err := json.MarshalIndent(yamlData, "", "  ")
-		if err != nil {
-			http.Error(w, "Failed to convert to JSON", http.StatusInternalServerError)
-			return
-		}
-
-		responseContent = jsonData
-		contentType = "application/json"
-	} else {
-		// Default YAML format
-		responseContent = []byte(daoConfig.Config)
-		contentType = "text/yaml"
-	}
-
-	w.Header().Set("Content-Type", contentType)
+	w.Header().Set("X-Cache", "MISS")
 	w.WriteHeader(http.StatusOK)
-	w.Write(responseContent)
+	w.Write([]byte(responseContent))
 }
