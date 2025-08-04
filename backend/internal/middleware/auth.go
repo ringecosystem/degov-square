@@ -38,6 +38,13 @@ func NewAuthMiddleware() *AuthMiddleware {
 	}
 }
 
+// Middleware returns a standard middleware function
+func (m *AuthMiddleware) Middleware() Middleware {
+	return func(next http.Handler) http.Handler {
+		return m.HTTPMiddleware(next)
+	}
+}
+
 // HTTPMiddleware wraps HTTP handlers with JWT authentication
 func (m *AuthMiddleware) HTTPMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

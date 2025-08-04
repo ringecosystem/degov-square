@@ -122,14 +122,22 @@ func startServer() {
 		Cache: lru.New[string](100),
 	})
 
-	// Initialize authentication middleware
-	authMiddleware := middleware.NewAuthMiddleware()
+	// Create middleware chain including auth middleware
+	middlewareChain := middleware.NewChain(
+		middleware.RecoveryMiddleware(),             // Recovery should be first
+		middleware.LoggingMiddleware(),              // Logging
+		// middleware.SecurityHeadersMiddleware(),      // Security headers
+		middleware.NewAuthMiddleware().Middleware(), // Authentication
+	)
 
 	mux := http.NewServeMux()
 
 	graphiql := playground.Handler("GraphQL playground", "/graphql", playground.WithGraphiqlEnablePluginExplorer(true))
 	mux.Handle("/graphiql", graphiql)
-	mux.Handle("/graphql", authMiddleware.HTTPMiddleware(srv))
+
+	// Apply complete middleware chain to GraphQL endpoint
+	graphqlHandler := middlewareChain.Then(srv)
+	mux.Handle("/graphql", graphqlHandler)
 
 	corsHandler := cors.New(cors.Options{
 		AllowedOrigins:   []string{"*"},
