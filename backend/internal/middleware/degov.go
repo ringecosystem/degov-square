@@ -22,8 +22,8 @@ type DegovMiddleware struct {
 }
 
 func NewDegovMiddleware() *DegovMiddleware {
-	// Create cache with 2 minutes TTL and 5 minutes cleanup interval
-	c := cache.New(2*time.Minute, 5*time.Minute)
+	// Create cache with 15 seconds TTL and 30 seconds cleanup interval
+	c := cache.New(15*time.Second, 30*time.Second)
 
 	return &DegovMiddleware{
 		daoService: services.NewDaoService(),
@@ -144,8 +144,8 @@ func (m *DegovMiddleware) getDaosFromCache() []DaoEndpoint {
 		daos = append(daos, dao)
 	}
 
-	// store in cache with 2 minutes TTL
-	m.daoCache.Set("daos", daos, 2*time.Minute)
+	// store in cache with 15 seconds TTL
+	m.daoCache.Set("daos", daos, 15*time.Second)
 
 	return daos
 }

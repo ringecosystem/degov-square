@@ -302,6 +302,28 @@ func getMapKeys(m map[string]bool) []string {
 	return keys
 }
 
+type DaoConfigService struct {
+	db *gorm.DB
+}
+
+func NewDaoConfigService() *DaoConfigService {
+	return &DaoConfigService{
+		db: database.GetDB(),
+	}
+}
+
+func (s *DaoConfigService) Inspect(daoCode string) (*dbmodels.DgvDaoConfig, error) {
+	var config dbmodels.DgvDaoConfig
+	err := s.db.Where("dao_code = ?", daoCode).First(&config).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("dao config not found")
+		}
+		return nil, err
+	}
+	return &config, nil
+}
+
 type UserLikedDaoService struct {
 	db *gorm.DB
 }
