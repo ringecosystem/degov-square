@@ -195,25 +195,87 @@ func (t *DaoSyncTask) processChip(agentDaos []types.AgentDaoConfig, daoInfo DaoR
 }
 
 func (t *DaoSyncTask) agentDaos() ([]types.AgentDaoConfig, error) {
-	resp, err := http.Get("https://agent.degov.ai/degov/daos")
-	if err != nil {
-		return nil, fmt.Errorf("failed to fetch agent DAOs: %w", err)
-	}
-	defer resp.Body.Close()
+	const (
+		maxRetries = 3
+		baseDelay  = time.Second
+		timeout    = 15 * time.Second
+	)
 
-	var agentDaos types.Resp[[]types.AgentDaoConfig]
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read agent DAOs response body: %w", err)
-	}
-	if err := json.Unmarshal(body, &agentDaos); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal agent DAOs: %w", err)
-	}
-	if agentDaos.Code != 0 {
-		return nil, fmt.Errorf("agent DAOs response error: %s", agentDaos.Message)
+	// Create HTTP client with timeout
+	client := &http.Client{
+		Timeout: timeout,
 	}
 
-	return agentDaos.Data, nil
+	var lastErr error
+	for attempt := 0; attempt < maxRetries; attempt++ {
+		if attempt > 0 {
+			// Exponential backoff: wait baseDelay * 2^(attempt-1)
+			delay := baseDelay * time.Duration(1<<(attempt-1))
+			slog.Debug("Retrying agent DAOs fetch", "attempt", attempt+1, "delay", delay)
+			time.Sleep(delay)
+		}
+
+		// Create request with context for timeout
+		ctx, cancel := context.WithTimeout(context.Background(), timeout)
+		req, err := http.NewRequestWithContext(ctx, "GET", "https://agent.degov.ai/degov/daos", nil)
+		cancel() // Cancel immediately after creating request
+		if err != nil {
+			lastErr = fmt.Errorf("failed to create request: %w", err)
+			continue
+		}
+
+		// Set User-Agent header for better API compatibility
+		req.Header.Set("User-Agent", "degov-apps/1.0")
+
+		resp, err := client.Do(req)
+		if err != nil {
+			lastErr = fmt.Errorf("failed to fetch agent DAOs (attempt %d/%d): %w", attempt+1, maxRetries, err)
+			slog.Warn("Failed to fetch agent DAOs", "attempt", attempt+1, "error", err)
+			continue
+		}
+		defer resp.Body.Close()
+
+		// Check for HTTP errors
+		if resp.StatusCode != http.StatusOK {
+			body, readErr := io.ReadAll(resp.Body)
+			if readErr != nil {
+				lastErr = fmt.Errorf("HTTP %d from agent DAOs API (attempt %d/%d), failed to read error body: %w",
+					resp.StatusCode, attempt+1, maxRetries, readErr)
+			} else {
+				lastErr = fmt.Errorf("HTTP %d from agent DAOs API (attempt %d/%d): %s",
+					resp.StatusCode, attempt+1, maxRetries, string(body))
+			}
+			slog.Warn("Agent DAOs API returned error", "attempt", attempt+1, "status_code", resp.StatusCode, "body", string(body))
+			continue
+		}
+
+		var agentDaos types.Resp[[]types.AgentDaoConfig]
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			lastErr = fmt.Errorf("failed to read agent DAOs response body (attempt %d/%d): %w", attempt+1, maxRetries, err)
+			slog.Warn("Failed to read response body", "attempt", attempt+1, "error", err)
+			continue
+		}
+
+		if err := json.Unmarshal(body, &agentDaos); err != nil {
+			lastErr = fmt.Errorf("failed to unmarshal agent DAOs (attempt %d/%d): %w", attempt+1, maxRetries, err)
+			slog.Warn("Failed to unmarshal response", "attempt", attempt+1, "error", err)
+			continue
+		}
+
+		if agentDaos.Code != 0 {
+			lastErr = fmt.Errorf("agent DAOs response error (attempt %d/%d): %s", attempt+1, maxRetries, agentDaos.Message)
+			slog.Warn("Agent DAOs API returned error response", "attempt", attempt+1, "code", agentDaos.Code, "message", agentDaos.Message)
+			continue
+		}
+
+		// Success - return the data
+		slog.Info("Successfully fetched agent DAOs", "count", len(agentDaos.Data), "attempt", attempt+1)
+		return agentDaos.Data, nil
+	}
+
+	// All retries failed
+	return nil, fmt.Errorf("failed to fetch agent DAOs after %d attempts: %w", maxRetries, lastErr)
 }
 
 // fetchRegistryConfig fetches and parses the main registry configuration
