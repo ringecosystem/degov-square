@@ -30,7 +30,10 @@ func (s *UserInteractionService) ModifyLikeDao(baseInput types.BasicInput[gqlmod
 	usess := baseInput.User
 	input := baseInput.Input
 
-	_, err := s.daoService.Inspect(input.DaoCode)
+	_, err := s.daoService.Inspect(types.BasicInput[string]{
+		User:  usess,
+		Input: input.DaoCode,
+	})
 	if err != nil {
 		return false, fmt.Errorf("error inspecting DAO: %w", err)
 	}

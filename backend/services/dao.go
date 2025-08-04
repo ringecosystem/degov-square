@@ -47,7 +47,8 @@ func (s *DaoService) convertToGqlDao(dbDao dbmodels.Dao) *gqlmodels.Dao {
 	}
 }
 
-func (s *DaoService) Inspect(code string) (*gqlmodels.Dao, error) {
+func (s *DaoService) Inspect(baseInput types.BasicInput[string]) (*gqlmodels.Dao, error) {
+	code := baseInput.Input
 	var dbDao dbmodels.Dao
 	err := s.db.Where("code = ?", code).First(&dbDao).Error
 	if err != nil {
@@ -65,8 +66,19 @@ func (s *DaoService) Inspect(code string) (*gqlmodels.Dao, error) {
 	}
 	dao.Chips = chips
 
-	liked := false
-	subscribed := false
+	// Query user's liked and subscribed status if user is logged in
+	var userID string
+	if baseInput.User != nil {
+		userID = baseInput.User.Id
+	}
+	userLikedDaos, userSubscribedDaos, err := s.getUserDaoInteractions(userID, []string{code})
+	if err != nil {
+		return nil, err
+	}
+
+	liked := userLikedDaos[code]
+	subscribed := userSubscribedDaos[code]
+
 	dao.Liked = &liked
 	dao.Subscribed = &subscribed
 
@@ -101,9 +113,26 @@ func (s *DaoService) MultipleDaoChips(codes []string) ([]*gqlmodels.DaoChip, err
 	return chips, nil
 }
 
+func (s *DaoService) getUserDaoInteractions(userID string, daoCodes []string) (map[string]bool, map[string]bool, error) {
+	likedService := NewUserLikedDaoService()
+	subscribedService := NewUserSubscribedDaoService()
+
+	userLikedDaos, err := likedService.GetUserLikedDaos(userID, daoCodes)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	userSubscribedDaos, err := subscribedService.GetUserSubscribedDaos(userID, daoCodes)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return userLikedDaos, userSubscribedDaos, nil
+}
+
 func (s *DaoService) GetDaos(baseInput types.BasicInput[*string]) ([]*gqlmodels.Dao, error) {
 	var dbDaos []dbmodels.Dao
-	if err := s.db.Table("dgv_dao").Where("state = ?", "ACTIVE").Find(&dbDaos).Order("seq asc").Error; err != nil {
+	if err := s.db.Table("dgv_dao").Where("state = ?", "ACTIVE").Order("seq asc").Find(&dbDaos).Error; err != nil {
 		return nil, err
 	}
 
@@ -113,15 +142,27 @@ func (s *DaoService) GetDaos(baseInput types.BasicInput[*string]) ([]*gqlmodels.
 		daoCodes = append(daoCodes, dao.Code)
 	}
 
+	// Batch query chips for all DAOs
 	daosChips, err := s.MultipleDaoChips(daoCodes)
+	if err != nil {
+		return nil, err
+	}
+
+	// Batch query user's liked and subscribed DAOs if user is logged in
+	var userID string
+	if baseInput.User != nil {
+		userID = baseInput.User.Id
+	}
+	userLikedDaos, userSubscribedDaos, err := s.getUserDaoInteractions(userID, daoCodes)
 	if err != nil {
 		return nil, err
 	}
 
 	var daos []*gqlmodels.Dao
 	for _, dbDao := range dbDaos {
-		liked := false
-		subscribed := false
+		// Check if current user liked this DAO
+		liked := userLikedDaos[dbDao.Code]
+		subscribed := userSubscribedDaos[dbDao.Code]
 
 		// Convert tags from JSON string to string array
 		var tags []string
@@ -234,6 +275,66 @@ func getMapKeys(m map[string]bool) []string {
 		keys = append(keys, k)
 	}
 	return keys
+}
+
+type UserLikedDaoService struct {
+	db *gorm.DB
+}
+
+func NewUserLikedDaoService() *UserLikedDaoService {
+	return &UserLikedDaoService{
+		db: database.GetDB(),
+	}
+}
+
+// GetUserLikedDaos 获取用户喜欢的 DAO 列表
+func (s *UserLikedDaoService) GetUserLikedDaos(userID string, daoCodes []string) (map[string]bool, error) {
+	userLikedDaos := make(map[string]bool)
+
+	if userID == "" {
+		return userLikedDaos, nil
+	}
+
+	var likedRecords []dbmodels.UserLikedDao
+	if err := s.db.Where("user_id = ? AND dao_code IN ?", userID, daoCodes).Find(&likedRecords).Error; err != nil {
+		return nil, err
+	}
+
+	for _, record := range likedRecords {
+		userLikedDaos[record.DaoCode] = true
+	}
+
+	return userLikedDaos, nil
+}
+
+type UserSubscribedDaoService struct {
+	db *gorm.DB
+}
+
+func NewUserSubscribedDaoService() *UserSubscribedDaoService {
+	return &UserSubscribedDaoService{
+		db: database.GetDB(),
+	}
+}
+
+// GetUserSubscribedDaos 获取用户订阅的 DAO 列表
+func (s *UserSubscribedDaoService) GetUserSubscribedDaos(userID string, daoCodes []string) (map[string]bool, error) {
+	userSubscribedDaos := make(map[string]bool)
+
+	if userID == "" {
+		return userSubscribedDaos, nil
+	}
+
+	var subscribedRecords []dbmodels.UserSubscribedDao
+	if err := s.db.Where("user_id = ? AND dao_code IN ? AND state = ?", userID, daoCodes, "SUBSCRIBED").Find(&subscribedRecords).Error; err != nil {
+		return nil, err
+	}
+
+	for _, record := range subscribedRecords {
+		userSubscribedDaos[record.DaoCode] = true
+	}
+
+	return userSubscribedDaos, nil
 }
 
 type DaoChipService struct {
