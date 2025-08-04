@@ -42,6 +42,7 @@ func (m *DegovMiddleware) HTTPMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		originHeader := r.Header.Get("Origin")
 		refererHeader := r.Header.Get("Referer")
+		siteHeader := r.Header.Get("x-degov-site")
 		daocodeHeader := r.Header.Get("x-degov-daocode")
 
 		var daoCode string
@@ -50,7 +51,7 @@ func (m *DegovMiddleware) HTTPMiddleware(next http.Handler) http.Handler {
 		if daocodeHeader != "" {
 			daoCode = daocodeHeader
 		} else {
-			daoCode = m.findDaoCodeByURL(originHeader, refererHeader)
+			daoCode = m.findDaoCodeByURL(siteHeader, originHeader, refererHeader)
 		}
 
 		if daoCode != "" {
@@ -62,9 +63,12 @@ func (m *DegovMiddleware) HTTPMiddleware(next http.Handler) http.Handler {
 }
 
 // try to find the DAO code based on the origin or referer headers
-func (m *DegovMiddleware) findDaoCodeByURL(origin, referer string) string {
+func (m *DegovMiddleware) findDaoCodeByURL(customSite, origin, referer string) string {
 	// use origin if available, otherwise use referer
-	targetURL := origin
+	targetURL := customSite
+	if targetURL == "" {
+		targetURL = origin
+	}
 	if targetURL == "" {
 		targetURL = referer
 	}
@@ -87,7 +91,7 @@ func (m *DegovMiddleware) findDaoCodeByURL(origin, referer string) string {
 	// match DAO by endpoint
 	for _, dao := range daos {
 		if dao.Endpoint != "" {
-			if dao.Endpoint == targetHost {
+			if strings.EqualFold(dao.Endpoint, targetHost) {
 				return dao.Code
 			}
 		}
