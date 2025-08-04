@@ -59,8 +59,8 @@ type Dao {
   metricsCountVote: Int!
   ctime: Time!
   utime: Time
-  liked: Boolean
-  subscribed: Boolean
+  # liked: Boolean
+  # subscribed: Boolean
   chips: [DaoChip!]
 }
 
@@ -205,6 +205,8 @@ type Query {
 
   # DAO queries (no authentication required, but auth info affects result)
   daos: [Dao!]! @auth(required: false)
+  likedDaos: [Dao!]! @auth(required: false)
+  subscribedDaos: [Dao!]! @auth(required: false)
   daoConfig(input: GetDaoConfigInput): String!
 
   # dao(id: ID!): Dao @auth(required: false)

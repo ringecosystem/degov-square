@@ -50,7 +50,25 @@ func (r *queryResolver) Daos(ctx context.Context) ([]*gqlmodels.Dao, error) {
 
 	// User is authenticated, return DAOs with personalized info (liked, subscribed, etc.)
 	// For now, just call the regular method - you can extend this later
-	return r.daoService.GetDaos(types.BasicInput[*string]{
+	return r.daoService.ListDaos(types.BasicInput[*types.ListDaosInput]{
+		User:  user,
+		Input: nil,
+	})
+}
+
+// LikedDaos is the resolver for the likedDaos field.
+func (r *queryResolver) LikedDaos(ctx context.Context) ([]*gqlmodels.Dao, error) {
+	user, _ := r.authUtils.GetUser(ctx)
+	return r.userLikedService.LikedDaos(types.BasicInput[*string]{
+		User:  user,
+		Input: nil,
+	})
+}
+
+// SubscribedDaos is the resolver for the subscribedDaos field.
+func (r *queryResolver) SubscribedDaos(ctx context.Context) ([]*gqlmodels.Dao, error) {
+	user, _ := r.authUtils.GetUser(ctx)
+	return r.userSubscribedService.SubscribedDaos(types.BasicInput[*string]{
 		User:  user,
 		Input: nil,
 	})

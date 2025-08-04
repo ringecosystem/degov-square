@@ -129,7 +129,7 @@ func (m *DegovMiddleware) getDaosFromCache() []DaoEndpoint {
 	}
 
 	// Fetch DAOs from the database
-	gqlDaos, err := m.daoService.GetDaos(types.BasicInput[*string]{})
+	gqlDaos, err := m.daoService.ListDaos(types.BasicInput[*types.ListDaosInput]{})
 	if err != nil {
 		return nil
 	}

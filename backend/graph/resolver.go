@@ -17,6 +17,8 @@ type Resolver struct {
 	authService            *services.AuthService
 	daoService             *services.DaoService
 	daoConfigService       *services.DaoConfigService
+	userLikedService       *services.UserLikedDaoService
+	userSubscribedService  *services.UserSubscribedDaoService
 	userInteractionService *services.UserInteractionService
 }
 
@@ -27,6 +29,8 @@ func NewResolver() *Resolver {
 		authService:            services.NewAuthService(),
 		daoService:             services.NewDaoService(),
 		daoConfigService:       services.NewDaoConfigService(),
+		userLikedService:       services.NewUserLikedDaoService(),
+		userSubscribedService:  services.NewUserSubscribedDaoService(),
 		userInteractionService: services.NewUserInteractionService(),
 	}
 }
