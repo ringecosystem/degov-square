@@ -10,7 +10,7 @@ import (
 	"github.com/ringecosystem/degov-apps/database"
 	dbmodels "github.com/ringecosystem/degov-apps/database/models"
 	gqlmodels "github.com/ringecosystem/degov-apps/graph/models"
-	"github.com/ringecosystem/degov-apps/internal"
+	"github.com/ringecosystem/degov-apps/internal/utils"
 	"github.com/ringecosystem/degov-apps/types"
 )
 
@@ -53,7 +53,7 @@ func (s *UserInteractionService) ModifyLikeDao(baseInput types.BasicInput[gqlmod
 		if isNotFoundError {
 			// Create new like
 			like := &dbmodels.UserLikedDao{
-				ID:          internal.NextIDString(),
+				ID:          utils.NextIDString(),
 				DaoCode:     input.DaoCode,
 				UserID:      usess.Id,
 				UserAddress: usess.Address,

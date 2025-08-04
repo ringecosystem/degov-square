@@ -7,11 +7,10 @@ import (
 
 	"gorm.io/gorm"
 
-	"github.com/ringecosystem/degov-apps/common"
 	"github.com/ringecosystem/degov-apps/database"
 	dbmodels "github.com/ringecosystem/degov-apps/database/models"
 	gqlmodels "github.com/ringecosystem/degov-apps/graph/models"
-	"github.com/ringecosystem/degov-apps/internal"
+	"github.com/ringecosystem/degov-apps/internal/utils"
 	"github.com/ringecosystem/degov-apps/types"
 )
 
@@ -201,11 +200,11 @@ func (s *DaoService) RefreshDaoAndConfig(input types.RefreshDaoAndConfigInput) e
 	var existingDao dbmodels.Dao
 	result := s.db.Where("code = ?", input.Code).First(&existingDao)
 
-	tagsJson := common.ToJSON(input.Tags)
+	tagsJson := utils.ToJSON(input.Tags)
 	if result.Error == gorm.ErrRecordNotFound {
 		// Insert new DAO
 		dao := &dbmodels.Dao{
-			ID:                    internal.NextIDString(),
+			ID:                    utils.NextIDString(),
 			ChainID:               input.Config.Chain.ID,
 			ChainName:             input.Config.Chain.Name,
 			Name:                  input.Config.Name,
@@ -213,7 +212,7 @@ func (s *DaoService) RefreshDaoAndConfig(input types.RefreshDaoAndConfigInput) e
 			State:                 "ACTIVE",
 			Tags:                  tagsJson,
 			ConfigLink:            input.ConfigLink,
-			TimeSyncd:             common.TimePtrNow(),
+			TimeSyncd:             utils.TimePtrNow(),
 			MetricsCountProposals: *input.MetricsCountProposals,
 			MetricsCountMembers:   *input.MetricsCountMembers,
 			MetricsSumPower:       *input.MetricsSumPower,
@@ -230,8 +229,8 @@ func (s *DaoService) RefreshDaoAndConfig(input types.RefreshDaoAndConfigInput) e
 		existingDao.State = "ACTIVE"
 		existingDao.Tags = tagsJson
 		existingDao.ConfigLink = input.ConfigLink
-		existingDao.UTime = common.TimePtrNow()
-		existingDao.TimeSyncd = common.TimePtrNow()
+		existingDao.UTime = utils.TimePtrNow()
+		existingDao.TimeSyncd = utils.TimePtrNow()
 
 		// Only update metrics if they are provided (not nil)
 		if input.MetricsCountProposals != nil {
@@ -257,7 +256,7 @@ func (s *DaoService) RefreshDaoAndConfig(input types.RefreshDaoAndConfigInput) e
 	if r2.Error == gorm.ErrRecordNotFound {
 		// Insert new DAO config
 		config := &dbmodels.DgvDaoConfig{
-			ID:      internal.NextIDString(),
+			ID:      utils.NextIDString(),
 			DaoCode: input.Code,
 			Config:  input.Raw,
 			CTime:   time.Now(),
@@ -269,7 +268,7 @@ func (s *DaoService) RefreshDaoAndConfig(input types.RefreshDaoAndConfigInput) e
 
 	// Update existing DAO config
 	existingConfig.Config = input.Raw
-	existingConfig.UTime = common.TimePtrNow()
+	existingConfig.UTime = utils.TimePtrNow()
 
 	return s.db.Save(&existingConfig).Error
 }
@@ -281,7 +280,7 @@ func (s *DaoService) MarkInactiveDAOs(activeCodes map[string]bool) error {
 		Where("code NOT IN ? AND state != ?", getMapKeys(activeCodes), "INACTIVE").
 		Updates(map[string]interface{}{
 			"state": "INACTIVE",
-			"utime": common.TimePtrNow(),
+			"utime": utils.TimePtrNow(),
 		})
 
 	if result.Error != nil {
@@ -377,11 +376,11 @@ func (s *DaoChipService) StoreChipAgent(input types.StoreDaoChipInput) error {
 	if result.Error == gorm.ErrRecordNotFound {
 		// Insert new chip
 		chip := &dbmodels.DgvDaoChip{
-			ID:         internal.NextIDString(),
+			ID:         utils.NextIDString(),
 			DaoCode:    input.Code,
 			ChipCode:   chipCode,
 			Value:      "ENABLED",
-			Additional: common.ToJSON(input.AgentConfig),
+			Additional: utils.ToJSON(input.AgentConfig),
 			CTime:      time.Now(),
 		}
 		if err := s.db.Create(chip).Error; err != nil {
@@ -393,8 +392,8 @@ func (s *DaoChipService) StoreChipAgent(input types.StoreDaoChipInput) error {
 		return result.Error
 	}
 	existingChip.Value = "ENABLED"
-	existingChip.Additional = common.ToJSON(input.AgentConfig)
-	existingChip.UTime = common.TimePtrNow()
+	existingChip.Additional = utils.ToJSON(input.AgentConfig)
+	existingChip.UTime = utils.TimePtrNow()
 	if err := s.db.Save(&existingChip).Error; err != nil {
 		return err
 	}

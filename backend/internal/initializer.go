@@ -9,10 +9,11 @@ import (
 
 	"github.com/ringecosystem/degov-apps/database"
 	"github.com/ringecosystem/degov-apps/internal/config"
+	"github.com/ringecosystem/degov-apps/internal/utils"
 )
 
 func AppInit() {
-	InitIDGenerator(1)
+	utils.InitIDGenerator(1)
 	loadDotEnv()
 	initConfig()
 	initLog()
