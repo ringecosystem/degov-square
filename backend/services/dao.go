@@ -2,6 +2,7 @@ package services
 
 import (
 	"encoding/json"
+	"errors"
 	"time"
 
 	"gorm.io/gorm"
@@ -24,7 +25,83 @@ func NewDaoService() *DaoService {
 	}
 }
 
-func (s *DaoService) GetDaos() ([]*gqlmodels.Dao, error) {
+func (s *DaoService) convertToGqlDao(dbDao dbmodels.Dao) *gqlmodels.Dao {
+	var tags []string
+	if dbDao.Tags != "" {
+		if err := json.Unmarshal([]byte(dbDao.Tags), &tags); err != nil {
+			tags = []string{} // If JSON unmarshal fails, treat as empty array
+		}
+	}
+
+	return &gqlmodels.Dao{
+		ID:        dbDao.ID,
+		ChainID:   int32(dbDao.ChainID),
+		ChainName: dbDao.ChainName,
+		Name:      dbDao.Name,
+		Code:      dbDao.Code,
+		State:     dbDao.State,
+		Tags:      tags,
+		TimeSyncd: dbDao.TimeSyncd,
+		Ctime:     dbDao.CTime,
+		Utime:     dbDao.UTime,
+	}
+}
+
+func (s *DaoService) Inspect(code string) (*gqlmodels.Dao, error) {
+	var dbDao dbmodels.Dao
+	err := s.db.Where("code = ?", code).First(&dbDao).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("dao not found")
+		}
+		return nil, err
+	}
+	dao := s.convertToGqlDao(dbDao)
+
+	// chips
+	chips, err := s.SingleDaoChips(code)
+	if err != nil {
+		return nil, err
+	}
+	dao.Chips = chips
+
+	liked := false
+	subscribed := false
+	dao.Liked = &liked
+	dao.Subscribed = &subscribed
+
+	return dao, nil
+}
+
+func (s *DaoService) SingleDaoChips(code string) ([]*gqlmodels.DaoChip, error) {
+	return s.MultipleDaoChips([]string{code})
+}
+
+func (s *DaoService) MultipleDaoChips(codes []string) ([]*gqlmodels.DaoChip, error) {
+	var dbChips []dbmodels.DgvDaoChip
+	err := s.db.Where("dao_code IN ?", codes).Find(&dbChips).Error
+	if err != nil {
+		return nil, err
+	}
+
+	var chips []*gqlmodels.DaoChip
+	for _, dbChip := range dbChips {
+		chip := &gqlmodels.DaoChip{
+			ID:         dbChip.ID,
+			DaoCode:    dbChip.DaoCode,
+			ChipCode:   dbChip.ChipCode,
+			Value:      dbChip.Value,
+			Additional: &dbChip.Additional,
+			Ctime:      dbChip.CTime,
+			Utime:      dbChip.UTime,
+		}
+		chips = append(chips, chip)
+	}
+
+	return chips, nil
+}
+
+func (s *DaoService) GetDaos(baseInput types.BasicInput[*string]) ([]*gqlmodels.Dao, error) {
 	var dbDaos []dbmodels.Dao
 	if err := s.db.Table("dgv_dao").Where("state = ?", "ACTIVE").Find(&dbDaos).Order("seq asc").Error; err != nil {
 		return nil, err
@@ -36,8 +113,8 @@ func (s *DaoService) GetDaos() ([]*gqlmodels.Dao, error) {
 		daoCodes = append(daoCodes, dao.Code)
 	}
 
-	var dbChips []dbmodels.DgvDaoChip
-	if err := s.db.Table("dgv_dao_chip").Where("dao_code IN ?", daoCodes).Find(&dbChips).Error; err != nil {
+	daosChips, err := s.MultipleDaoChips(daoCodes)
+	if err != nil {
 		return nil, err
 	}
 
@@ -57,37 +134,17 @@ func (s *DaoService) GetDaos() ([]*gqlmodels.Dao, error) {
 
 		// Find chips for this DAO
 		var chips []*gqlmodels.DaoChip
-		for _, dbChip := range dbChips {
-			if dbChip.DaoCode == dbDao.Code {
-				chip := &gqlmodels.DaoChip{
-					ID:         dbChip.ID,
-					DaoCode:    dbChip.DaoCode,
-					ChipCode:   dbChip.ChipCode,
-					Value:      dbChip.Value,
-					Additional: &dbChip.Additional,
-					Ctime:      dbChip.CTime,
-					Utime:      dbChip.UTime,
-				}
-				chips = append(chips, chip)
+		for _, daoChip := range daosChips {
+			if daoChip.DaoCode == dbDao.Code {
+				chips = append(chips, daoChip)
 			}
 		}
 
-		dao := &gqlmodels.Dao{
-			ID:         dbDao.ID,
-			ChainID:    int32(dbDao.ChainID),
-			ChainName:  dbDao.ChainName,
-			Name:       dbDao.Name,
-			Code:       dbDao.Code,
-			Seq:        int32(dbDao.Seq),
-			State:      dbDao.State,
-			Tags:       tags,
-			TimeSyncd:  dbDao.TimeSyncd,
-			Ctime:      dbDao.CTime,
-			Utime:      dbDao.UTime,
-			Liked:      &liked,
-			Subscribed: &subscribed,
-			Chips:      chips,
-		}
+		dao := s.convertToGqlDao(dbDao)
+
+		dao.Liked = &liked
+		dao.Subscribed = &subscribed
+		dao.Chips = chips
 
 		daos = append(daos, dao)
 	}

@@ -7,7 +7,6 @@ package graph
 import (
 	"context"
 	"fmt"
-	"log/slog"
 
 	gqlmodels "github.com/ringecosystem/degov-apps/graph/models"
 	"github.com/ringecosystem/degov-apps/types"
@@ -47,17 +46,15 @@ func (r *queryResolver) Nonce(ctx context.Context, input gqlmodels.GetNonceInput
 
 // Daos is the resolver for the daos field.
 func (r *queryResolver) Daos(ctx context.Context) ([]*gqlmodels.Dao, error) {
-	authenticatedUser, err := r.authUtils.GetUser(ctx)
-	slog.Info("Fetching DAOs", "authenticated_user", authenticatedUser)
-
+	user, err := r.authUtils.GetUser(ctx)
 	fmt.Println("err:", err)
-	if err != nil {
-		// User not authenticated, return basic DAO info
-		return r.daoService.GetDaos()
-	}
+
 	// User is authenticated, return DAOs with personalized info (liked, subscribed, etc.)
 	// For now, just call the regular method - you can extend this later
-	return r.daoService.GetDaos()
+	return r.daoService.GetDaos(types.BasicInput[*string]{
+		User:  user,
+		Input: nil,
+	})
 }
 
 // Mutation returns MutationResolver implementation.

@@ -10,41 +10,73 @@ import (
 	"github.com/ringecosystem/degov-apps/database"
 	dbmodels "github.com/ringecosystem/degov-apps/database/models"
 	gqlmodels "github.com/ringecosystem/degov-apps/graph/models"
+	"github.com/ringecosystem/degov-apps/internal"
 	"github.com/ringecosystem/degov-apps/types"
 )
 
 type UserInteractionService struct {
-	db *gorm.DB
+	db         *gorm.DB
+	daoService *DaoService
 }
 
 func NewUserInteractionService() *UserInteractionService {
 	return &UserInteractionService{
-		db: database.GetDB(),
+		db:         database.GetDB(),
+		daoService: NewDaoService(),
 	}
 }
 
 func (s *UserInteractionService) ModifyLikeDao(baseInput types.BasicInput[gqlmodels.ModifyLikeDaoInput]) (bool, error) {
-	// userID := baseInput.User.ID
-	// daoCode := baseInput.Input.DaoCode
-	// action := baseInput.Input.Action
+	usess := baseInput.User
+	input := baseInput.Input
 
-	// if action == types.LikeActionLike {
-	// 	// Like the DAO
-	// 	_, err := s.LikeDao(userID, daoCode)
-	// 	if err != nil {
-	// 		return false, fmt.Errorf("error liking DAO: %w", err)
-	// 	}
-	// 	return true, nil
-	// } else if action == types.LikeActionUnlike {
-	// 	// Unlike the DAO
-	// 	err := s.UnlikeDao(userID, daoCode)
-	// 	if err != nil {
-	// 		return false, fmt.Errorf("error unliking DAO: %w", err)
-	// 	}
-	// 	return true, nil
-	// }
-	// return false, errors.New("invalid action")
-	return false, nil
+	_, err := s.daoService.Inspect(input.DaoCode)
+	if err != nil {
+		return false, fmt.Errorf("error inspecting DAO: %w", err)
+	}
+
+	var existingLikedDao dbmodels.UserLikedDao
+	err = s.db.Where("user_id = ? AND dao_code = ?", usess.Id, input.DaoCode).First(&existingLikedDao).Error
+	isNotFoundError := false
+	if err != nil {
+		isNotFoundError = errors.Is(err, gorm.ErrRecordNotFound)
+		if !isNotFoundError {
+			return false, fmt.Errorf("error checking existing like: %w", err)
+		}
+	}
+
+	switch baseInput.Input.Action {
+	case gqlmodels.LikeActionLike:
+		if isNotFoundError {
+			// Create new like
+			like := &dbmodels.UserLikedDao{
+				ID:          internal.NextIDString(),
+				DaoCode:     input.DaoCode,
+				UserID:      usess.Id,
+				UserAddress: usess.Address,
+				CTime:       time.Now(),
+			}
+
+			if err := s.db.Create(like).Error; err != nil {
+				return false, fmt.Errorf("error creating like: %w", err)
+			}
+			return true, nil
+		}
+	case gqlmodels.LikeActionUnlike:
+		if !isNotFoundError {
+			// Remove existing like
+			result := s.db.Where("user_id = ? AND dao_code = ?", usess.Id, input.DaoCode).Delete(&dbmodels.UserLikedDao{})
+			if result.Error != nil {
+				return false, fmt.Errorf("error removing like: %w", result.Error)
+			}
+			if result.RowsAffected == 0 {
+				return false, errors.New("like not found")
+			}
+			return true, nil
+		}
+	}
+
+	return true, nil
 }
 
 // UserLikedDao methods
