@@ -2,12 +2,13 @@ package routes
 
 import (
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/patrickmn/go-cache"
+	gqlmodels "github.com/ringecosystem/degov-apps/graph/models"
 	"github.com/ringecosystem/degov-apps/internal/middleware"
 	"github.com/ringecosystem/degov-apps/services"
-	"github.com/ringecosystem/degov-apps/types"
 )
 
 type DaoRoute struct {
@@ -30,7 +31,7 @@ func NewDaoRoute() *DaoRoute {
 func (d *DaoRoute) ConfigHandler(w http.ResponseWriter, r *http.Request) {
 	// Get parameters from URL query
 	queryParams := r.URL.Query()
-	format := queryParams.Get("format")
+	format := strings.ToLower(queryParams.Get("format"))
 
 	// Default format is yml
 	if format == "" {
@@ -41,6 +42,15 @@ func (d *DaoRoute) ConfigHandler(w http.ResponseWriter, r *http.Request) {
 	if format != "yml" && format != "yaml" && format != "json" {
 		http.Error(w, "Invalid format parameter. Supported formats: yml, yaml, json", http.StatusBadRequest)
 		return
+	}
+
+	// Convert format string to gqlmodels.ConfigFormat
+	var configFormat gqlmodels.ConfigFormat
+	if strings.EqualFold(format, "json") {
+		configFormat = gqlmodels.ConfigFormatJSON
+	} else {
+		// yml, yaml both map to YAML
+		configFormat = gqlmodels.ConfigFormatYaml
 	}
 
 	var daoCode string
@@ -89,9 +99,9 @@ func (d *DaoRoute) ConfigHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Cache miss, fetch from service
-	responseContent, err := d.daoConfigService.RawConfig(types.RawDaoConfigInput{
-		Code:   daoCode,
-		Format: format,
+	responseContent, err := d.daoConfigService.RawConfig(gqlmodels.GetDaoConfigInput{
+		DaoCode: daoCode,
+		Format:  &configFormat,
 	})
 	if err != nil {
 		http.Error(w, "Failed to retrieve DAO configuration", http.StatusInternalServerError)

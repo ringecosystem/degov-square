@@ -325,13 +325,18 @@ func (s *DaoConfigService) Inspect(daoCode string) (*dbmodels.DgvDaoConfig, erro
 	return &config, nil
 }
 
-func (s *DaoConfigService) RawConfig(input types.RawDaoConfigInput) (string, error) {
-	daoConfig, err := s.Inspect(input.Code)
+func (s *DaoConfigService) RawConfig(input gqlmodels.GetDaoConfigInput) (string, error) {
+	daoConfig, err := s.Inspect(input.DaoCode)
 	if err != nil {
 		return "", err
 	}
 
-	if input.Format == "json" {
+	format := gqlmodels.ConfigFormatYaml
+	if input.Format != nil {
+		format = *input.Format
+	}
+
+	if format == gqlmodels.ConfigFormatJSON {
 		// Convert YAML to JSON
 		var yamlData interface{}
 		err := yaml.Unmarshal([]byte(daoConfig.Config), &yamlData)

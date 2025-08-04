@@ -56,6 +56,14 @@ func (r *queryResolver) Daos(ctx context.Context) ([]*gqlmodels.Dao, error) {
 	})
 }
 
+// DaoConfig is the resolver for the daoConfig field.
+func (r *queryResolver) DaoConfig(ctx context.Context, input *gqlmodels.GetDaoConfigInput) (string, error) {
+	return r.daoConfigService.RawConfig(gqlmodels.GetDaoConfigInput{
+		DaoCode: input.DaoCode,
+		Format:  input.Format,
+	})
+}
+
 // Mutation returns MutationResolver implementation.
 func (r *Resolver) Mutation() MutationResolver { return &mutationResolver{r} }
 

@@ -7,19 +7,20 @@ scalar Time
 ### ==== directives
 
 # Authentication directive
-directive @auth(
-  required: Boolean = true
-) on FIELD_DEFINITION
+directive @auth(required: Boolean = true) on FIELD_DEFINITION
 
 # Authorization directive for resource ownership
-directive @authorize(
-  rule: AuthRule!
-) on FIELD_DEFINITION
+directive @authorize(rule: AuthRule!) on FIELD_DEFINITION
 
 enum AuthRule {
-  OWNER_ONLY     # User can only access their own resources
-  ADMIN_ONLY     # Admin only access
-  PUBLIC         # Public access (no auth required)
+  OWNER_ONLY # User can only access their own resources
+  ADMIN_ONLY # Admin only access
+  PUBLIC # Public access (no auth required)
+}
+
+enum ConfigFormat {
+  YAML
+  JSON
 }
 
 enum LikeAction {
@@ -162,6 +163,11 @@ input LoginInput {
   signature: String!
 }
 
+input GetDaoConfigInput {
+  daoCode: String!
+  format: ConfigFormat
+}
+
 # input CreateUserInput {
 #   address: String!
 #   email: String
@@ -191,7 +197,6 @@ input ModifyLikeDaoInput {
 #   enableVotingEndReminder: Int!
 # }
 
-
 ### ==== graphql
 
 type Query {
@@ -200,6 +205,8 @@ type Query {
 
   # DAO queries (no authentication required, but auth info affects result)
   daos: [Dao!]! @auth(required: false)
+  daoConfig(input: GetDaoConfigInput): String!
+
   # dao(id: ID!): Dao @auth(required: false)
   # daoByCode(code: String!): Dao @auth(required: false)
 
@@ -212,7 +219,6 @@ type Query {
   # # User interactions (require authentication)
   # userLikedDaos(userId: String!): [UserLikedDao!]! @auth @authorize(rule: OWNER_ONLY)
   # userFollowedDaos(userId: String!): [UserFollowedDao!]! @auth @authorize(rule: OWNER_ONLY)
-
 }
 
 type Mutation {
@@ -223,11 +229,9 @@ type Mutation {
   modifyLikeDao(input: ModifyLikeDaoInput!): Boolean! @auth
   # followDao(input: FollowDaoInput!): UserFollowedDao! @auth @authorize(rule: OWNER_ONLY)
   # unfollowDao(userId: String!, daoCode: String!): Boolean! @auth @authorize(rule: OWNER_ONLY)
-
 }
 
 # type Subscription {
 #   # notificationCreated(userId: String!): NotificationRecord!
 #   # daoUpdated(daoCode: String!): Dao!
 # }
-
