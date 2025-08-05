@@ -102,6 +102,8 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("TASK_DAO_SYNC_INTERVAL", "5m")
 	v.SetDefault("TASK_NOTIFICATION_CLEANUP_ENABLED", true)
 	v.SetDefault("TASK_NOTIFICATION_CLEANUP_INTERVAL", "30m")
+	v.SetDefault("TASK_PROPOSAL_TRACKING_ENABLED", true)
+	v.SetDefault("TASK_PROPOSAL_TRACKING_INTERVAL", "3m")
 }
 
 // Server configuration methods

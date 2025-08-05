@@ -1,0 +1,9 @@
+.data
+bin
+build
+target
+dist
+main
+
+*.exe
+*.dll
