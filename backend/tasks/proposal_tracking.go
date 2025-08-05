@@ -76,7 +76,7 @@ func (t *ProposalTrackingTask) TrackingProposal() error {
 			slog.Error("Failed to process proposal tracking", "dao_code", dao.Code, "error", err)
 			continue
 		}
-		if err := t.updateUnknownStates(dao, daoConfig); err != nil {
+		if err := t.updateProposalsStates(dao, daoConfig); err != nil {
 			slog.Error("Failed to update proposal state", "dao_code", dao.Code, "error", err)
 			continue
 		}
@@ -203,11 +203,15 @@ func (t *ProposalTrackingTask) storeProposals(dao *gqlmodels.Dao, daoConfig type
 	return nil
 }
 
-func (t *ProposalTrackingTask) updateUnknownStates(dao *gqlmodels.Dao, daoConfig types.DaoConfig) error {
+func (t *ProposalTrackingTask) updateProposalsStates(dao *gqlmodels.Dao, daoConfig types.DaoConfig) error {
 	proposals, err := t.proposalService.TrackingStateProposals(types.TrackingStateProposalsInput{
 		DaoCode: dao.Code,
 		States: []dbmodels.ProposalState{
 			dbmodels.ProposalStateUnknown,
+			dbmodels.ProposalStatePending,
+			dbmodels.ProposalStateActive,
+			dbmodels.ProposalStateSucceeded,
+			dbmodels.ProposalStateQueued,
 		},
 	})
 	if err != nil {
