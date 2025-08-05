@@ -116,7 +116,7 @@ func convertToProposalState(state uint64) dbmodels.ProposalState {
 	case 7:
 		return dbmodels.ProposalStateExecuted
 	default:
-		return dbmodels.ProposalStatePending // Default fallback
+		return dbmodels.ProposalStateUnknown // Default fallback
 	}
 }
 
