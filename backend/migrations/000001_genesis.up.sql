@@ -58,7 +58,7 @@ create table
     id varchar(50) not null,
     dao_code varchar(255) not null,
     chip_code varchar(255) not null,
-    value varchar(255) not null,
+    flag varchar(255),
     additional text,
     ctime timestamp default now (),
     utime timestamp,

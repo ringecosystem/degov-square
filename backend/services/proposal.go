@@ -134,3 +134,22 @@ func (s *ProposalService) UpdateProposalTrackingError(proposalID, daoCode string
 			"utime":           time.Now(),
 		}).Error
 }
+
+// ProposalStateCount returns count of proposals by DAO and state for active DAOs
+func (s *ProposalService) ProposalStateCount() ([]types.ProposalStateCountResult, error) {
+	var results []types.ProposalStateCountResult
+
+	err := s.db.Table("dgv_proposal_tracking as t").
+		Select("t.dao_code, t.state, count(1) as total").
+		Joins("left join dgv_dao as d on t.dao_code = d.code").
+		Where("d.state = ?", "ACTIVE").
+		Group("t.dao_code, t.state").
+		Order("t.dao_code, t.state").
+		Find(&results).Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	return results, nil
+}

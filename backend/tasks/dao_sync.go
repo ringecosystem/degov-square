@@ -179,7 +179,7 @@ func (t *DaoSyncTask) processChip(agentDaos []types.AgentDaoConfig, daoInfo DaoR
 		if agentDao.Code != daoInfo.Code {
 			continue
 		}
-		chipInput := types.StoreDaoChipInput{
+		chipInput := types.StoreDaoChipAgentInput{
 			Code:        daoInfo.Code,
 			AgentConfig: agentDao,
 		}

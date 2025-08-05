@@ -12,9 +12,13 @@ type RefreshDaoAndConfigInput struct {
 	MetricsCountVote      *int      `json:"metricsCountVote,omitempty"`
 }
 
-type StoreDaoChipInput struct {
+type StoreDaoChipAgentInput struct {
 	Code        string         `json:"code"`
 	AgentConfig AgentDaoConfig `json:"agentConfig"`
+}
+
+type StoreDaoChipMetricsStateInput struct {
+	MetricsStates []ProposalStateCountResult
 }
 
 type ListDaosInput struct {

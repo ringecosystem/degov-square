@@ -69,7 +69,7 @@ type DaoChip {
   id: ID!
   daoCode: String!
   chipCode: String!
-  value: String!
+  flag: String!
   additional: String
   ctime: Time!
   utime: Time

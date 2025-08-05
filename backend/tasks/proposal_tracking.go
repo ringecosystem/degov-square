@@ -20,6 +20,7 @@ type ProposalTrackingTask struct {
 	daoService       *services.DaoService
 	daoConfigService *services.DaoConfigService
 	proposalService  *services.ProposalService
+	chipService      *services.DaoChipService
 }
 
 func NewProposalTrackingTask() *ProposalTrackingTask {
@@ -27,6 +28,7 @@ func NewProposalTrackingTask() *ProposalTrackingTask {
 		daoService:       services.NewDaoService(),
 		daoConfigService: services.NewDaoConfigService(),
 		proposalService:  services.NewProposalService(),
+		chipService:      services.NewDaoChipService(),
 	}
 }
 
@@ -80,10 +82,10 @@ func (t *ProposalTrackingTask) TrackingProposal() error {
 			slog.Error("Failed to update proposal state", "dao_code", dao.Code, "error", err)
 			continue
 		}
-		if err := t.updateDaoChips(dao); err != nil {
-			slog.Error("Failed to update DAO chips", "dao_code", dao.Code, "error", err)
-			continue
-		}
+	}
+	if err := t.updateDaoChips(); err != nil {
+		slog.Warn("Failed to update DAO chips", "error", err)
+		return err
 	}
 
 	return nil
@@ -308,6 +310,26 @@ func (t *ProposalTrackingTask) updateProposalsStates(dao *gqlmodels.Dao, daoConf
 	return nil
 }
 
-func (t *ProposalTrackingTask) updateDaoChips(dao *gqlmodels.Dao) error {
+func (t *ProposalTrackingTask) updateDaoChips() error {
+	// Get proposal state counts for all active DAOs
+	counts, err := t.proposalService.ProposalStateCount()
+	if err != nil {
+		slog.Error("Failed to get proposal state counts", "error", err)
+		return err
+	}
+
+	slog.Info("Retrieved proposal state counts", "total_records", len(counts))
+
+	// Store metrics state chips using DaoChipService
+	storeInput := types.StoreDaoChipMetricsStateInput{
+		MetricsStates: counts,
+	}
+
+	if err := t.chipService.StoreChipMetricsState(storeInput); err != nil {
+		slog.Error("Failed to store chip metrics state", "error", err)
+		return err
+	}
+
+	slog.Info("Successfully updated DAO chips", "metrics_count", len(counts))
 	return nil
 }

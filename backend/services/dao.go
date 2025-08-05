@@ -107,8 +107,8 @@ func (s *DaoService) MultipleDaoChips(codes []string) ([]*gqlmodels.DaoChip, err
 		chip := &gqlmodels.DaoChip{
 			ID:         dbChip.ID,
 			DaoCode:    dbChip.DaoCode,
-			ChipCode:   dbChip.ChipCode,
-			Value:      dbChip.Value,
+			ChipCode:   string(dbChip.ChipCode),
+			Flag:       dbChip.Flag,
 			Additional: &dbChip.Additional,
 			Ctime:      dbChip.CTime,
 			Utime:      dbChip.UTime,
@@ -515,8 +515,8 @@ func NewDaoChipService() *DaoChipService {
 	}
 }
 
-func (s *DaoChipService) StoreChipAgent(input types.StoreDaoChipInput) error {
-	chipCode := "AGENT"
+func (s *DaoChipService) StoreChipAgent(input types.StoreDaoChipAgentInput) error {
+	chipCode := dbmodels.ChipCodeAgent
 	var existingChip dbmodels.DgvDaoChip
 	result := s.db.Where("dao_code = ? AND chip_code = ?", input.Code, chipCode).First(&existingChip)
 	if result.Error == gorm.ErrRecordNotFound {
@@ -525,7 +525,7 @@ func (s *DaoChipService) StoreChipAgent(input types.StoreDaoChipInput) error {
 			ID:         utils.NextIDString(),
 			DaoCode:    input.Code,
 			ChipCode:   chipCode,
-			Value:      "ENABLED",
+			Flag:       "ENABLED",
 			Additional: utils.ToJSON(input.AgentConfig),
 			CTime:      time.Now(),
 		}
@@ -537,11 +537,57 @@ func (s *DaoChipService) StoreChipAgent(input types.StoreDaoChipInput) error {
 	if result.Error != nil {
 		return result.Error
 	}
-	existingChip.Value = "ENABLED"
 	existingChip.Additional = utils.ToJSON(input.AgentConfig)
 	existingChip.UTime = utils.TimePtrNow()
 	if err := s.db.Save(&existingChip).Error; err != nil {
 		return err
 	}
+	return nil
+}
+
+func (s *DaoChipService) StoreChipMetricsState(input types.StoreDaoChipMetricsStateInput) error {
+	chipCode := dbmodels.ChipCodeMetricsState
+
+	// Extract unique dao_codes from input.MetricsStates
+	daoCodesMap := make(map[string]struct{})
+	for _, state := range input.MetricsStates {
+		daoCodesMap[state.DaoCode] = struct{}{}
+	}
+
+	// Convert to slice
+	daoCodes := make([]string, 0, len(daoCodesMap))
+	for daoCode := range daoCodesMap {
+		daoCodes = append(daoCodes, daoCode)
+	}
+
+	// Delete existing records for these dao_codes with chip_code = METRICS_STATE
+	if len(daoCodes) > 0 {
+		if err := s.db.Where("dao_code IN ? AND chip_code = ?", daoCodes, chipCode).Delete(&dbmodels.DgvDaoChip{}).Error; err != nil {
+			return err
+		}
+	}
+
+	// Batch insert new records
+	chips := make([]dbmodels.DgvDaoChip, 0, len(input.MetricsStates))
+	for _, state := range input.MetricsStates {
+		chip := dbmodels.DgvDaoChip{
+			ID:         utils.NextIDString(),
+			DaoCode:    state.DaoCode,
+			ChipCode:   chipCode,
+			Flag:       string(state.State), // MetricsState.State as flag
+			Additional: utils.ToJSON(state), // Single MetricsState as JSON
+			CTime:      time.Now(),
+			UTime:      utils.TimePtrNow(),
+		}
+		chips = append(chips, chip)
+	}
+
+	// Batch insert
+	if len(chips) > 0 {
+		if err := s.db.Create(&chips).Error; err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
