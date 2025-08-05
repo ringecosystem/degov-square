@@ -71,7 +71,7 @@ func (t *ProposalTrackingTask) TrackingProposal() error {
 			"dao_name", daoConfig.Name,
 			"indexer_endpoint", daoConfig.Indexer.Endpoint)
 
-		if err := t.storeProposalsTracking(dao, daoConfig); err != nil {
+		if err := t.storeProposals(dao, daoConfig); err != nil {
 			slog.Error("Failed to process proposal tracking", "dao_code", dao.Code, "error", err)
 			continue
 		}
@@ -80,7 +80,7 @@ func (t *ProposalTrackingTask) TrackingProposal() error {
 	return nil
 }
 
-func (t *ProposalTrackingTask) storeProposalsTracking(dao *gqlmodels.Dao, daoConfig types.DaoConfig) error {
+func (t *ProposalTrackingTask) storeProposals(dao *gqlmodels.Dao, daoConfig types.DaoConfig) error {
 	indexer := internal.NewDegovIndexer(daoConfig.Indexer.Endpoint)
 
 	lastBlockNumber := dao.LastTrackingBlock
