@@ -47,6 +47,7 @@ func (s *DaoService) convertToGqlDao(dbDao dbmodels.Dao) *gqlmodels.Dao {
 		MetricsCountMembers:   int32(dbDao.MetricsCountMembers),
 		MetricsSumPower:       dbDao.MetricsSumPower,
 		MetricsCountVote:      int32(dbDao.MetricsCountVote),
+		LastTrackingBlock:     int32(dbDao.LastTrackingBlock),
 		Ctime:                 dbDao.CTime,
 		Utime:                 dbDao.UTime,
 	}
@@ -301,6 +302,13 @@ func (s *DaoService) MarkInactiveDAOs(activeCodes map[string]bool) error {
 	}
 
 	return nil
+}
+
+// UpdateDaoLastTrackingBlock updates the last tracking block for a DAO
+func (s *DaoService) UpdateDaoLastTrackingBlock(daoCode string, blockNumber int) error {
+	return s.db.Model(&dbmodels.Dao{}).
+		Where("code = ?", daoCode).
+		Update("last_tracking_block", blockNumber).Error
 }
 
 // getMapKeys extracts keys from a map[string]bool

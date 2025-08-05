@@ -26,6 +26,19 @@ type DataMetricsResponse struct {
 	DataMetrics []DataMetrics `json:"dataMetrics"`
 }
 
+// Proposal represents the proposal structure from GraphQL response
+type Proposal struct {
+	ID             string `json:"id"`
+	BlockNumber    string `json:"blockNumber"`
+	BlockTimestamp string `json:"blockTimestamp"`
+	ProposalID     string `json:"proposalId"`
+}
+
+// ProposalsResponse represents the GraphQL response structure for proposals
+type ProposalsResponse struct {
+	Proposals []Proposal `json:"proposals"`
+}
+
 // DegovIndexer handles GraphQL queries to fetch governance data
 type DegovIndexer struct {
 	client   *graphql.Client
@@ -78,4 +91,30 @@ func (d *DegovIndexer) QueryGlobalDataMetrics(ctx context.Context) (*DataMetrics
 	}
 
 	return nil, fmt.Errorf("no data metrics found for global id")
+}
+
+// QueryProposalsAfterBlock executes the QueryProposalsAfterBlock GraphQL query and returns proposals list
+func (d *DegovIndexer) QueryProposalsAfterBlock(ctx context.Context, blockNumber int, limit int) ([]Proposal, error) {
+	query := `
+		query QueryProposalsAfterBlock($limit: Int!, $offset: Int!, $blockNumber: BigInt!) {
+			proposals(orderBy: blockNumber_ASC_NULLS_FIRST, limit: $limit, offset: $offset, where: {blockNumber_gt: $blockNumber}) {
+				id
+				blockNumber
+				blockTimestamp
+				proposalId
+			}
+		}
+	`
+
+	req := graphql.NewRequest(query)
+	req.Var("limit", limit)
+	req.Var("offset", 0)
+	req.Var("blockNumber", blockNumber)
+
+	var response ProposalsResponse
+	if err := d.client.Run(ctx, req, &response); err != nil {
+		return nil, fmt.Errorf("failed to execute QueryProposalsAfterBlock: %w", err)
+	}
+
+	return response.Proposals, nil
 }

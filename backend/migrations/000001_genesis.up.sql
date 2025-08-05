@@ -216,6 +216,8 @@ create table
     proposal_link varchar(255) not null, -- link to the proposal
     proposal_id varchar(255) not null,
     state varchar(50) not null, -- { Pending, Active, Canceled, Defeated, Succeeded, Queued, Executed, Expired }
+    proposal_at_block int not null, -- block number when the proposal was created
+    proposal_created_at timestamp, -- proposal creation time
     ctime timestamp default now (),
     utime timestamp,
     primary key (id)

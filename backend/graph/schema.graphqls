@@ -57,6 +57,7 @@ type Dao {
   metricsCountMembers: Int!
   metricsSumPower: String!
   metricsCountVote: Int!
+  lastTrackingBlock: Int!
   ctime: Time!
   utime: Time
   # liked: Boolean
