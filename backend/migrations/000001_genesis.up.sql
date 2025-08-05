@@ -213,11 +213,15 @@ create table
   if not exists dgv_proposal_tracking (
     id varchar(50) not null,
     dao_code varchar(255) not null,
+    chain_id int not null,
     proposal_link varchar(255) not null, -- link to the proposal
     proposal_id varchar(255) not null,
     state varchar(50) not null, -- { Pending, Active, Canceled, Defeated, Succeeded, Queued, Executed, Expired }
     proposal_at_block int not null, -- block number when the proposal was created
     proposal_created_at timestamp, -- proposal creation time
+    times_track int not null default 0,
+    time_next_track timestamp, -- next tracking time
+    message text,
     ctime timestamp default now (),
     utime timestamp,
     primary key (id)

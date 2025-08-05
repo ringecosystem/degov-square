@@ -9,6 +9,7 @@ import (
 
 	"gopkg.in/yaml.v3"
 
+	dbmodels "github.com/ringecosystem/degov-apps/database/models"
 	gqlmodels "github.com/ringecosystem/degov-apps/graph/models"
 	"github.com/ringecosystem/degov-apps/internal"
 	"github.com/ringecosystem/degov-apps/services"
@@ -75,6 +76,10 @@ func (t *ProposalTrackingTask) TrackingProposal() error {
 			slog.Error("Failed to process proposal tracking", "dao_code", dao.Code, "error", err)
 			continue
 		}
+		if err := t.updateUnknownStates(dao, daoConfig); err != nil {
+			slog.Error("Failed to update proposal state", "dao_code", dao.Code, "error", err)
+			continue
+		}
 	}
 
 	return nil
@@ -83,10 +88,10 @@ func (t *ProposalTrackingTask) TrackingProposal() error {
 func (t *ProposalTrackingTask) storeProposals(dao *gqlmodels.Dao, daoConfig types.DaoConfig) error {
 	indexer := internal.NewDegovIndexer(daoConfig.Indexer.Endpoint)
 
-	lastBlockNumber := dao.LastTrackingBlock
+	lastBlockNumber := int(dao.LastTrackingBlock)
 
 	limit := 20
-	maxBlockNumber := int(lastBlockNumber)
+	maxBlockNumber := lastBlockNumber
 
 	slog.Info("Starting proposal tracking",
 		"dao_code", dao.Code,
@@ -97,7 +102,7 @@ func (t *ProposalTrackingTask) storeProposals(dao *gqlmodels.Dao, daoConfig type
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 
 		// Query proposals after the last tracked block (correct parameter order)
-		proposals, err := indexer.QueryProposalsAfterBlock(ctx, int(lastBlockNumber), limit)
+		proposals, err := indexer.QueryProposalsAfterBlock(ctx, lastBlockNumber, limit)
 		cancel()
 
 		if err != nil {
@@ -128,7 +133,8 @@ func (t *ProposalTrackingTask) storeProposals(dao *gqlmodels.Dao, daoConfig type
 			var proposalCreatedAt *time.Time
 			if proposal.BlockTimestamp != "" {
 				if timestamp, err := strconv.ParseInt(proposal.BlockTimestamp, 10, 64); err == nil {
-					createdAt := time.Unix(timestamp, 0)
+					// Convert milliseconds to seconds for time.Unix()
+					createdAt := time.Unix(timestamp/1000, (timestamp%1000)*1000000)
 					proposalCreatedAt = &createdAt
 				}
 			}
@@ -139,6 +145,7 @@ func (t *ProposalTrackingTask) storeProposals(dao *gqlmodels.Dao, daoConfig type
 			// Build proposal tracking input
 			input := types.ProposalTrackingInput{
 				DaoCode:           dao.Code,
+				ChainId:           daoConfig.Chain.ID,
 				ProposalLink:      proposalLink,
 				ProposalID:        proposal.ProposalID,
 				ProposalCreatedAt: proposalCreatedAt,
@@ -178,18 +185,119 @@ func (t *ProposalTrackingTask) storeProposals(dao *gqlmodels.Dao, daoConfig type
 			slog.Info("Reached end of proposals", "dao_code", dao.Code, "final_count", len(proposals))
 			break
 		}
+
+		// Update DAO's LastTrackingBlock if we found new proposals using DaoService
+		if maxBlockNumber > lastBlockNumber {
+			if err := t.daoService.UpdateDaoLastTrackingBlock(dao.Code, maxBlockNumber); err != nil {
+				return fmt.Errorf("failed to update last tracking block: %w", err)
+			}
+
+			slog.Info("Updated last tracking block",
+				"dao_code", dao.Code,
+				"old_block", lastBlockNumber,
+				"new_block", maxBlockNumber)
+			lastBlockNumber = maxBlockNumber
+		}
 	}
 
-	// Update DAO's LastTrackingBlock if we found new proposals using DaoService
-	if maxBlockNumber > int(lastBlockNumber) {
-		if err := t.daoService.UpdateDaoLastTrackingBlock(dao.Code, maxBlockNumber); err != nil {
-			return fmt.Errorf("failed to update last tracking block: %w", err)
+	return nil
+}
+
+func (t *ProposalTrackingTask) updateUnknownStates(dao *gqlmodels.Dao, daoConfig types.DaoConfig) error {
+	proposals, err := t.proposalService.TrackingStateProposals(types.TrackingStateProposalsInput{
+		DaoCode: dao.Code,
+		States: []dbmodels.ProposalState{
+			dbmodels.ProposalStateUnknown,
+		},
+	})
+	if err != nil {
+		slog.Error("Failed to get tracking state proposals",
+			"dao_code", dao.Code,
+			"error", err)
+		return err
+	}
+
+	if len(proposals) == 0 {
+		slog.Info("No proposals to update state for", "dao_code", dao.Code)
+		return nil
+	}
+
+	governorAddress := daoConfig.Contracts.Governor
+	if governorAddress == "" {
+		slog.Warn("No governor contract address configured", "dao_code", dao.Code)
+		return nil
+	}
+
+	// Get RPC URL
+	rpcURL := internal.GetRPCURL(daoConfig.Chain.RPCs, daoConfig.Chain.ID)
+	if rpcURL == "" {
+		slog.Warn("No RPC URL available for chain", "dao_code", dao.Code, "chain_id", daoConfig.Chain.ID)
+		return nil
+	}
+
+	// Create Governor contract client
+	governorContract, err := internal.NewGovernorContract(rpcURL)
+	if err != nil {
+		slog.Error("Failed to create Governor contract client", "dao_code", dao.Code, "rpc_url", rpcURL, "error", err)
+		return err
+	}
+	defer governorContract.Close()
+
+	slog.Info("Updating proposal states",
+		"dao_code", dao.Code,
+		"count", len(proposals),
+		"governor_address", governorAddress,
+		"rpc_url", rpcURL)
+
+	// Process each proposal individually
+	for _, proposal := range proposals {
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+
+		// Get proposal state from contract
+		newState, err := governorContract.GetProposalState(ctx, governorAddress, proposal.ProposalId)
+		cancel()
+
+		if err != nil {
+			slog.Error("Failed to get proposal state from contract",
+				"dao_code", dao.Code,
+				"proposal_id", proposal.ProposalId,
+				"error", err)
+			continue
 		}
 
-		slog.Info("Updated last tracking block",
-			"dao_code", dao.Code,
-			"old_block", lastBlockNumber,
-			"new_block", maxBlockNumber)
+		// Check if state has changed
+		if newState != proposal.State {
+			// Update proposal state in database
+			if err := t.proposalService.UpdateProposalState(proposal.ProposalId, dao.Code, newState); err != nil {
+				slog.Error("Failed to update proposal state in database",
+					"dao_code", dao.Code,
+					"proposal_id", proposal.ProposalId,
+					"old_state", proposal.State,
+					"new_state", newState,
+					"error", err)
+				continue
+			}
+
+			slog.Info("Updated proposal state",
+				"dao_code", dao.Code,
+				"proposal_id", proposal.ProposalId,
+				"old_state", proposal.State,
+				"new_state", newState)
+		} else {
+			// State hasn't changed, just update tracking info
+			if err := t.proposalService.UpdateProposalState(proposal.ProposalId, dao.Code, newState); err != nil {
+				slog.Error("Failed to update proposal tracking info",
+					"dao_code", dao.Code,
+					"proposal_id", proposal.ProposalId,
+					"error", err)
+				continue
+			}
+
+			slog.Debug("Proposal state unchanged, updated tracking info",
+				"dao_code", dao.Code,
+				"proposal_id", proposal.ProposalId,
+				"state", newState)
+		}
 	}
 
 	return nil
