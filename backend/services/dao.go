@@ -16,9 +16,7 @@ import (
 )
 
 type DaoService struct {
-	db                *gorm.DB
-	likedService      *UserLikedDaoService
-	subscribedService *UserSubscribedDaoService
+	db *gorm.DB
 }
 
 func NewDaoService() *DaoService {
@@ -230,6 +228,7 @@ func (s *DaoService) RefreshDaoAndConfig(input types.RefreshDaoAndConfigInput) e
 			MetricsCountMembers:   *input.MetricsCountMembers,
 			MetricsSumPower:       *input.MetricsSumPower,
 			MetricsCountVote:      *input.MetricsCountVote,
+			LastTrackingBlock:     0, // Default to 0 for new DAOs
 		}
 		if err := s.db.Create(dao).Error; err != nil {
 			return err
@@ -479,7 +478,6 @@ func (s *UserSubscribedDaoService) SubscribedDaos(baseInput types.BasicInput[*st
 	})
 }
 
-// // GetUserSubscribedDaos 获取用户订阅的 DAO 列表
 // func (s *UserSubscribedDaoService) GetUserSubscribedDaos(userID string, daoCodes []string) (map[string]bool, error) {
 // 	userSubscribedDaos := make(map[string]bool)
 

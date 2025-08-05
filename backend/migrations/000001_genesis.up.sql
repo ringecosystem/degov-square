@@ -31,6 +31,7 @@ create table
     metrics_count_members int not null default 0,
     metrics_sum_power varchar(255) not null default '0',
     metrics_count_vote int not null default 0,
+    last_tracking_block int not null default 0,
     ctime timestamp default now (),
     utime timestamp,
     primary key (id)
