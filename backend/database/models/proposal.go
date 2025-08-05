@@ -11,3 +11,7 @@ type ProposalTracking struct {
 	CTime        time.Time  `gorm:"column:ctime;default:now()" json:"ctime"`
 	UTime        *time.Time `gorm:"column:utime" json:"utime,omitempty"`
 }
+
+func (ProposalTracking) TableName() string {
+	return "dgv_proposal_tracking"
+}
