@@ -31,6 +31,7 @@ create table
     metrics_count_members int not null default 0,
     metrics_sum_power varchar(255) not null default '0',
     metrics_count_vote int not null default 0,
+    last_tracking_block int not null default 0,
     ctime timestamp default now (),
     utime timestamp,
     primary key (id)
@@ -57,7 +58,7 @@ create table
     id varchar(50) not null,
     dao_code varchar(255) not null,
     chip_code varchar(255) not null,
-    value varchar(255) not null,
+    flag varchar(255),
     additional text,
     ctime timestamp default now (),
     utime timestamp,
@@ -207,3 +208,23 @@ comment on column dgv_user_channel.channel_type is 'notification channel type';
 comment on column dgv_user_channel.channel_value is 'notification channel value (email or phone)';
 
 comment on column dgv_user_channel.payload is 'additional data for the channel';
+
+create table
+  if not exists dgv_proposal_tracking (
+    id varchar(50) not null,
+    dao_code varchar(255) not null,
+    chain_id int not null,
+    proposal_link varchar(255) not null, -- link to the proposal
+    proposal_id varchar(255) not null,
+    state varchar(50) not null, -- { Pending, Active, Canceled, Defeated, Succeeded, Queued, Executed, Expired }
+    proposal_at_block int not null, -- block number when the proposal was created
+    proposal_created_at timestamp, -- proposal creation time
+    times_track int not null default 0,
+    time_next_track timestamp, -- next tracking time
+    message text,
+    ctime timestamp default now (),
+    utime timestamp,
+    primary key (id)
+  );
+
+comment on table dgv_proposal_tracking is 'DAO proposal tracking table';

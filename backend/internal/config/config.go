@@ -163,6 +163,14 @@ func (c *Config) GetTaskNotificationCleanupInterval() time.Duration {
 	return c.viper.GetDuration("TASK_NOTIFICATION_CLEANUP_INTERVAL")
 }
 
+func (c *Config) GetTaskProposalTrackingEnabled() bool {
+	return c.viper.GetBool("TASK_PROPOSAL_TRACKING_ENABLED")
+}
+
+func (c *Config) GetTaskProposalTrackingInterval() time.Duration {
+	return c.viper.GetDuration("TASK_PROPOSAL_TRACKING_INTERVAL")
+}
+
 // Generic configuration methods
 func (c *Config) GetString(key string) string {
 	return c.viper.GetString(key)

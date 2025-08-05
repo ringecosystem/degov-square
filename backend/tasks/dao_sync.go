@@ -179,7 +179,7 @@ func (t *DaoSyncTask) processChip(agentDaos []types.AgentDaoConfig, daoInfo DaoR
 		if agentDao.Code != daoInfo.Code {
 			continue
 		}
-		chipInput := types.StoreDaoChipInput{
+		chipInput := types.StoreDaoChipAgentInput{
 			Code:        daoInfo.Code,
 			AgentConfig: agentDao,
 		}
@@ -217,8 +217,8 @@ func (t *DaoSyncTask) agentDaos() ([]types.AgentDaoConfig, error) {
 
 		// Create request with context for timeout
 		ctx, cancel := context.WithTimeout(context.Background(), timeout)
+		defer cancel() // Defer cancel to ensure cleanup after request completes
 		req, err := http.NewRequestWithContext(ctx, "GET", "https://agent.degov.ai/degov/daos", nil)
-		cancel() // Cancel immediately after creating request
 		if err != nil {
 			lastErr = fmt.Errorf("failed to create request: %w", err)
 			continue

@@ -40,6 +40,14 @@ func GetTaskDefinitions() []TaskDefinition {
 			},
 			Constructor: func() Task { return NewNotificationTask() },
 		},
+		{
+			Config: TaskConfig{
+				Name:     "proposal-tracking-sync",
+				Interval: cfg.GetTaskProposalTrackingInterval(),
+				Enabled:  cfg.GetTaskProposalTrackingEnabled(),
+			},
+			Constructor: func() Task { return NewProposalTrackingTask() },
+		},
 		// Add more task definitions here
 	}
 }
