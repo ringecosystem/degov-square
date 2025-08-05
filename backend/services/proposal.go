@@ -94,9 +94,43 @@ func (s *ProposalService) UpdateProposalState(proposalID, daoCode string, newSta
 	return s.db.Model(&dbmodels.ProposalTracking{}).
 		Where("proposal_id = ? AND dao_code = ?", proposalID, daoCode).
 		Updates(map[string]interface{}{
-			"state":           newState,
+			"state": newState,
+			"utime": time.Now(),
+		}).Error
+}
+
+// UpdateProposalTrackingError updates tracking info when processing fails
+func (s *ProposalService) UpdateProposalTrackingError(proposalID, daoCode string, errorMessage string) error {
+	// Get current proposal to build new message
+	var proposal dbmodels.ProposalTracking
+	err := s.db.Where("proposal_id = ? AND dao_code = ?", proposalID, daoCode).First(&proposal).Error
+	if err != nil {
+		return err
+	}
+
+	// Calculate next tracking time (exponential backoff based on attempts)
+	nextTrackTime := time.Now()
+	attempts := proposal.TimesTrack + 1
+	if attempts <= 3 {
+		nextTrackTime = nextTrackTime.Add(time.Hour) // 1 hour for first 3 attempts
+	} else if attempts <= 6 {
+		nextTrackTime = nextTrackTime.Add(2 * time.Hour) // 2 hours for attempts 4-6
+	} else {
+		nextTrackTime = nextTrackTime.Add(5 * time.Hour) // 5 hours for more attempts
+	}
+
+	// Build new message in format: [${time_next_track}] ${message}\n----\nOLD_MESSAGE
+	newMessage := "[" + nextTrackTime.Format("2006-01-02 15:04:05") + "] " + errorMessage
+	if proposal.Message != "" {
+		newMessage += "\n----\n" + proposal.Message
+	}
+
+	return s.db.Model(&dbmodels.ProposalTracking{}).
+		Where("proposal_id = ? AND dao_code = ?", proposalID, daoCode).
+		Updates(map[string]interface{}{
 			"times_track":     gorm.Expr("times_track + 1"),
-			"time_next_track": time.Now().Add(time.Hour), // Next check in 1 hour
+			"time_next_track": nextTrackTime,
+			"message":         newMessage,
 			"utime":           time.Now(),
 		}).Error
 }
