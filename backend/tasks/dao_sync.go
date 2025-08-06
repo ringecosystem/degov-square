@@ -98,9 +98,16 @@ func (t *DaoSyncTask) SyncDaos() error {
 				slog.Error("Failed to process DAO", "dao", daoInfo.Code, "chain", chainName, "error", err)
 				continue
 			}
-			if adErr == nil {
-				t.processChip(agentDaos, daoInfo)
-			}
+		}
+	}
+
+	// Process chip agents if agent DAOs were fetched successfully
+	if adErr == nil {
+		err := t.daoChipService.SyncAgentChips(agentDaos)
+		if err != nil {
+			slog.Error("Failed to sync agent chips", "error", err)
+		} else {
+			slog.Info("Agent chips synced successfully", "count", len(agentDaos))
 		}
 	}
 
@@ -172,26 +179,6 @@ func (t *DaoSyncTask) processSingleDao(remoteLink GithubConfigLink, daoInfo DaoR
 	slog.Debug("Successfully synced DAO", "dao", daoInfo.Code, "chain", chainName)
 
 	return *daoConfig.Config, nil
-}
-
-func (t *DaoSyncTask) processChip(agentDaos []types.AgentDaoConfig, daoInfo DaoRegistryConfig) {
-	for _, agentDao := range agentDaos {
-		if agentDao.Code != daoInfo.Code {
-			continue
-		}
-		chipInput := types.StoreDaoChipAgentInput{
-			Code:        daoInfo.Code,
-			AgentConfig: agentDao,
-		}
-		err := t.daoChipService.StoreChipAgent(chipInput)
-		if err != nil {
-			// return fmt.Errorf("failed to store chip for DAO %s: %w", daoInfo.Code, err)
-			slog.Warn("Failed to store chip for DAO", "dao", daoInfo.Code, "error", err)
-		} else {
-			slog.Info("Stored chip for DAO", "dao", daoInfo.Code, "agent_config", agentDao)
-		}
-	}
-
 }
 
 func (t *DaoSyncTask) agentDaos() ([]types.AgentDaoConfig, error) {

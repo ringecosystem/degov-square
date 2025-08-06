@@ -519,34 +519,41 @@ func NewDaoChipService() *DaoChipService {
 	}
 }
 
-func (s *DaoChipService) StoreChipAgent(input types.StoreDaoChipAgentInput) error {
+func (s *DaoChipService) SyncAgentChips(agentDaoConfigs []types.AgentDaoConfig) error {
 	chipCode := dbmodels.ChipCodeAgent
-	var existingChip dbmodels.DgvDaoChip
-	result := s.db.Where("dao_code = ? AND chip_code = ?", input.Code, chipCode).First(&existingChip)
-	if result.Error == gorm.ErrRecordNotFound {
-		// Insert new chip
-		chip := &dbmodels.DgvDaoChip{
+
+	// Build map for quick lookup and prepare new chips
+	agentDaoMap := make(map[string]types.AgentDaoConfig, len(agentDaoConfigs))
+	newChips := make([]dbmodels.DgvDaoChip, 0, len(agentDaoConfigs))
+
+	for _, agentDao := range agentDaoConfigs {
+		agentDaoMap[agentDao.Code] = agentDao
+		newChips = append(newChips, dbmodels.DgvDaoChip{
 			ID:         utils.NextIDString(),
-			DaoCode:    input.Code,
+			DaoCode:    agentDao.Code,
 			ChipCode:   chipCode,
 			Flag:       "ENABLED",
-			Additional: utils.ToJSON(input.AgentConfig),
+			Additional: utils.ToJSON(agentDao),
 			CTime:      time.Now(),
-		}
-		if err := s.db.Create(chip).Error; err != nil {
+		})
+	}
+
+	// Use transaction for atomicity
+	return s.db.Transaction(func(tx *gorm.DB) error {
+		// First, delete all existing agent chips
+		if err := tx.Where("chip_code = ?", chipCode).Delete(&dbmodels.DgvDaoChip{}).Error; err != nil {
 			return err
 		}
+
+		// Then, batch insert new chips if any
+		if len(newChips) > 0 {
+			if err := tx.Create(&newChips).Error; err != nil {
+				return err
+			}
+		}
+
 		return nil
-	}
-	if result.Error != nil {
-		return result.Error
-	}
-	existingChip.Additional = utils.ToJSON(input.AgentConfig)
-	existingChip.UTime = utils.TimePtrNow()
-	if err := s.db.Save(&existingChip).Error; err != nil {
-		return err
-	}
-	return nil
+	})
 }
 
 func (s *DaoChipService) StoreChipMetricsState(input types.StoreDaoChipMetricsStateInput) error {
