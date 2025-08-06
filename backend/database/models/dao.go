@@ -15,8 +15,10 @@ type Dao struct {
 	ID                    string     `gorm:"column:id;type:varchar(50);primaryKey" json:"id"`
 	ChainID               int        `gorm:"column:chain_id;not null" json:"chain_id"`
 	ChainName             string     `gorm:"column:chain_name;type:varchar(255);not null" json:"chain_name"`
+	ChainLogo             string     `gorm:"column:chain_logo;type:text" json:"chain_logo,omitempty"` // Optional chain logo field
 	Name                  string     `gorm:"column:name;type:varchar(255);not null" json:"name"`
 	Code                  string     `gorm:"column:code;type:varchar(255);not null;uniqueIndex:uq_dgv_dao_code" json:"code"`
+	Logo                  string     `gorm:"column:logo;type:text" json:"logo,omitempty"` // Optional logo field
 	Seq                   int        `gorm:"column:seq;not null;default:0" json:"seq"`
 	Endpoint              string     `gorm:"column:endpoint;type:varchar(255);not null" json:"endpoint"` // Website endpoint
 	State                 string     `gorm:"column:state;type:varchar(50);not null" json:"state"`

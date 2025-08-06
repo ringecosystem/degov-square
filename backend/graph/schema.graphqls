@@ -46,8 +46,10 @@ type Dao {
   id: ID!
   chainId: Int!
   chainName: String!
+  chainLogo: String
   name: String!
   code: String!
+  logo: String
   seq: Int!
   endpoint: String! # Website endpoint
   state: String!
