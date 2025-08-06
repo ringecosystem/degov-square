@@ -549,6 +549,43 @@ func (s *DaoChipService) StoreChipAgent(input types.StoreDaoChipAgentInput) erro
 	return nil
 }
 
+func (s *DaoChipService) SyncAgentChips(agentDaoConfigs []types.AgentDaoConfig) error {
+	chipCode := dbmodels.ChipCodeAgent
+
+	// Build map for quick lookup and prepare new chips
+	agentDaoMap := make(map[string]types.AgentDaoConfig, len(agentDaoConfigs))
+	newChips := make([]dbmodels.DgvDaoChip, 0, len(agentDaoConfigs))
+
+	for _, agentDao := range agentDaoConfigs {
+		agentDaoMap[agentDao.Code] = agentDao
+		newChips = append(newChips, dbmodels.DgvDaoChip{
+			ID:         utils.NextIDString(),
+			DaoCode:    agentDao.Code,
+			ChipCode:   chipCode,
+			Flag:       "ENABLED",
+			Additional: utils.ToJSON(agentDao),
+			CTime:      time.Now(),
+		})
+	}
+
+	// Use transaction for atomicity
+	return s.db.Transaction(func(tx *gorm.DB) error {
+		// First, delete all existing agent chips
+		if err := tx.Where("chip_code = ?", chipCode).Delete(&dbmodels.DgvDaoChip{}).Error; err != nil {
+			return err
+		}
+
+		// Then, batch insert new chips if any
+		if len(newChips) > 0 {
+			if err := tx.Create(&newChips).Error; err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
+}
+
 func (s *DaoChipService) StoreChipMetricsState(input types.StoreDaoChipMetricsStateInput) error {
 	chipCode := dbmodels.ChipCodeMetricsState
 
