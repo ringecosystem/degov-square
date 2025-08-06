@@ -33,7 +33,7 @@ func InitDB() error {
 
 	// connect to the database
 	DB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Info),
+		Logger: logger.Default.LogMode(cfg.GetDBLogLevel()),
 	})
 	if err != nil {
 		return fmt.Errorf("failed to connect to database: %w", err)
