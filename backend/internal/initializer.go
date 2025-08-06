@@ -52,6 +52,7 @@ func initLog() {
 	if env.IsProduction() {
 		zapConfig := zap.NewProductionConfig()
 		zapConfig.Encoding = config.GetLogFormat()
+		zapConfig.Level = zap.NewAtomicLevelAt(config.GetLogLevel())
 		zapL, err = zapConfig.Build()
 		slog.Info("set log mode to [production]")
 	}

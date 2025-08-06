@@ -12,13 +12,13 @@ help:
 	@echo "  generate    - Generate GraphQL code"
 
 build:
-	go build -o bin/server cmd/main.go
+	go build -o bin/degov-server cmd/main.go
 
 run:
 	go run cmd/main.go
 
 serve: build
-	./bin/server
+	./bin/degov-server
 
 test:
 	go test ./...

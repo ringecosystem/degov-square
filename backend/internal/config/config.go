@@ -7,6 +7,8 @@ import (
 	"time"
 
 	"github.com/spf13/viper"
+	"go.uber.org/zap/zapcore"
+	"gorm.io/gorm/logger"
 )
 
 type Environment int
@@ -93,6 +95,8 @@ func setDefaults(v *viper.Viper) {
 
 	// Log defaults
 	v.SetDefault("LOG_FORMAT", "json")
+	v.SetDefault("LOG_LEVEL", "info")
+	v.SetDefault("DB_LOG_LEVEL", "warn")
 
 	// Environment defaults
 	v.SetDefault("APP_ENV", "production")
@@ -102,6 +106,8 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("TASK_DAO_SYNC_INTERVAL", "5m")
 	v.SetDefault("TASK_NOTIFICATION_CLEANUP_ENABLED", true)
 	v.SetDefault("TASK_NOTIFICATION_CLEANUP_INTERVAL", "30m")
+	v.SetDefault("TASK_PROPOSAL_TRACKING_ENABLED", true)
+	v.SetDefault("TASK_PROPOSAL_TRACKING_INTERVAL", "3m")
 }
 
 // Server configuration methods
@@ -137,6 +143,40 @@ func (c *Config) GetDBSSLMode() string {
 // Log configuration methods
 func (c *Config) GetLogFormat() string {
 	return c.viper.GetString("LOG_FORMAT")
+}
+
+func (c *Config) GetLogLevel() zapcore.Level {
+	levelStr := strings.ToLower(c.viper.GetString("LOG_LEVEL"))
+	switch levelStr {
+	case "debug":
+		return zapcore.DebugLevel
+	case "info":
+		return zapcore.InfoLevel
+	case "warn", "warning":
+		return zapcore.WarnLevel
+	case "error":
+		return zapcore.ErrorLevel
+	case "fatal":
+		return zapcore.FatalLevel
+	default:
+		return zapcore.InfoLevel
+	}
+}
+
+func (c *Config) GetDBLogLevel() logger.LogLevel {
+	levelStr := strings.ToLower(c.viper.GetString("DB_LOG_LEVEL"))
+	switch levelStr {
+	case "silent":
+		return logger.Silent
+	case "error":
+		return logger.Error
+	case "warn", "warning":
+		return logger.Warn
+	case "info":
+		return logger.Info
+	default:
+		return logger.Warn
+	}
 }
 
 // Environment configuration methods
@@ -225,6 +265,14 @@ func GetAppEnv() Environment {
 
 func GetLogFormat() string {
 	return GetConfig().GetLogFormat()
+}
+
+func GetLogLevel() zapcore.Level {
+	return GetConfig().GetLogLevel()
+}
+
+func GetDBLogLevel() logger.LogLevel {
+	return GetConfig().GetDBLogLevel()
 }
 
 func GetString(key string) string {

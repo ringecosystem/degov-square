@@ -1,6 +1,6 @@
-FROM golang:1.21-alpine AS builder
+FROM golang:1.25-rc-alpine AS builder
 
-WORKDIR /app
+WORKDIR /code
 
 # Copy go mod files
 COPY go.mod go.sum ./
@@ -12,24 +12,25 @@ RUN go mod download
 COPY . .
 
 # Build the application
-RUN go build -o bin/server .
+RUN go generate ./... \
+  && go build -o bin/degov-server cmd/main.go
 
 # Final stage
-FROM alpine:latest
+FROM alpine:3.22 AS runner
 
 # Install ca-certificates for TLS
 RUN apk --no-cache add ca-certificates
 
-WORKDIR /root/
+WORKDIR /app
 
 # Copy the binary from builder stage
-COPY --from=builder /app/bin/server .
+COPY --from=builder /code/bin/degov-server .
 
 # Copy migrations
-COPY --from=builder /app/migrations ./migrations
+COPY --from=builder /code/migrations ./migrations
 
 # Expose port
-EXPOSE 1096
+EXPOSE 8080
 
 # Run the binary
-CMD ["./server"]
+CMD ["./degov-server"]
