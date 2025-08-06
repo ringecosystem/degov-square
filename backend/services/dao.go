@@ -519,36 +519,6 @@ func NewDaoChipService() *DaoChipService {
 	}
 }
 
-func (s *DaoChipService) StoreChipAgent(input types.StoreDaoChipAgentInput) error {
-	chipCode := dbmodels.ChipCodeAgent
-	var existingChip dbmodels.DgvDaoChip
-	result := s.db.Where("dao_code = ? AND chip_code = ?", input.Code, chipCode).First(&existingChip)
-	if result.Error == gorm.ErrRecordNotFound {
-		// Insert new chip
-		chip := &dbmodels.DgvDaoChip{
-			ID:         utils.NextIDString(),
-			DaoCode:    input.Code,
-			ChipCode:   chipCode,
-			Flag:       "ENABLED",
-			Additional: utils.ToJSON(input.AgentConfig),
-			CTime:      time.Now(),
-		}
-		if err := s.db.Create(chip).Error; err != nil {
-			return err
-		}
-		return nil
-	}
-	if result.Error != nil {
-		return result.Error
-	}
-	existingChip.Additional = utils.ToJSON(input.AgentConfig)
-	existingChip.UTime = utils.TimePtrNow()
-	if err := s.db.Save(&existingChip).Error; err != nil {
-		return err
-	}
-	return nil
-}
-
 func (s *DaoChipService) SyncAgentChips(agentDaoConfigs []types.AgentDaoConfig) error {
 	chipCode := dbmodels.ChipCodeAgent
 
