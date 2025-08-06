@@ -19,8 +19,10 @@ create table
     id varchar(50) not null,
     chain_id int not null,
     chain_name varchar(255) not null,
+    chain_logo text,
     name varchar(255) not null,
     code varchar(255) not null,
+    logo text,
     seq int not null default 0,
     endpoint varchar(255) not null, -- website endpoint
     state varchar(50) not null, -- { ACTIVE, INACTIVE }
