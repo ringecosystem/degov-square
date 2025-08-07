@@ -9,7 +9,6 @@ import { SortableCell } from '@/components/sortable-cell';
 import { Button } from '@/components/ui/button';
 import TagGroup from '@/components/ui/tag-group';
 import { useGraphqlDaoData } from '@/hooks/useGraphqlDaoData';
-import type { Chip } from '@/lib/graphql/types';
 import type { DaoInfo } from '@/utils/config';
 import { formatNetworkName } from '@/utils/helper';
 
@@ -73,7 +72,7 @@ export default function Home() {
               />
               <span className="text-[16px]">{value?.name}</span>
             </Link>
-            <TagGroup chips={value?.chips as Chip[]} />
+            <TagGroup dao={value} />
           </div>
         );
       }

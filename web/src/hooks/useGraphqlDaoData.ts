@@ -34,7 +34,9 @@ export function useGraphqlDaoData() {
     if (!graphqlData?.daos) return [];
 
     // Show all DAOs without any filtering
-    return graphqlData.daos.map((dao, index) => transformDaoData(dao, index));
+    return graphqlData.daos
+      ?.filter((dao) => !dao.tags?.includes('demo'))
+      .map((dao, index) => transformDaoData(dao, index));
   }, [graphqlData]);
 
   const refreshData = () => {
