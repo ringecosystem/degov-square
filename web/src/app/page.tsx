@@ -20,7 +20,6 @@ type SortState = 'asc' | 'desc';
 export default function Home() {
   const { daoData, isLoading } = useGraphqlDaoData();
 
-  const [isFetchingNextPage, setIsFetchingNextPage] = useState(false);
   const [sortState, setSortState] = useState<SortState | undefined>(undefined);
   const [searchQuery, setSearchQuery] = useState('');
   const [openSearchDialog, setOpenSearchDialog] = useState(false);
@@ -239,13 +238,6 @@ export default function Home() {
             rowKey="id"
             isLoading={isLoading}
             emptyText="No DAOs found"
-            caption={
-              filteredAndSortedData.length > 10 ? (
-                <div className="text-foreground hover:text-foreground/80 cursor-pointer transition-colors">
-                  {isFetchingNextPage ? 'Loading more...' : 'View more'}
-                </div>
-              ) : undefined
-            }
           />
           <DaoList daoInfo={filteredAndSortedData} isLoading={isLoading} />
         </>

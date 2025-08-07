@@ -23,7 +23,7 @@ export const useQueryNonce = (length: number = 10) => {
   return useQuery({
     queryKey: QUERY_KEYS.nonce(length),
     queryFn: async () => {
-      const client = createAuthorizedClient();
+      const client = createPublicClient();
       const variables: NonceVariables = { length };
       const data = await client.request<{ nonce: string }>(QUERY_NONCE, { input: variables });
       return data.nonce;
@@ -39,7 +39,7 @@ export const useLogin = () => {
 
   return useMutation({
     mutationFn: async (variables: LoginVariables) => {
-      const client = createAuthorizedClient();
+      const client = createPublicClient();
       const data = await client.request<LoginResponse>(LOGIN_MUTATION, variables);
       return data.login.token;
     },
@@ -57,7 +57,7 @@ export const useQueryDaos = () => {
   const { token } = useAuth();
 
   return useQuery({
-    queryKey: [QUERY_KEYS.daos(), token],
+    queryKey: [...QUERY_KEYS.daos(), token],
     queryFn: async () => {
       const client = createAuthorizedClient(token);
       const data = await client.request<DaosResponse>(QUERY_DAOS);
