@@ -7,16 +7,20 @@ import type { ColumnType } from '@/components/custom-table';
 import { CustomTable } from '@/components/custom-table';
 import { SortableCell } from '@/components/sortable-cell';
 import { Button } from '@/components/ui/button';
-import { useDaoData } from '@/hooks/useDaoData';
+import TagGroup from '@/components/ui/tag-group';
+import { useGraphqlDaoData } from '@/hooks/useGraphqlDaoData';
+import type { Chip } from '@/lib/graphql/types';
 import type { DaoInfo } from '@/utils/config';
 import { formatNetworkName } from '@/utils/helper';
 
 import { DaoList } from './_components/daoList';
 import { MobileSearchDialog } from './_components/MobileSearchDialog';
+
 type SortState = 'asc' | 'desc';
 
 export default function Home() {
-  const { daoData, isLoading } = useDaoData();
+  const { daoData, isLoading } = useGraphqlDaoData();
+
   const [isFetchingNextPage, setIsFetchingNextPage] = useState(false);
   const [sortState, setSortState] = useState<SortState | undefined>(undefined);
   const [searchQuery, setSearchQuery] = useState('');
@@ -53,15 +57,24 @@ export default function Home() {
       className: 'w-[34%] text-left',
       render(value) {
         return (
-          <Link
-            href={value?.website}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-[10px] hover:underline"
-          >
-            <Image src={value?.daoIcon} alt="dao" width={34} height={34} className="rounded-full" />
-            <span className="text-[16px]">{value?.name}</span>
-          </Link>
+          <div className="flex items-center gap-[10px]">
+            <Link
+              href={value?.website}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-[10px] hover:underline"
+            >
+              <Image
+                src={value?.daoIcon}
+                alt="dao"
+                width={34}
+                height={34}
+                className="rounded-full"
+              />
+              <span className="text-[16px]">{value?.name}</span>
+            </Link>
+            <TagGroup chips={value?.chips as Chip[]} />
+          </div>
         );
       }
     },
