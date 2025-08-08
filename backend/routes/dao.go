@@ -27,6 +27,19 @@ func NewDaoRoute() *DaoRoute {
 	}
 }
 
+func (d *DaoRoute) DetectDaoCode(w http.ResponseWriter, r *http.Request) {
+	contextDaocode, ok := r.Context().Value(middleware.DegovDaocodeKey).(string)
+	if !ok {
+		http.Error(w, "Failed to detect dao code", http.StatusBadRequest)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	response := `{"code": "` + contextDaocode + `"}`
+	w.Write([]byte(response))
+}
+
 // ConfigHandler handles the /dao/config and /dao/config/{dao} endpoints
 func (d *DaoRoute) ConfigHandler(w http.ResponseWriter, r *http.Request) {
 	// Get parameters from URL query
