@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"encoding/json"
 	"net/http"
 	"strings"
 	"time"
@@ -9,6 +10,7 @@ import (
 	gqlmodels "github.com/ringecosystem/degov-apps/graph/models"
 	"github.com/ringecosystem/degov-apps/internal/middleware"
 	"github.com/ringecosystem/degov-apps/services"
+	"github.com/ringecosystem/degov-apps/types"
 )
 
 type DaoRoute struct {
@@ -25,6 +27,29 @@ func NewDaoRoute() *DaoRoute {
 		daoConfigService: services.NewDaoConfigService(),
 		configCache:      c,
 	}
+}
+
+func (d *DaoRoute) Detect(w http.ResponseWriter, r *http.Request) {
+	contextDaocode, ok := r.Context().Value(middleware.DegovDaocodeKey).(string)
+	contextDaosite, _ := r.Context().Value(middleware.DegovDaositeKey).(string)
+	if !ok {
+		errorResp := types.RespWithError(400, "Failed to detect dao code")
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(errorResp)
+		return
+	}
+
+	// Create response data with daocode field
+	responseData := map[string]string{
+		"daocode": contextDaocode,
+		"daosite": contextDaosite,
+	}
+
+	successResp := types.RespWithOk(responseData)
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(successResp)
 }
 
 // ConfigHandler handles the /dao/config and /dao/config/{dao} endpoints

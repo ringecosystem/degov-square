@@ -147,6 +147,7 @@ func startServer() {
 	// Support both patterns: /dao/config and /dao/config/{dao}
 	mux.Handle("/dao/config", middlewareChain.Then(http.HandlerFunc(daoRoute.ConfigHandler)))
 	mux.Handle("/dao/config/{dao}", middlewareChain.Then(http.HandlerFunc(daoRoute.ConfigHandler)))
+	mux.Handle("/dao/detect", middlewareChain.Then(http.HandlerFunc(daoRoute.Detect)))
 
 	corsHandler := cors.New(cors.Options{
 		AllowedOrigins:   []string{"*"},
