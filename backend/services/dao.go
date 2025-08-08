@@ -229,11 +229,21 @@ func (s *DaoService) RefreshDaoAndConfig(input types.RefreshDaoAndConfigInput) e
 			Tags:                  tagsJson,
 			ConfigLink:            input.ConfigLink,
 			TimeSyncd:             utils.TimePtrNow(),
-			MetricsCountProposals: *input.MetricsCountProposals,
-			MetricsCountMembers:   *input.MetricsCountMembers,
-			MetricsSumPower:       *input.MetricsSumPower,
-			MetricsCountVote:      *input.MetricsCountVote,
 			LastTrackingBlock:     0, // Default to 0 for new DAOs
+		}
+
+		// Set metrics fields if they are provided (not nil)
+		if input.MetricsCountProposals != nil {
+			dao.MetricsCountProposals = *input.MetricsCountProposals
+		}
+		if input.MetricsCountMembers != nil {
+			dao.MetricsCountMembers = *input.MetricsCountMembers
+		}
+		if input.MetricsSumPower != nil {
+			dao.MetricsSumPower = *input.MetricsSumPower
+		}
+		if input.MetricsCountVote != nil {
+			dao.MetricsCountVote = *input.MetricsCountVote
 		}
 		if err := s.db.Create(dao).Error; err != nil {
 			return err
