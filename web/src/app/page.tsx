@@ -7,17 +7,19 @@ import type { ColumnType } from '@/components/custom-table';
 import { CustomTable } from '@/components/custom-table';
 import { SortableCell } from '@/components/sortable-cell';
 import { Button } from '@/components/ui/button';
-import { useDaoData } from '@/hooks/useDaoData';
+import TagGroup from '@/components/ui/tag-group';
+import { useGraphqlDaoData } from '@/hooks/useGraphqlDaoData';
 import type { DaoInfo } from '@/utils/config';
 import { formatNetworkName } from '@/utils/helper';
 
 import { DaoList } from './_components/daoList';
 import { MobileSearchDialog } from './_components/MobileSearchDialog';
+
 type SortState = 'asc' | 'desc';
 
 export default function Home() {
-  const { daoData, isLoading } = useDaoData();
-  const [isFetchingNextPage, setIsFetchingNextPage] = useState(false);
+  const { daoData, isLoading } = useGraphqlDaoData();
+
   const [sortState, setSortState] = useState<SortState | undefined>(undefined);
   const [searchQuery, setSearchQuery] = useState('');
   const [openSearchDialog, setOpenSearchDialog] = useState(false);
@@ -53,15 +55,24 @@ export default function Home() {
       className: 'w-[34%] text-left',
       render(value) {
         return (
-          <Link
-            href={value?.website}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-[10px] hover:underline"
-          >
-            <Image src={value?.daoIcon} alt="dao" width={34} height={34} className="rounded-full" />
-            <span className="text-[16px]">{value?.name}</span>
-          </Link>
+          <div className="flex items-center gap-[10px]">
+            <Link
+              href={value?.website}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-[10px] hover:underline"
+            >
+              <Image
+                src={value?.daoIcon}
+                alt="dao"
+                width={34}
+                height={34}
+                className="rounded-full"
+              />
+              <span className="text-[16px]">{value?.name}</span>
+            </Link>
+            <TagGroup dao={value} />
+          </div>
         );
       }
     },
@@ -227,13 +238,6 @@ export default function Home() {
             rowKey="id"
             isLoading={isLoading}
             emptyText="No DAOs found"
-            caption={
-              filteredAndSortedData.length > 10 ? (
-                <div className="text-foreground hover:text-foreground/80 cursor-pointer transition-colors">
-                  {isFetchingNextPage ? 'Loading more...' : 'View more'}
-                </div>
-              ) : undefined
-            }
           />
           <DaoList daoInfo={filteredAndSortedData} isLoading={isLoading} />
         </>
