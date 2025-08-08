@@ -84,7 +84,7 @@ func (m *DegovMiddleware) findDaoCodeByURL(customSite, origin, referer string) (
 
 	targetHost := m.extractHost(targetURL)
 	if targetHost == "" {
-		return "", targetHost
+		return "", ""
 	}
 
 	// get DAOs from cache, if not found, fetch from database and cache
