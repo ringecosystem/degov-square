@@ -29,8 +29,9 @@ func NewDaoRoute() *DaoRoute {
 	}
 }
 
-func (d *DaoRoute) DetectDaoCode(w http.ResponseWriter, r *http.Request) {
+func (d *DaoRoute) Detect(w http.ResponseWriter, r *http.Request) {
 	contextDaocode, ok := r.Context().Value(middleware.DegovDaocodeKey).(string)
+	contextDaosite, _ := r.Context().Value(middleware.DegovDaositeKey).(string)
 	if !ok {
 		errorResp := types.RespWithError(400, "Failed to detect dao code")
 		w.Header().Set("Content-Type", "application/json")
@@ -42,6 +43,7 @@ func (d *DaoRoute) DetectDaoCode(w http.ResponseWriter, r *http.Request) {
 	// Create response data with daocode field
 	responseData := map[string]string{
 		"daocode": contextDaocode,
+		"daosite": contextDaosite,
 	}
 
 	successResp := types.RespWithOk(responseData)

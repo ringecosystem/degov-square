@@ -14,6 +14,7 @@ import (
 
 const (
 	DegovDaocodeKey ContextKey = "degov_daocode"
+	DegovDaositeKey ContextKey = "degov_site"
 )
 
 type DegovMiddleware struct {
@@ -46,16 +47,20 @@ func (m *DegovMiddleware) HTTPMiddleware(next http.Handler) http.Handler {
 		daocodeHeader := r.Header.Get("x-degov-daocode")
 
 		var daoCode string
+		var originHost string
 
 		// if daocodeHeader no empty, use it
 		if daocodeHeader != "" {
 			daoCode = daocodeHeader
 		} else {
-			daoCode = m.findDaoCodeByURL(siteHeader, originHeader, refererHeader)
+			extractedDaoCode, extractedOriginHost := m.findDaoCodeByURL(siteHeader, originHeader, refererHeader)
+			daoCode = extractedDaoCode
+			originHost = extractedOriginHost
 		}
 
 		if daoCode != "" {
 			ctx := context.WithValue(r.Context(), DegovDaocodeKey, daoCode)
+			ctx = context.WithValue(ctx, DegovDaositeKey, originHost)
 			r = r.WithContext(ctx)
 		}
 		next.ServeHTTP(w, r)
@@ -63,7 +68,7 @@ func (m *DegovMiddleware) HTTPMiddleware(next http.Handler) http.Handler {
 }
 
 // try to find the DAO code based on the origin or referer headers
-func (m *DegovMiddleware) findDaoCodeByURL(customSite, origin, referer string) string {
+func (m *DegovMiddleware) findDaoCodeByURL(customSite, origin, referer string) (string, string) {
 	// use origin if available, otherwise use referer
 	targetURL := customSite
 	if targetURL == "" {
@@ -74,30 +79,30 @@ func (m *DegovMiddleware) findDaoCodeByURL(customSite, origin, referer string) s
 	}
 
 	if targetURL == "" {
-		return ""
+		return "", ""
 	}
 
 	targetHost := m.extractHost(targetURL)
 	if targetHost == "" {
-		return ""
+		return "", targetHost
 	}
 
 	// get DAOs from cache, if not found, fetch from database and cache
 	daos := m.getDaosFromCache()
 	if daos == nil {
-		return ""
+		return "", targetHost
 	}
 
 	// match DAO by endpoint
 	for _, dao := range daos {
 		if dao.Endpoint != "" {
 			if strings.EqualFold(dao.Endpoint, targetHost) {
-				return dao.Code
+				return dao.Code, targetHost
 			}
 		}
 	}
 
-	return ""
+	return "", targetHost
 }
 
 // extractHost extracts the host from a given URL string
