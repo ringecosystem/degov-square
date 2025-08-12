@@ -132,7 +132,7 @@ func (t *DaoSyncTask) processSingleDao(remoteLink GithubConfigLink, daoInfo DaoR
 	}
 
 	// Fetch DAO config details
-	daoConfig, err := t.fetchDaoConfig(configURL, "")
+	daoConfig, err := t.fetchDaoConfig(configURL)
 	if err != nil {
 		return types.DaoConfig{}, fmt.Errorf("failed to fetch DAO config: %w", err)
 	}
@@ -410,7 +410,7 @@ func (t *DaoSyncTask) getLatestTag() (string, error) {
 }
 
 // fetchDaoConfig fetches and parses individual DAO configuration
-func (t *DaoSyncTask) fetchDaoConfig(configURL string, daoCode string) (DaoConfigResult, error) {
+func (t *DaoSyncTask) fetchDaoConfig(configURL string) (DaoConfigResult, error) {
 	slog.Debug("Fetching DAO config", "url", configURL)
 
 	var config types.DaoConfig
