@@ -217,19 +217,19 @@ func (s *DaoService) RefreshDaoAndConfig(input types.RefreshDaoAndConfigInput) e
 	if result.Error == gorm.ErrRecordNotFound {
 		// Insert new DAO
 		dao := &dbmodels.Dao{
-			ID:                    utils.NextIDString(),
-			ChainID:               input.Config.Chain.ID,
-			ChainName:             input.Config.Chain.Name,
-			ChainLogo:             input.Config.Chain.Logo,
-			Name:                  input.Config.Name,
-			Code:                  input.Code,
-			Logo:                  input.Config.Logo,
-			Endpoint:              input.Config.SiteURL,
-			State:                 "ACTIVE",
-			Tags:                  tagsJson,
-			ConfigLink:            input.ConfigLink,
-			TimeSyncd:             utils.TimePtrNow(),
-			LastTrackingBlock:     0, // Default to 0 for new DAOs
+			ID:                utils.NextIDString(),
+			ChainID:           input.Config.Chain.ID,
+			ChainName:         input.Config.Chain.Name,
+			ChainLogo:         input.Config.Chain.Logo,
+			Name:              input.Config.Name,
+			Code:              input.Code,
+			Logo:              input.Config.Logo,
+			Endpoint:          input.Config.SiteURL,
+			State:             "ACTIVE",
+			Tags:              tagsJson,
+			ConfigLink:        input.ConfigLink,
+			TimeSyncd:         utils.TimePtrNow(),
+			LastTrackingBlock: 0, // Default to 0 for new DAOs
 		}
 
 		// Set metrics fields if they are provided (not nil)
@@ -252,6 +252,7 @@ func (s *DaoService) RefreshDaoAndConfig(input types.RefreshDaoAndConfigInput) e
 		// Update existing DAO
 		existingDao.ChainID = input.Config.Chain.ID
 		existingDao.ChainName = input.Config.Chain.Name
+		existingDao.ChainLogo = input.Config.Chain.Logo
 		existingDao.Name = input.Config.Name
 		existingDao.Endpoint = input.Config.SiteURL
 		existingDao.State = "ACTIVE"
