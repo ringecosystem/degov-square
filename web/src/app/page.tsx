@@ -183,7 +183,7 @@ export default function Home() {
               </button>
             )}
           </div>
-          <div className="fixed right-0 bottom-[20px] left-[20px] grid grid-cols-[calc(50%-20px)_calc(50%-20px)] gap-[20px] md:static md:grid-cols-1 md:justify-end">
+          <div className="fixed right-0 bottom-[20px] left-[20px] grid grid-cols-[calc(100%-20px)_calc(50%-20px)] gap-[20px] md:static md:grid-cols-1 md:justify-end">
             <Button variant="outline" className="hidden rounded-[100px]" asChild>
               <Link href="/add/existing">Add Existing DAO</Link>
             </Button>
