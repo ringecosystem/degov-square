@@ -10,6 +10,7 @@ interface DaoItemProps {
   network: string;
   proposals: number;
   id: string;
+  website: string;
 }
 export const DaoItem = ({ name, daoIcon, network, proposals, id, website }: DaoItemProps) => {
   return (
