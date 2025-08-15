@@ -31,7 +31,7 @@ export function Footer() {
           <Image src="/social/x.svg" alt="Twitter" width={12} height={12} />
         </Link>
         <Link
-          href="https://t.me/DeGov_AI"
+          href="https://t.me/RingDAO_Hub"
           className="bg-muted flex size-[24px] flex-shrink-0 items-center justify-center rounded-full transition-opacity hover:opacity-80"
           target="_blank"
           rel="noopener noreferrer"
