@@ -259,6 +259,7 @@ func (s *DaoService) RefreshDaoAndConfig(input types.RefreshDaoAndConfigInput) e
 		existingDao.ChainName = input.Config.Chain.Name
 		existingDao.ChainLogo = input.Config.Chain.Logo
 		existingDao.Name = input.Config.Name
+		existingDao.Logo = input.Config.Logo
 		existingDao.Endpoint = input.Config.SiteURL
 		existingDao.State = input.State
 		existingDao.Tags = tagsJson
