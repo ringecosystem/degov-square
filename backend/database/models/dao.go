@@ -20,7 +20,7 @@ const (
 const (
 	DaoStateActive   DaoState = "ACTIVE"
 	DaoStateDraft    DaoState = "DRAFT"
-	DaoStateUnactive DaoState = "UNACTIVE"
+	DaoStateInactive DaoState = "INACTIVE"
 )
 
 // UnmarshalYAML implements custom YAML unmarshaling for DaoState
@@ -37,11 +37,11 @@ func (d *DaoState) UnmarshalYAML(value *yaml.Node) error {
 	// Convert to uppercase and validate
 	upperState := strings.ToUpper(state)
 	switch DaoState(upperState) {
-	case DaoStateActive, DaoStateDraft, DaoStateUnactive:
+	case DaoStateActive, DaoStateDraft, DaoStateInactive:
 		*d = DaoState(upperState)
 		return nil
 	default:
-		return fmt.Errorf("invalid dao state: %s (valid values: active, draft, unactive)", state)
+		return fmt.Errorf("invalid dao state: %s (valid values: active, draft, inactive)", state)
 	}
 }
 
