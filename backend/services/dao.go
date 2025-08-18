@@ -141,11 +141,16 @@ func (s *DaoService) MultipleDaoChips(codes []string) ([]*gqlmodels.DaoChip, err
 func (s *DaoService) ListDaos(baseInput types.BasicInput[*types.ListDaosInput]) ([]*gqlmodels.Dao, error) {
 	var dbDaos []dbmodels.Dao
 
-	query := s.db.Table("dgv_dao").Where("state = ?", "ACTIVE")
+	query := s.db.Table("dgv_dao")
 
 	// If codes are provided, filter by them
 	if baseInput.Input != nil && baseInput.Input.Codes != nil && len(*baseInput.Input.Codes) > 0 {
 		query = query.Where("code IN ?", *baseInput.Input.Codes)
+	}
+	if baseInput.Input != nil && baseInput.Input.State != nil && len(*baseInput.Input.State) > 0 {
+		query = query.Where("state IN ?", *baseInput.Input.State)
+	} else {
+		query = query.Where("state = ?", dbmodels.DaoStateActive)
 	}
 
 	if err := query.Order("seq asc").Find(&dbDaos).Error; err != nil {

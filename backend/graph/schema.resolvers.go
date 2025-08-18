@@ -8,6 +8,7 @@ import (
 	"context"
 	"fmt"
 
+	dbmodels "github.com/ringecosystem/degov-apps/database/models"
 	gqlmodels "github.com/ringecosystem/degov-apps/graph/models"
 	"github.com/ringecosystem/degov-apps/types"
 )
@@ -51,8 +52,10 @@ func (r *queryResolver) Daos(ctx context.Context) ([]*gqlmodels.Dao, error) {
 	// User is authenticated, return DAOs with personalized info (liked, subscribed, etc.)
 	// For now, just call the regular method - you can extend this later
 	return r.daoService.ListDaos(types.BasicInput[*types.ListDaosInput]{
-		User:  user,
-		Input: nil,
+		User: user,
+		Input: &types.ListDaosInput{
+			State: &[]dbmodels.DaoState{dbmodels.DaoStateActive},
+		},
 	})
 }
 

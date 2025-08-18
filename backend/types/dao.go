@@ -25,7 +25,8 @@ type StoreDaoChipMetricsStateInput struct {
 }
 
 type ListDaosInput struct {
-	Codes *[]string `json:"codes"`
+	State *[]dbmodels.DaoState `json:"state,omitempty"`
+	Codes *[]string            `json:"codes"`
 }
 
 // DaoConfig represents the structure of individual DAO config files
