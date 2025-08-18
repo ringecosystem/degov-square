@@ -1,15 +1,18 @@
 package types
 
+import dbmodels "github.com/ringecosystem/degov-apps/database/models"
+
 type RefreshDaoAndConfigInput struct {
-	Code                  string    `json:"code"`
-	Tags                  []string  `json:"tags"`
-	ConfigLink            string    `json:"configLink"`
-	Config                DaoConfig `json:"config"`
-	Raw                   string    `json:"raw"`
-	MetricsCountProposals *int      `json:"metricsCountProposals,omitempty"`
-	MetricsCountMembers   *int      `json:"metricsCountMembers,omitempty"`
-	MetricsSumPower       *string   `json:"metricsSumPower,omitempty"`
-	MetricsCountVote      *int      `json:"metricsCountVote,omitempty"`
+	Code                  string            `json:"code"`
+	Tags                  []string          `json:"tags"`
+	ConfigLink            string            `json:"configLink"`
+	Config                DaoConfig         `json:"config"`
+	State                 dbmodels.DaoState `json:"state"`
+	Raw                   string            `json:"raw"`
+	MetricsCountProposals *int              `json:"metricsCountProposals,omitempty"`
+	MetricsCountMembers   *int              `json:"metricsCountMembers,omitempty"`
+	MetricsSumPower       *string           `json:"metricsSumPower,omitempty"`
+	MetricsCountVote      *int              `json:"metricsCountVote,omitempty"`
 }
 
 type StoreDaoChipAgentInput struct {
