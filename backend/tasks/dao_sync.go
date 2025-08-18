@@ -154,7 +154,7 @@ func (t *DaoSyncTask) processSingleDao(remoteLink GithubConfigLink, daoInfo DaoR
 	defer cancel()
 
 	var state = dbmodels.DaoStateActive
-	if daoInfo.State != dbmodels.DaoState("") {
+	if daoInfo.State != "" {
 		state = daoInfo.State
 	}
 
