@@ -42,7 +42,7 @@ func (s *DaoService) convertToGqlDao(dbDao dbmodels.Dao) *gqlmodels.Dao {
 		Code:                  dbDao.Code,
 		Logo:                  &dbDao.Logo,
 		Endpoint:              dbDao.Endpoint,
-		State:                 dbDao.State,
+		State:                 string(dbDao.State),
 		Tags:                  tags,
 		TimeSyncd:             dbDao.TimeSyncd,
 		MetricsCountProposals: int32(dbDao.MetricsCountProposals),
@@ -225,7 +225,7 @@ func (s *DaoService) RefreshDaoAndConfig(input types.RefreshDaoAndConfigInput) e
 			Code:              input.Code,
 			Logo:              input.Config.Logo,
 			Endpoint:          input.Config.SiteURL,
-			State:             "ACTIVE",
+			State:             input.State,
 			Tags:              tagsJson,
 			ConfigLink:        input.ConfigLink,
 			TimeSyncd:         utils.TimePtrNow(),
@@ -255,7 +255,7 @@ func (s *DaoService) RefreshDaoAndConfig(input types.RefreshDaoAndConfigInput) e
 		existingDao.ChainLogo = input.Config.Chain.Logo
 		existingDao.Name = input.Config.Name
 		existingDao.Endpoint = input.Config.SiteURL
-		existingDao.State = "ACTIVE"
+		existingDao.State = input.State
 		existingDao.Tags = tagsJson
 		existingDao.ConfigLink = input.ConfigLink
 		existingDao.UTime = utils.TimePtrNow()
@@ -306,9 +306,9 @@ func (s *DaoService) RefreshDaoAndConfig(input types.RefreshDaoAndConfigInput) e
 func (s *DaoService) MarkInactiveDAOs(activeCodes map[string]bool) error {
 	// Use a more efficient query to find and update inactive DAOs in one go
 	result := s.db.Model(&dbmodels.Dao{}).
-		Where("code NOT IN ? AND state != ?", getMapKeys(activeCodes), "INACTIVE").
+		Where("code NOT IN ? AND state != ?", getMapKeys(activeCodes), dbmodels.DaoStateInactive).
 		Updates(map[string]interface{}{
-			"state": "INACTIVE",
+			"state": dbmodels.DaoStateInactive,
 			"utime": utils.TimePtrNow(),
 		})
 

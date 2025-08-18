@@ -12,6 +12,7 @@ import (
 
 	"gopkg.in/yaml.v3"
 
+	dbmodels "github.com/ringecosystem/degov-apps/database/models"
 	"github.com/ringecosystem/degov-apps/internal"
 	"github.com/ringecosystem/degov-apps/internal/config"
 	"github.com/ringecosystem/degov-apps/services"
@@ -35,8 +36,9 @@ type DaoSyncTask struct {
 
 // DaoRegistryConfig represents the structure of individual DAO configuration
 type DaoRegistryConfig struct {
-	Tags   []string `yaml:"tags,omitempty"` // Optional tags field
-	Config string   `yaml:"config"`
+	Tags   []string          `yaml:"tags,omitempty"`  // Optional tags field
+	State  dbmodels.DaoState `yaml:"state,omitempty"` // Optional state field
+	Config string            `yaml:"config"`
 }
 
 type DaoRegistryConfigResult struct {
@@ -151,10 +153,16 @@ func (t *DaoSyncTask) processSingleDao(remoteLink GithubConfigLink, daoInfo DaoR
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
+	var state = dbmodels.DaoStateActive
+	if daoInfo.State != "" {
+		state = daoInfo.State
+	}
+
 	// Prepare base input
 	input := types.RefreshDaoAndConfigInput{
 		Code:       daoConfig.Config.Code,
 		Tags:       daoInfo.Tags,
+		State:      state,
 		ConfigLink: configURL,
 		Config:     *daoConfig.Config,
 		Raw:        daoConfig.Raw,
