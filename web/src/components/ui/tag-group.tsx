@@ -2,7 +2,7 @@ import { cn } from '@/lib/utils';
 import type { DaoInfo } from '@/utils/config';
 
 import ActiveTag from './active-tag';
-import AgentEnabled from './agent-enabled';
+// import AgentEnabled from './agent-enabled';
 
 interface TagGroupProps {
   dao?: DaoInfo;
@@ -17,7 +17,7 @@ const TagGroup = ({ dao, className }: TagGroupProps) => {
 
   return activeTag || agentEnabledTag ? (
     <div className={cn('flex items-center gap-[10px]', className)}>
-      {agentEnabledTag && <AgentEnabled />}
+      {/* {agentEnabledTag && <AgentEnabled />} */}
       {activeTag && <ActiveTag />}
     </div>
   ) : null;
