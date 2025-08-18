@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/patrickmn/go-cache"
+	dbmodels "github.com/ringecosystem/degov-apps/database/models"
 	"github.com/ringecosystem/degov-apps/services"
 	"github.com/ringecosystem/degov-apps/types"
 )
@@ -134,7 +135,11 @@ func (m *DegovMiddleware) getDaosFromCache() []DaoEndpoint {
 	}
 
 	// Fetch DAOs from the database
-	gqlDaos, err := m.daoService.ListDaos(types.BasicInput[*types.ListDaosInput]{})
+	gqlDaos, err := m.daoService.ListDaos(types.BasicInput[*types.ListDaosInput]{
+		Input: &types.ListDaosInput{
+			State: &[]dbmodels.DaoState{dbmodels.DaoStateActive, dbmodels.DaoStateDraft},
+		},
+	})
 	if err != nil {
 		return nil
 	}
