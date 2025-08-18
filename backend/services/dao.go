@@ -306,9 +306,9 @@ func (s *DaoService) RefreshDaoAndConfig(input types.RefreshDaoAndConfigInput) e
 func (s *DaoService) MarkInactiveDAOs(activeCodes map[string]bool) error {
 	// Use a more efficient query to find and update inactive DAOs in one go
 	result := s.db.Model(&dbmodels.Dao{}).
-		Where("code NOT IN ? AND state != ?", getMapKeys(activeCodes), "INACTIVE").
+		Where("code NOT IN ? AND state != ?", getMapKeys(activeCodes), dbmodels.DaoStateInactive).
 		Updates(map[string]interface{}{
-			"state": "INACTIVE",
+			"state": dbmodels.DaoStateInactive,
 			"utime": utils.TimePtrNow(),
 		})
 
