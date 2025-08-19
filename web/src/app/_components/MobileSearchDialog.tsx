@@ -65,7 +65,7 @@ export function MobileSearchDialog({
           <input
             ref={inputRef}
             className="placeholder:text-muted-foreground h-[17px] w-full outline-none placeholder:text-[14px]"
-            placeholder="Search by Name, Chain"
+            placeholder="Search by DAO name or Chain name"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             onKeyDown={(e) => {

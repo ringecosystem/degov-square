@@ -163,7 +163,7 @@ export default function Home() {
             <Image src="/search.svg" alt="search" width={16} height={16} />
             <input
               className="placeholder:text-muted-foreground hidden h-[17px] w-full outline-none placeholder:text-[14px] md:block"
-              placeholder="Search by Name, Chain"
+              placeholder="Search by DAO name or Chain name"
               value={searchQuery}
               onChange={handleDesktopSearch}
             />
