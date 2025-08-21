@@ -1,15 +1,18 @@
 package types
 
+import dbmodels "github.com/ringecosystem/degov-apps/database/models"
+
 type RefreshDaoAndConfigInput struct {
-	Code                  string    `json:"code"`
-	Tags                  []string  `json:"tags"`
-	ConfigLink            string    `json:"configLink"`
-	Config                DaoConfig `json:"config"`
-	Raw                   string    `json:"raw"`
-	MetricsCountProposals *int      `json:"metricsCountProposals,omitempty"`
-	MetricsCountMembers   *int      `json:"metricsCountMembers,omitempty"`
-	MetricsSumPower       *string   `json:"metricsSumPower,omitempty"`
-	MetricsCountVote      *int      `json:"metricsCountVote,omitempty"`
+	Code                  string            `json:"code"`
+	Tags                  []string          `json:"tags"`
+	ConfigLink            string            `json:"configLink"`
+	Config                DaoConfig         `json:"config"`
+	State                 dbmodels.DaoState `json:"state"`
+	Raw                   string            `json:"raw"`
+	MetricsCountProposals *int              `json:"metricsCountProposals,omitempty"`
+	MetricsCountMembers   *int              `json:"metricsCountMembers,omitempty"`
+	MetricsSumPower       *string           `json:"metricsSumPower,omitempty"`
+	MetricsCountVote      *int              `json:"metricsCountVote,omitempty"`
 }
 
 type StoreDaoChipAgentInput struct {
@@ -22,12 +25,14 @@ type StoreDaoChipMetricsStateInput struct {
 }
 
 type ListDaosInput struct {
-	Codes *[]string `json:"codes"`
+	State *[]dbmodels.DaoState `json:"state,omitempty"`
+	Codes *[]string            `json:"codes"`
 }
 
 // DaoConfig represents the structure of individual DAO config files
 type DaoConfig struct {
 	Name                  string `yaml:"name"`
+	Code                  string `yaml:"code"`
 	Logo                  string `yaml:"logo"`
 	SiteURL               string `yaml:"siteUrl"`
 	OffChainDiscussionURL string `yaml:"offChainDiscussionUrl"`

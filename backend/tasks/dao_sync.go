@@ -12,6 +12,7 @@ import (
 
 	"gopkg.in/yaml.v3"
 
+	dbmodels "github.com/ringecosystem/degov-apps/database/models"
 	"github.com/ringecosystem/degov-apps/internal"
 	"github.com/ringecosystem/degov-apps/internal/config"
 	"github.com/ringecosystem/degov-apps/services"
@@ -35,9 +36,9 @@ type DaoSyncTask struct {
 
 // DaoRegistryConfig represents the structure of individual DAO configuration
 type DaoRegistryConfig struct {
-	Code   string   `yaml:"code"`
-	Tags   []string `yaml:"tags,omitempty"` // Optional tags field
-	Config string   `yaml:"config"`
+	Tags   []string          `yaml:"tags,omitempty"`  // Optional tags field
+	State  dbmodels.DaoState `yaml:"state,omitempty"` // Optional state field
+	Config string            `yaml:"config"`
 }
 
 type DaoRegistryConfigResult struct {
@@ -93,9 +94,9 @@ func (t *DaoSyncTask) SyncDaos() error {
 	// Process each chain and its DAOs
 	for chainName, daos := range registryConfigResult.Result {
 		for _, daoInfo := range daos {
-			_, err := t.processSingleDao(registryConfigResult.RemoteLink, daoInfo, chainName, activeDaoCodes)
+			daoConfig, err := t.processSingleDao(registryConfigResult.RemoteLink, daoInfo, chainName, activeDaoCodes)
 			if err != nil {
-				slog.Error("Failed to process DAO", "dao", daoInfo.Code, "chain", chainName, "error", err)
+				slog.Error("Failed to process DAO", "dao", daoConfig.Code, "chain", chainName, "error", err)
 				continue
 			}
 		}
@@ -133,18 +134,18 @@ func (t *DaoSyncTask) processSingleDao(remoteLink GithubConfigLink, daoInfo DaoR
 	}
 
 	// Fetch DAO config details
-	daoConfig, err := t.fetchDaoConfig(configURL, daoInfo.Code)
+	daoConfig, err := t.fetchDaoConfig(configURL)
 	if err != nil {
 		return types.DaoConfig{}, fmt.Errorf("failed to fetch DAO config: %w", err)
 	}
 
 	// Skip if essential fields are missing
-	if daoInfo.Code == "" || daoConfig.Config.Name == "" {
+	if daoConfig.Config.Code == "" || daoConfig.Config.Name == "" {
 		slog.Warn("DAO config missing essential fields", "config_url", daoInfo.Config)
-		return types.DaoConfig{}, fmt.Errorf("missing essential fields in DAO config for code: %s", daoInfo.Code)
+		return types.DaoConfig{}, fmt.Errorf("missing essential fields in DAO config for code: %s", daoConfig.Config.Code)
 	}
 
-	activeDaoCodes[daoInfo.Code] = true
+	activeDaoCodes[daoConfig.Config.Code] = true
 
 	indexer := internal.NewDegovIndexer(daoConfig.Config.Indexer.Endpoint)
 
@@ -152,10 +153,16 @@ func (t *DaoSyncTask) processSingleDao(remoteLink GithubConfigLink, daoInfo DaoR
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
+	var state = dbmodels.DaoStateActive
+	if daoInfo.State != "" {
+		state = daoInfo.State
+	}
+
 	// Prepare base input
 	input := types.RefreshDaoAndConfigInput{
-		Code:       daoInfo.Code,
+		Code:       daoConfig.Config.Code,
 		Tags:       daoInfo.Tags,
+		State:      state,
 		ConfigLink: configURL,
 		Config:     *daoConfig.Config,
 		Raw:        daoConfig.Raw,
@@ -164,7 +171,7 @@ func (t *DaoSyncTask) processSingleDao(remoteLink GithubConfigLink, daoInfo DaoR
 	// Try to get metrics data
 	metrics, err := indexer.QueryGlobalDataMetrics(ctx)
 	if err != nil {
-		slog.Warn("Failed to query data metrics", "dao", daoInfo.Code, "error", err)
+		slog.Warn("Failed to query data metrics", "dao", daoConfig.Config.Code, "error", err)
 		// Metrics fields will be nil, indicating no update needed
 	} else if metrics != nil {
 		// Set metrics data if available
@@ -176,7 +183,7 @@ func (t *DaoSyncTask) processSingleDao(remoteLink GithubConfigLink, daoInfo DaoR
 
 	t.daoService.RefreshDaoAndConfig(input)
 
-	slog.Debug("Successfully synced DAO", "dao", daoInfo.Code, "chain", chainName)
+	slog.Debug("Successfully synced DAO", "dao", daoConfig.Config.Code, "chain", chainName)
 
 	return *daoConfig.Config, nil
 }
@@ -411,7 +418,7 @@ func (t *DaoSyncTask) getLatestTag() (string, error) {
 }
 
 // fetchDaoConfig fetches and parses individual DAO configuration
-func (t *DaoSyncTask) fetchDaoConfig(configURL string, daoCode string) (DaoConfigResult, error) {
+func (t *DaoSyncTask) fetchDaoConfig(configURL string) (DaoConfigResult, error) {
 	slog.Debug("Fetching DAO config", "url", configURL)
 
 	var config types.DaoConfig
@@ -420,7 +427,7 @@ func (t *DaoSyncTask) fetchDaoConfig(configURL string, daoCode string) (DaoConfi
 		return DaoConfigResult{}, err
 	}
 
-	slog.Debug("Successfully fetched DAO config", "url", configURL, "dao_code", daoCode)
+	slog.Debug("Successfully fetched DAO config", "url", configURL, "dao_code", config.Code)
 	return DaoConfigResult{
 		Raw:    rawContent,
 		Config: &config,

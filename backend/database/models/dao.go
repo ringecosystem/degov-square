@@ -1,15 +1,49 @@
 package dbmodels
 
 import (
+	"fmt"
+	"strings"
 	"time"
+
+	"gopkg.in/yaml.v3"
 )
 
 type ChipCode string
+
+type DaoState string
 
 const (
 	ChipCodeAgent        ChipCode = "AGENT"
 	ChipCodeMetricsState ChipCode = "METRICS_STATE"
 )
+
+const (
+	DaoStateActive   DaoState = "ACTIVE"
+	DaoStateDraft    DaoState = "DRAFT"
+	DaoStateInactive DaoState = "INACTIVE"
+)
+
+// UnmarshalYAML implements custom YAML unmarshaling for DaoState
+// This allows parsing both uppercase and lowercase state values from YAML
+func (d *DaoState) UnmarshalYAML(value *yaml.Node) error {
+	var state string
+	if err := value.Decode(&state); err != nil {
+		return err
+	}
+	if state == "" {
+		return nil
+	}
+
+	// Convert to uppercase and validate
+	upperState := strings.ToUpper(state)
+	switch DaoState(upperState) {
+	case DaoStateActive, DaoStateDraft, DaoStateInactive:
+		*d = DaoState(upperState)
+		return nil
+	default:
+		return fmt.Errorf("invalid dao state: %s (valid values: active, draft, inactive)", state)
+	}
+}
 
 type Dao struct {
 	ID                    string     `gorm:"column:id;type:varchar(50);primaryKey" json:"id"`
@@ -21,7 +55,7 @@ type Dao struct {
 	Logo                  string     `gorm:"column:logo;type:text" json:"logo,omitempty"` // Optional logo field
 	Seq                   int        `gorm:"column:seq;not null;default:0" json:"seq"`
 	Endpoint              string     `gorm:"column:endpoint;type:varchar(255);not null" json:"endpoint"` // Website endpoint
-	State                 string     `gorm:"column:state;type:varchar(50);not null" json:"state"`
+	State                 DaoState   `gorm:"column:state;type:varchar(50);not null" json:"state"`
 	Tags                  string     `gorm:"column:tags;type:text" json:"tags,omitempty"` // Optional tags field
 	ConfigLink            string     `gorm:"column:config_link;type:varchar(255);not null" json:"config_link"`
 	TimeSyncd             *time.Time `gorm:"column:time_syncd" json:"time_syncd,omitempty"`

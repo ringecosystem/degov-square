@@ -42,7 +42,7 @@ func (s *DaoService) convertToGqlDao(dbDao dbmodels.Dao) *gqlmodels.Dao {
 		Code:                  dbDao.Code,
 		Logo:                  &dbDao.Logo,
 		Endpoint:              dbDao.Endpoint,
-		State:                 dbDao.State,
+		State:                 string(dbDao.State),
 		Tags:                  tags,
 		TimeSyncd:             dbDao.TimeSyncd,
 		MetricsCountProposals: int32(dbDao.MetricsCountProposals),
@@ -141,11 +141,16 @@ func (s *DaoService) MultipleDaoChips(codes []string) ([]*gqlmodels.DaoChip, err
 func (s *DaoService) ListDaos(baseInput types.BasicInput[*types.ListDaosInput]) ([]*gqlmodels.Dao, error) {
 	var dbDaos []dbmodels.Dao
 
-	query := s.db.Table("dgv_dao").Where("state = ?", "ACTIVE")
+	query := s.db.Table("dgv_dao")
 
 	// If codes are provided, filter by them
 	if baseInput.Input != nil && baseInput.Input.Codes != nil && len(*baseInput.Input.Codes) > 0 {
 		query = query.Where("code IN ?", *baseInput.Input.Codes)
+	}
+	if baseInput.Input != nil && baseInput.Input.State != nil && len(*baseInput.Input.State) > 0 {
+		query = query.Where("state IN ?", *baseInput.Input.State)
+	} else {
+		query = query.Where("state = ?", dbmodels.DaoStateActive)
 	}
 
 	if err := query.Order("seq asc").Find(&dbDaos).Error; err != nil {
@@ -217,23 +222,33 @@ func (s *DaoService) RefreshDaoAndConfig(input types.RefreshDaoAndConfigInput) e
 	if result.Error == gorm.ErrRecordNotFound {
 		// Insert new DAO
 		dao := &dbmodels.Dao{
-			ID:                    utils.NextIDString(),
-			ChainID:               input.Config.Chain.ID,
-			ChainName:             input.Config.Chain.Name,
-			ChainLogo:             input.Config.Chain.Logo,
-			Name:                  input.Config.Name,
-			Code:                  input.Code,
-			Logo:                  input.Config.Logo,
-			Endpoint:              input.Config.SiteURL,
-			State:                 "ACTIVE",
-			Tags:                  tagsJson,
-			ConfigLink:            input.ConfigLink,
-			TimeSyncd:             utils.TimePtrNow(),
-			MetricsCountProposals: *input.MetricsCountProposals,
-			MetricsCountMembers:   *input.MetricsCountMembers,
-			MetricsSumPower:       *input.MetricsSumPower,
-			MetricsCountVote:      *input.MetricsCountVote,
-			LastTrackingBlock:     0, // Default to 0 for new DAOs
+			ID:                utils.NextIDString(),
+			ChainID:           input.Config.Chain.ID,
+			ChainName:         input.Config.Chain.Name,
+			ChainLogo:         input.Config.Chain.Logo,
+			Name:              input.Config.Name,
+			Code:              input.Code,
+			Logo:              input.Config.Logo,
+			Endpoint:          input.Config.SiteURL,
+			State:             input.State,
+			Tags:              tagsJson,
+			ConfigLink:        input.ConfigLink,
+			TimeSyncd:         utils.TimePtrNow(),
+			LastTrackingBlock: 0, // Default to 0 for new DAOs
+		}
+
+		// Set metrics fields if they are provided (not nil)
+		if input.MetricsCountProposals != nil {
+			dao.MetricsCountProposals = *input.MetricsCountProposals
+		}
+		if input.MetricsCountMembers != nil {
+			dao.MetricsCountMembers = *input.MetricsCountMembers
+		}
+		if input.MetricsSumPower != nil {
+			dao.MetricsSumPower = *input.MetricsSumPower
+		}
+		if input.MetricsCountVote != nil {
+			dao.MetricsCountVote = *input.MetricsCountVote
 		}
 		if err := s.db.Create(dao).Error; err != nil {
 			return err
@@ -242,9 +257,11 @@ func (s *DaoService) RefreshDaoAndConfig(input types.RefreshDaoAndConfigInput) e
 		// Update existing DAO
 		existingDao.ChainID = input.Config.Chain.ID
 		existingDao.ChainName = input.Config.Chain.Name
+		existingDao.ChainLogo = input.Config.Chain.Logo
 		existingDao.Name = input.Config.Name
+		existingDao.Logo = input.Config.Logo
 		existingDao.Endpoint = input.Config.SiteURL
-		existingDao.State = "ACTIVE"
+		existingDao.State = input.State
 		existingDao.Tags = tagsJson
 		existingDao.ConfigLink = input.ConfigLink
 		existingDao.UTime = utils.TimePtrNow()
@@ -295,9 +312,9 @@ func (s *DaoService) RefreshDaoAndConfig(input types.RefreshDaoAndConfigInput) e
 func (s *DaoService) MarkInactiveDAOs(activeCodes map[string]bool) error {
 	// Use a more efficient query to find and update inactive DAOs in one go
 	result := s.db.Model(&dbmodels.Dao{}).
-		Where("code NOT IN ? AND state != ?", getMapKeys(activeCodes), "INACTIVE").
+		Where("code NOT IN ? AND state != ?", getMapKeys(activeCodes), dbmodels.DaoStateInactive).
 		Updates(map[string]interface{}{
-			"state": "INACTIVE",
+			"state": dbmodels.DaoStateInactive,
 			"utime": utils.TimePtrNow(),
 		})
 
