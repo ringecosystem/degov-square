@@ -22,7 +22,7 @@ jobs:
           project_name: "degov-apps"
           script_run: false
           dist_path: .
-          enable_notify_comment: true
+          enable_notify_comment: ${{ github.actor != 'dependabot' }}
           enable_notify_slack: false
           slack_channel: public-degov
           slack_webhook: ${{ secrets.SLACK_INCOMING_WEBHOOK_URL }}
