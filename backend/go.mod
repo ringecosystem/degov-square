@@ -5,7 +5,7 @@ go 1.24.4
 require (
 	github.com/99designs/gqlgen v0.17.78
 	github.com/bwmarrin/snowflake v0.3.0
-	github.com/ethereum/go-ethereum v1.16.1
+	github.com/ethereum/go-ethereum v1.16.2
 	github.com/go-co-op/gocron/v2 v2.16.3
 	github.com/golang-jwt/jwt/v5 v5.2.2
 	github.com/golang-migrate/migrate/v4 v4.18.1
@@ -20,7 +20,7 @@ require (
 	go.uber.org/zap/exp v0.3.0
 	gopkg.in/yaml.v3 v3.0.1
 	gorm.io/driver/postgres v1.6.0
-	gorm.io/gorm v1.25.12
+	gorm.io/gorm v1.30.1
 )
 
 require (
