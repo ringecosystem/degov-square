@@ -175,7 +175,7 @@ export default function Home() {
             )
           </span>
           {selectedNetwork && (
-            <div className="bg-muted text-muted-foreground flex items-center gap-[5px] rounded-[12px] px-[8px] py-[4px] text-[12px] font-medium">
+            <div className="bg-muted text-muted-foreground hidden items-center gap-[5px] rounded-[12px] px-[8px] py-[4px] text-[12px] font-medium md:flex">
               <span>Network: {formatNetworkName(selectedNetwork)}</span>
               <button
                 onClick={clearSearch}
@@ -268,7 +268,14 @@ export default function Home() {
             isLoading={isLoading}
             emptyText="No DAOs found"
           />
-          <DaoList daoInfo={filteredAndSortedData} isLoading={isLoading} />
+          <DaoList
+            daoInfo={filteredAndSortedData}
+            isLoading={isLoading}
+            onNetworkClick={(network) => {
+              setSelectedNetwork(network);
+              setSearchQuery('');
+            }}
+          />
         </>
       }
       <MobileSearchDialog
