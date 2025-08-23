@@ -67,8 +67,12 @@ export interface DaosResponse {
 }
 
 // GraphQL Variables Types
-export interface NonceVariables {
+export interface GetNonceInput {
   length: number;
+}
+
+export interface NonceVariables {
+  input: GetNonceInput;
 }
 
 export interface LoginVariables {

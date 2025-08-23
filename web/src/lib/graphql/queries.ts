@@ -2,7 +2,7 @@ import { gql } from 'graphql-request';
 
 // Query for getting nonce
 export const QUERY_NONCE = gql`
-  query QueryNonce($input: NonceInput!) {
+  query QueryNonce($input: GetNonceInput!) {
     nonce(input: $input)
   }
 `;

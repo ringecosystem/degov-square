@@ -8,6 +8,7 @@ import { CustomTable } from '@/components/custom-table';
 import { SortableCell } from '@/components/sortable-cell';
 import { Button } from '@/components/ui/button';
 import TagGroup from '@/components/ui/tag-group';
+import { LikeButton } from '@/components/like-button';
 import { useGraphqlDaoData } from '@/hooks/useGraphqlDaoData';
 import type { DaoInfo } from '@/utils/config';
 import { formatNetworkName } from '@/utils/helper';
@@ -18,7 +19,7 @@ import { MobileSearchDialog } from './_components/MobileSearchDialog';
 type SortState = 'asc' | 'desc';
 
 export default function Home() {
-  const { daoData, isLoading } = useGraphqlDaoData();
+  const { daoData, isLoading, isLiked } = useGraphqlDaoData();
 
   const [sortState, setSortState] = useState<SortState | undefined>(undefined);
   const [searchQuery, setSearchQuery] = useState('');
@@ -102,27 +103,25 @@ export default function Home() {
       render(value) {
         return <span className="text-[16px]">{value?.proposals}</span>;
       }
+    },
+    {
+      title: 'Action',
+      key: 'action',
+      className: 'w-[20%] text-right',
+      render(value) {
+        return (
+          <div className="flex items-center justify-end gap-[10px]">
+            {/* <Link
+              href={`/setting/${value?.id}`}
+              className="cursor-pointer transition-opacity hover:opacity-80"
+            >
+              <Image src="/setting.svg" alt="setting" width={20} height={20} />
+            </Link> */}
+            <LikeButton dao={value} isLiked={isLiked(value.code)} className="flex-shrink-0" />
+          </div>
+        );
+      }
     }
-    // {
-    //   title: 'Action',
-    //   key: 'action',
-    //   className: 'w-[20%] text-right',
-    //   render(value) {
-    //     return (
-    //       <div className="flex items-center justify-end gap-[10px]">
-    //         <Link
-    //           href={`/setting/${value?.id}`}
-    //           className="cursor-pointer transition-opacity hover:opacity-80"
-    //         >
-    //           <Image src="/setting.svg" alt="setting" width={20} height={20} />
-    //         </Link>
-    //         <button className="cursor-pointer transition-opacity hover:opacity-80">
-    //           <Image src="/favorite.svg" alt="favorite" width={20} height={20} />
-    //         </button>
-    //       </div>
-    //     );
-    //   }
-    // }
   ];
 
   const handleSearch = useCallback((query: string) => {

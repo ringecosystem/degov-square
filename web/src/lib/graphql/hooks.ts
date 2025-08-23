@@ -6,7 +6,6 @@ import { createAuthorizedClient, createPublicClient } from './client';
 import { QUERY_NONCE, LOGIN_MUTATION, MODIFY_LIKE_DAO_MUTATION, QUERY_DAOS } from './queries';
 
 import type {
-  NonceResponse,
   LoginResponse,
   LoginVariables,
   ModifyLikeDaoVariables,
@@ -24,8 +23,8 @@ export const useQueryNonce = (length: number = 10) => {
     queryKey: QUERY_KEYS.nonce(length),
     queryFn: async () => {
       const client = createPublicClient();
-      const variables: NonceVariables = { length };
-      const data = await client.request<{ nonce: string }>(QUERY_NONCE, { input: variables });
+      const variables: NonceVariables = { input: { length } };
+      const data = await client.request<{ nonce: string }>(QUERY_NONCE, variables);
       return data.nonce;
     },
     staleTime: 0,
@@ -45,7 +44,9 @@ export const useLogin = () => {
     },
     onSuccess: (token) => {
       setToken(token);
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.daos() });
+      queryClient.invalidateQueries({ 
+        predicate: (query) => query.queryKey[0] === 'daos'
+      });
     },
     onError: (error) => {
       console.error('Login failed:', error);
@@ -59,10 +60,12 @@ export const useQueryDaos = () => {
   return useQuery({
     queryKey: [...QUERY_KEYS.daos(), token],
     queryFn: async () => {
+      if (!token) throw new Error('No authentication token available');
       const client = createAuthorizedClient(token);
       const data = await client.request<DaosResponse>(QUERY_DAOS);
       return data;
     },
+    enabled: !!token, // Only run query when token is available
     staleTime: 1000 * 60 * 5
   });
 };
@@ -80,7 +83,7 @@ export const useQueryDaosPublic = () => {
 };
 
 export const useModifyLikeDao = () => {
-  const { token } = useAuth();
+  const { token, setToken } = useAuth();
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -96,11 +99,45 @@ export const useModifyLikeDao = () => {
       );
       return data.modifyLikeDao;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.daos() });
+    onMutate: async (variables) => {
+      // Cancel any outgoing refetches (so they don't overwrite our optimistic update)
+      await queryClient.cancelQueries({ queryKey: QUERY_KEYS.daos() });
+
+      // Snapshot the previous value
+      const previousData = queryClient.getQueryData([...QUERY_KEYS.daos(), token]);
+
+      // Optimistically update to the new value
+      queryClient.setQueryData([...QUERY_KEYS.daos(), token], (old: DaosResponse | undefined) => {
+        if (!old) return old;
+        
+        const updatedLikedDaos = variables.input.action === 'LIKE'
+          ? [...(old.likedDaos || []), { code: variables.input.daoCode }]
+          : (old.likedDaos || []).filter((dao) => dao.code !== variables.input.daoCode);
+
+        return {
+          ...old,
+          likedDaos: updatedLikedDaos
+        };
+      });
+
+      return { previousData };
     },
-    onError: (error) => {
+    onError: (error, _variables, context) => {
+      // If the mutation fails, use the context returned from onMutate to roll back
+      if (context?.previousData) {
+        queryClient.setQueryData([...QUERY_KEYS.daos(), token], context.previousData);
+      }
+      
+      if (error instanceof Error && error.message.includes('401')) {
+        setToken(null);
+      }
       console.error('Failed to modify DAO like status:', error);
+    },
+    onSettled: () => {
+      // Always refetch after error or success
+      queryClient.invalidateQueries({ 
+        predicate: (query) => query.queryKey[0] === 'daos'
+      });
     }
   });
 };
