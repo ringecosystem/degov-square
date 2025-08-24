@@ -24,25 +24,25 @@ export function Footer() {
           </h3>
           <div className="flex flex-col gap-[20px]">
             <Link
-              href="/deploy"
+              href=" https://docs.degov.ai/integration/deploy"
               className="text-muted-foreground block text-[14px] leading-[1.2] font-normal transition-colors hover:opacity-80"
             >
               Deploy By Yourself
             </Link>
             <Link
-              href="/faqs"
+              href="https://docs.degov.ai/faqs"
               className="text-muted-foreground block text-[14px] leading-[1.2] font-normal transition-colors hover:opacity-80"
             >
               FAQs
             </Link>
             <Link
-              href="/license"
+              href="https://github.com/ringecosystem/degov/blob/main/LICENSE.md"
               className="text-muted-foreground block text-[14px] leading-[1.2] font-normal transition-colors hover:opacity-80"
             >
               License
             </Link>
             <Link
-              href="/docs"
+              href="https://docs.degov.ai"
               className="text-muted-foreground block text-[14px] leading-[1.2] font-normal transition-colors hover:opacity-80"
             >
               Docs
@@ -73,7 +73,7 @@ export function Footer() {
               Telegram
             </Link>
             <Link
-              href="https://github.com/ringecosystem/degov"
+              href="https://github.com/ringecosystem/degov "
               target="_blank"
               rel="noopener noreferrer"
               className="text-muted-foreground block text-[14px] leading-[1.2] font-normal transition-colors hover:opacity-80"
