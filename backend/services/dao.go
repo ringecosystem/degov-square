@@ -8,6 +8,7 @@ import (
 	"gopkg.in/yaml.v3"
 	"gorm.io/gorm"
 
+	"github.com/jinzhu/copier"
 	"github.com/ringecosystem/degov-apps/database"
 	dbmodels "github.com/ringecosystem/degov-apps/database/models"
 	gqlmodels "github.com/ringecosystem/degov-apps/graph/models"
@@ -32,27 +33,10 @@ func (s *DaoService) convertToGqlDao(dbDao dbmodels.Dao) *gqlmodels.Dao {
 			tags = []string{} // If JSON unmarshal fails, treat as empty array
 		}
 	}
-
-	return &gqlmodels.Dao{
-		ID:                    dbDao.ID,
-		ChainID:               int32(dbDao.ChainID),
-		ChainName:             dbDao.ChainName,
-		ChainLogo:             &dbDao.ChainLogo,
-		Name:                  dbDao.Name,
-		Code:                  dbDao.Code,
-		Logo:                  &dbDao.Logo,
-		Endpoint:              dbDao.Endpoint,
-		State:                 string(dbDao.State),
-		Tags:                  tags,
-		TimeSyncd:             dbDao.TimeSyncd,
-		MetricsCountProposals: int32(dbDao.MetricsCountProposals),
-		MetricsCountMembers:   int32(dbDao.MetricsCountMembers),
-		MetricsSumPower:       dbDao.MetricsSumPower,
-		MetricsCountVote:      int32(dbDao.MetricsCountVote),
-		LastTrackingBlock:     int32(dbDao.LastTrackingBlock),
-		Ctime:                 dbDao.CTime,
-		Utime:                 dbDao.UTime,
-	}
+	gqlDao := gqlmodels.Dao{}
+	copier.Copy(&gqlDao, &dbDao)
+	gqlDao.Tags = tags
+	return &gqlDao
 }
 
 func (s *DaoService) Inspect(baseInput types.BasicInput[string]) (*gqlmodels.Dao, error) {
@@ -106,16 +90,9 @@ func (s *DaoService) MultipleDaoChips(codes []string) ([]*gqlmodels.DaoChip, err
 
 	var chips []*gqlmodels.DaoChip
 	for _, dbChip := range dbChips {
-		chip := &gqlmodels.DaoChip{
-			ID:         dbChip.ID,
-			DaoCode:    dbChip.DaoCode,
-			ChipCode:   string(dbChip.ChipCode),
-			Flag:       dbChip.Flag,
-			Additional: &dbChip.Additional,
-			Ctime:      dbChip.CTime,
-			Utime:      dbChip.UTime,
-		}
-		chips = append(chips, chip)
+		chip := gqlmodels.DaoChip{}
+		copier.Copy(&chip, &dbChip)
+		chips = append(chips, &chip)
 	}
 
 	return chips, nil
