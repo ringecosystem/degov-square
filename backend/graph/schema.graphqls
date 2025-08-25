@@ -77,6 +77,10 @@ type DaoChip {
   utime: Time
 }
 
+type EvmAbiOutput {
+  abi: String
+}
+
 
 ### === outputs
 
@@ -112,6 +116,11 @@ input ModifyLikeDaoInput {
 }
 
 
+input EvmAbiInput {
+  chain: Int!
+  contract: String!
+}
+
 ### ==== graphql
 
 type Query {
@@ -127,6 +136,9 @@ type Query {
   # # User interactions (require authentication)
   # userLikedDaos(userId: String!): [UserLikedDao!]! @auth @authorize(rule: OWNER_ONLY)
   # userFollowedDaos(userId: String!): [UserFollowedDao!]! @auth @authorize(rule: OWNER_ONLY)
+
+  # Tool queries
+  evmAbi(input: EvmAbiInput!): EvmAbiOutput!
 }
 
 type Mutation {
