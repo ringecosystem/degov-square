@@ -5,10 +5,10 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 
 import type { ColumnType } from '@/components/custom-table';
 import { CustomTable } from '@/components/custom-table';
+import { LikeButton } from '@/components/like-button';
 import { SortableCell } from '@/components/sortable-cell';
 import { Button } from '@/components/ui/button';
 import TagGroup from '@/components/ui/tag-group';
-import { LikeButton } from '@/components/like-button';
 import { useGraphqlDaoData } from '@/hooks/useGraphqlDaoData';
 import type { DaoInfo } from '@/utils/config';
 import { formatNetworkName } from '@/utils/helper';

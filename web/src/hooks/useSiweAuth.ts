@@ -1,13 +1,13 @@
 'use client';
 
 import { useCallback, useState } from 'react';
-import { useAccount, useSignMessage, useChainId } from 'wagmi';
 import { toast } from 'react-toastify';
 import { createSiweMessage } from 'viem/siwe';
+import { useAccount, useSignMessage, useChainId } from 'wagmi';
 
-import { useLogin } from '@/lib/graphql/hooks';
 import { useAuth } from '@/contexts/auth';
 import { createPublicClient } from '@/lib/graphql/client';
+import { useLogin } from '@/lib/graphql/hooks';
 import { QUERY_NONCE } from '@/lib/graphql/queries';
 import type { NonceVariables } from '@/lib/graphql/types';
 

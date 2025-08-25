@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 
-import { useQueryDaosPublic, useQueryDaos } from '@/lib/graphql';
 import { useAuth } from '@/contexts/auth';
+import { useQueryDaosPublic, useQueryDaos } from '@/lib/graphql';
 import type { Dao } from '@/lib/graphql/types';
 import type { DaoInfo } from '@/utils/config';
 

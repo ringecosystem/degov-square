@@ -1,8 +1,7 @@
 'use client';
 
-import { useOptimistic, useTransition, useState } from 'react';
-
 import Image from 'next/image';
+import { useOptimistic, useTransition, useState } from 'react';
 import { toast } from 'react-toastify';
 
 import { useRequireAuth } from '@/hooks/useRequireAuth';

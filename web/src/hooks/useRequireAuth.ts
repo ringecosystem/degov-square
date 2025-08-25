@@ -1,7 +1,7 @@
 'use client';
 
-import { useCallback } from 'react';
 import { useConnectModal } from '@rainbow-me/rainbowkit';
+import { useCallback } from 'react';
 import { useAccount } from 'wagmi';
 
 import { useAuth } from '@/contexts/auth';
