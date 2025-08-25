@@ -39,6 +39,11 @@ enum ProposalState {
   EXPIRED
 }
 
+enum AbiType {
+  PROXY
+  IMPLEMENTATION
+}
+
 ### ==== entities
 
 type User {
@@ -90,7 +95,9 @@ type DaoChip {
 }
 
 type EvmAbiOutput {
-  abi: String
+  address: String!
+  abi: String!
+  type: AbiType!
 }
 
 type Proposal {
@@ -159,14 +166,14 @@ type Query {
   daos: [Dao!]! @auth(required: false)
   likedDaos: [Dao!]! @auth(required: false)
   subscribedDaos: [Dao!]! @auth(required: false)
-  daoConfig(input: GetDaoConfigInput): String!
+  daoConfig(input: GetDaoConfigInput): String! @auth(required: false)
 
   # # User interactions (require authentication)
   # userLikedDaos(userId: String!): [UserLikedDao!]! @auth @authorize(rule: OWNER_ONLY)
   # userFollowedDaos(userId: String!): [UserFollowedDao!]! @auth @authorize(rule: OWNER_ONLY)
 
   # Tool queries
-  evmAbi(input: EvmAbiInput!): EvmAbiOutput!
+  evmAbi(input: EvmAbiInput!): [EvmAbiOutput!] @auth(required: false)
 }
 
 type Mutation {

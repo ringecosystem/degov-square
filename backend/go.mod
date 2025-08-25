@@ -56,7 +56,6 @@ require (
 	github.com/jonboulle/clockwork v0.5.0 // indirect
 	github.com/lib/pq v1.10.9 // indirect
 	github.com/matryer/is v1.4.1 // indirect
-	github.com/nanmu42/etherscan-api v1.10.0 // indirect
 	github.com/pelletier/go-toml/v2 v2.2.3 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/relvacode/iso8601 v1.6.0 // indirect
