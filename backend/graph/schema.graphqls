@@ -73,7 +73,7 @@ type Dao {
   lastTrackingBlock: Int!
   ctime: Time!
   utime: Time
-  # liked: Boolean
+  liked: Boolean
   # subscribed: Boolean
   chips: [DaoChip!]
   lastProposal: Proposal

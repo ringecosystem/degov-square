@@ -3,6 +3,7 @@ package services
 import (
 	"encoding/json"
 	"errors"
+	"strings"
 	"time"
 
 	"gopkg.in/yaml.v3"
@@ -24,17 +25,6 @@ func NewDaoService() *DaoService {
 	return &DaoService{
 		db: database.GetDB(),
 	}
-}
-
-func (s *DaoService) filterAndConvertToGqlProposal(proposals []dbmodels.ProposalTracking, daoCode string) *gqlmodels.Proposal {
-	for _, proposal := range proposals {
-		if proposal.DaoCode == daoCode {
-			gqlProposal := gqlmodels.Proposal{}
-			copier.Copy(&gqlProposal, &proposal)
-			return &gqlProposal
-		}
-	}
-	return nil
 }
 
 func (s *DaoService) convertToGqlDao(dbDao dbmodels.Dao) *gqlmodels.Dao {
@@ -69,22 +59,6 @@ func (s *DaoService) Inspect(baseInput types.BasicInput[string]) (*gqlmodels.Dao
 	}
 	dao.Chips = chips
 
-	// Query user's liked and subscribed status if user is logged in
-	// var userID string
-	// if baseInput.User != nil {
-	// 	userID = baseInput.User.Id
-	// }
-	// userLikedDaos, userSubscribedDaos, err := s.getUserDaoInteractions(userID, []string{code})
-	// if err != nil {
-	// 	return nil, err
-	// }
-
-	// liked := userLikedDaos[code]
-	// subscribed := userSubscribedDaos[code]
-
-	// dao.Liked = &liked
-	// dao.Subscribed = &subscribed
-
 	return dao, nil
 }
 
@@ -109,46 +83,107 @@ func (s *DaoService) MultipleDaoChips(codes []string) ([]*gqlmodels.DaoChip, err
 	return chips, nil
 }
 
-// func (s *DaoService) getUserDaoInteractions(userID string, daoCodes []string) (map[string]bool, map[string]bool, error) {
-// 	likedService := NewUserLikedDaoService()
-// 	subscribedService := NewUserSubscribedDaoService()
-
-// 	userLikedDaos, err := likedService.GetUserLikedDaos(userID, daoCodes)
-// 	if err != nil {
-// 		return nil, nil, err
-// 	}
-
-// 	userSubscribedDaos, err := subscribedService.GetUserSubscribedDaos(userID, daoCodes)
-// 	if err != nil {
-// 		return nil, nil, err
-// 	}
-
-// 	return userLikedDaos, userSubscribedDaos, nil
-// }
-
 func (s *DaoService) ListDaos(baseInput types.BasicInput[*types.ListDaosInput]) ([]*gqlmodels.Dao, error) {
-	var dbDaos []dbmodels.Dao
+	input := baseInput.Input
+	var whereClauses []string
+	var params []interface{}
 
-	query := s.db.Table("dgv_dao")
-
-	// If codes are provided, filter by them
-	if baseInput.Input != nil && baseInput.Input.Codes != nil && len(*baseInput.Input.Codes) > 0 {
-		query = query.Where("code IN ?", *baseInput.Input.Codes)
+	if input != nil {
+		if input.Codes != nil && len(*input.Codes) > 0 {
+			whereClauses = append(whereClauses, "d.code IN ?")
+			params = append(params, *input.Codes)
+		}
+		if input.State != nil && len(*input.State) > 0 {
+			whereClauses = append(whereClauses, "d.state IN ?")
+			params = append(params, *input.State)
+		}
 	}
-	if baseInput.Input != nil && baseInput.Input.State != nil && len(*baseInput.Input.State) > 0 {
-		query = query.Where("state IN ?", *baseInput.Input.State)
+
+	if input == nil || input.State == nil || len(*input.State) == 0 {
+		whereClauses = append(whereClauses, "d.state = ?")
+		params = append(params, dbmodels.DaoStateActive)
+	}
+
+	whereSQL := ""
+	if len(whereClauses) > 0 {
+		whereSQL = "WHERE " + strings.Join(whereClauses, " AND ")
+	}
+
+	var allParams []interface{}
+	user := baseInput.User
+	var selectBuilder, joinBuilder, orderBuilder strings.Builder
+
+	// Base SELECT columns, with corrected aliases
+	selectBuilder.WriteString(`
+		d.*,
+		lp.id as lp_id,
+		lp.dao_code as lp_dao_code,
+		lp.chain_id as lp_chain_id,
+		lp.proposal_link as lp_proposal_link,
+		lp.proposal_id as lp_proposal_id,
+		lp.state as lp_state,
+		lp.proposal_at_block as lp_proposal_at_block,
+		lp.proposal_created_at as lp_proposal_created_at,
+		lp.times_track as lp_times_track,
+		lp.time_next_track as lp_time_next_track,
+		lp.message as lp_message,
+		lp.ctime as lp_ctime,
+		lp.utime as lp_utime
+	`)
+
+	if user == nil {
+		allParams = params
+		orderBuilder.WriteString("ORDER BY lp.proposal_created_at DESC NULLS LAST")
 	} else {
-		query = query.Where("state = ?", dbmodels.DaoStateActive)
+		allParams = append([]interface{}{user.Id}, params...)
+		selectBuilder.WriteString(", CASE WHEN uld.dao_code IS NOT NULL THEN 1 ELSE 0 END AS liked")
+		joinBuilder.WriteString("LEFT JOIN dgv_user_liked_dao uld ON d.code = uld.dao_code AND uld.user_id = ?")
+		orderBuilder.WriteString("ORDER BY liked DESC, lp.proposal_created_at DESC NULLS LAST")
 	}
 
-	if err := query.Order("seq asc").Find(&dbDaos).Error; err != nil {
+	sql := `
+		WITH LatestProposals AS (
+			SELECT * FROM (
+				SELECT *, ROW_NUMBER() OVER(PARTITION BY dao_code ORDER BY proposal_created_at DESC) as rn
+				FROM dgv_proposal_tracking
+			) RankedProposals
+			WHERE rn = 1
+		)
+		SELECT ` + selectBuilder.String() + `
+		FROM dgv_dao d
+		LEFT JOIN LatestProposals lp ON d.code = lp.dao_code ` +
+		joinBuilder.String() + ` ` +
+		whereSQL + ` ` +
+		orderBuilder.String()
+
+	// --- daoRow struct modified to use native pointer types ---
+	type daoRow struct {
+		dbmodels.Dao
+		Liked               *int    // Pointer to int
+		LpID                *string // Pointer to string
+		LpDaoCode           *string
+		LpChainID           *int64
+		LpProposalLink      *string
+		LpProposalID        *string
+		LpState             *string
+		LpProposalAtBlock   *int64
+		LpProposalCreatedAt *time.Time // Already a pointer, no change
+		LpTimesTrack        *int64
+		LpTimeNextTrack     *time.Time // Already a pointer, no change
+		LpMessage           *string
+		LpCTime             *time.Time
+		LpUTime             *time.Time // Already a pointer, no change
+	}
+
+	var rows []daoRow
+	if err := s.db.Raw(sql, allParams...).Scan(&rows).Error; err != nil {
 		return nil, err
 	}
 
 	// Extract dao codes from dbDaos
 	var daoCodes []string
-	for _, dao := range dbDaos {
-		daoCodes = append(daoCodes, dao.Code)
+	for _, row := range rows {
+		daoCodes = append(daoCodes, row.Code)
 	}
 
 	// Batch query chips for all DAOs
@@ -157,95 +192,70 @@ func (s *DaoService) ListDaos(baseInput types.BasicInput[*types.ListDaosInput]) 
 		return nil, err
 	}
 
-	proposalResults, err := s.lastProposalMultiDaos(daoCodes)
-	if err != nil {
-		return nil, err
-	}
+	daos := make([]*gqlmodels.Dao, len(rows))
+	for i, row := range rows {
+		dao := s.convertToGqlDao(row.Dao)
 
-	// Batch query user's liked and subscribed DAOs if user is logged in
-	// var userID string
-	// if baseInput.User != nil {
-	// 	userID = baseInput.User.Id
-	// }
-	// userLikedDaos, userSubscribedDaos, err := s.getUserDaoInteractions(userID, daoCodes)
-	// if err != nil {
-	// 	return nil, err
-	// }
-
-	var daos []*gqlmodels.Dao
-	for _, dbDao := range dbDaos {
-		// Check if current user liked this DAO
-		// liked := userLikedDaos[dbDao.Code]
-		// subscribed := userSubscribedDaos[dbDao.Code]
-
-		// Convert tags from JSON string to string array
-		var tags []string
-		if dbDao.Tags != "" {
-			if err := json.Unmarshal([]byte(dbDao.Tags), &tags); err != nil {
-				// If JSON unmarshal fails, treat as empty array
-				tags = []string{}
-			}
-		}
+		// Check pointer for nil and then check its value
+		liked := row.Liked != nil && *row.Liked == 1
+		dao.Liked = &liked
 
 		// Find chips for this DAO
 		var chips []*gqlmodels.DaoChip
 		for _, daoChip := range daosChips {
-			if daoChip.DaoCode == dbDao.Code {
+			if daoChip.DaoCode == dao.Code {
 				chips = append(chips, daoChip)
 			}
 		}
-
-		dao := s.convertToGqlDao(dbDao)
-
-		// dao.Liked = &liked
-		// dao.Subscribed = &subscribed
 		dao.Chips = chips
 
-		dao.LastProposal = s.filterAndConvertToGqlProposal(proposalResults, dbDao.Code)
+		// --- Mapping logic adjusted for pointers ---
+		// Check if the pointer is not nil to determine if a proposal exists
+		if row.LpID != nil {
+			proposal := &gqlmodels.Proposal{
+				ID: *row.LpID, // Dereference safely after nil check
+				// Directly assign pointers where the target type is also a pointer
+				TimeNextTrack: row.LpTimeNextTrack,
+				Utime:         row.LpUTime,
+			}
 
-		daos = append(daos, dao)
+			// Safely handle other nullable fields by checking for nil before dereferencing
+			if row.LpDaoCode != nil {
+				proposal.DaoCode = *row.LpDaoCode
+			}
+			if row.LpChainID != nil {
+				proposal.ChainID = int32(*row.LpChainID)
+			}
+			if row.LpProposalLink != nil {
+				proposal.ProposalLink = *row.LpProposalLink
+			}
+			if row.LpProposalID != nil {
+				proposal.ProposalID = *row.LpProposalID
+			}
+			if row.LpState != nil {
+				proposal.State = gqlmodels.ProposalState(*row.LpState)
+			}
+			if row.LpProposalAtBlock != nil {
+				proposal.ProposalAtBlock = int32(*row.LpProposalAtBlock)
+			}
+			if row.LpProposalCreatedAt != nil {
+				proposal.ProposalCreatedAt = *row.LpProposalCreatedAt
+			}
+			if row.LpTimesTrack != nil {
+				proposal.TimesTrack = int32(*row.LpTimesTrack)
+			}
+			if row.LpCTime != nil {
+				proposal.Ctime = *row.LpCTime
+			}
+			if row.LpMessage != nil {
+				proposal.Message = row.LpMessage // Assign pointer directly
+			}
+
+			dao.LastProposal = proposal
+		}
+		daos[i] = dao
 	}
-
 	return daos, nil
-}
-
-func (s *DaoService) lastProposalMultiDaos(daoCodes []string) ([]dbmodels.ProposalTracking, error) {
-	if len(daoCodes) == 0 {
-		return nil, nil
-	}
-
-	var results []dbmodels.ProposalTracking
-	err := s.db.Raw(`
-			WITH RankedProposals AS (
-					SELECT
-							*,
-							ROW_NUMBER() OVER(PARTITION BY dao_code ORDER BY proposal_created_at DESC) as rn
-					FROM
-							dgv_proposal_tracking
-			)
-			SELECT
-				id,
-				dao_code,
-				chain_id,
-				proposal_link,
-				proposal_id,
-				state,
-				proposal_at_block,
-				proposal_created_at,
-				times_track,
-				time_next_track,
-				ctime,
-				utime
-			FROM
-					RankedProposals
-			WHERE
-					rn = 1 AND dao_code IN ?
-    `, daoCodes).Scan(&results).Error
-
-	if err != nil {
-		return nil, err
-	}
-	return results, nil
 }
 
 func (s *DaoService) RefreshDaoAndConfig(input types.RefreshDaoAndConfigInput) error {
@@ -440,31 +450,6 @@ func NewUserLikedDaoService() *UserLikedDaoService {
 	}
 }
 
-// func (s *DaoService) LikedDaos(baseInput types.BasicInput[*string]) ([]*gqlmodels.Dao, error) {
-// 	// Get user ID from input
-// 	userID := ""
-// 	if baseInput.User != nil {
-// 		userID = baseInput.User.Id
-// 	}
-
-// 	// Get liked DAO codes for the user
-// 	likedDaos, err := s.likedService.GetUserLikedDaos(userID, nil) // Pass nil to get all liked DAOs
-// 	if err != nil {
-// 		return nil, err
-// 	}
-
-// 	// Convert liked DAO codes to a slice
-// 	var daoCodes []string
-// 	for code := range likedDaos {
-// 		daoCodes = append(daoCodes, code)
-// 	}
-
-// 	// Fetch DAOs by codes
-// 	return s.ListDaos(types.BasicInput[*types.ListDaosInput]{Input: &types.ListDaosInput{
-// 		Codes: &daoCodes,
-// 	}})
-// }
-
 // liked daos
 func (s *UserLikedDaoService) LikedDaos(baseInput types.BasicInput[*string]) ([]*gqlmodels.Dao, error) {
 	if baseInput.User == nil {
@@ -540,25 +525,6 @@ func (s *UserSubscribedDaoService) SubscribedDaos(baseInput types.BasicInput[*st
 		User: baseInput.User,
 	})
 }
-
-// func (s *UserSubscribedDaoService) GetUserSubscribedDaos(userID string, daoCodes []string) (map[string]bool, error) {
-// 	userSubscribedDaos := make(map[string]bool)
-
-// 	if userID == "" {
-// 		return userSubscribedDaos, nil
-// 	}
-
-// 	var subscribedRecords []dbmodels.UserSubscribedDao
-// 	if err := s.db.Where("user_id = ? AND dao_code IN ? AND state = ?", userID, daoCodes, "SUBSCRIBED").Find(&subscribedRecords).Error; err != nil {
-// 		return nil, err
-// 	}
-
-// 	for _, record := range subscribedRecords {
-// 		userSubscribedDaos[record.DaoCode] = true
-// 	}
-
-// 	return userSubscribedDaos, nil
-// }
 
 type DaoChipService struct {
 	db *gorm.DB
