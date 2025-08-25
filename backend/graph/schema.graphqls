@@ -97,7 +97,7 @@ type Proposal {
   proposalId: String!
   state: ProposalState!
   proposalAtBlock: Int!
-  proposalCreatedAt: Int!
+  proposalCreatedAt: Time!
   timesTrack: Int!
   timeNextTrack: Time
   message: String

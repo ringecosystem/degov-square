@@ -26,6 +26,17 @@ func NewDaoService() *DaoService {
 	}
 }
 
+func (s *DaoService) filterAndConvertToGqlProposal(proposals []dbmodels.ProposalTracking, daoCode string) *gqlmodels.Proposal {
+	for _, proposal := range proposals {
+		if proposal.DaoCode == daoCode {
+			gqlProposal := gqlmodels.Proposal{}
+			copier.Copy(&gqlProposal, &proposal)
+			return &gqlProposal
+		}
+	}
+	return nil
+}
+
 func (s *DaoService) convertToGqlDao(dbDao dbmodels.Dao) *gqlmodels.Dao {
 	var tags []string
 	if dbDao.Tags != "" {
@@ -146,6 +157,11 @@ func (s *DaoService) ListDaos(baseInput types.BasicInput[*types.ListDaosInput]) 
 		return nil, err
 	}
 
+	proposalResults, err := s.lastProposalMultiDaos(daoCodes)
+	if err != nil {
+		return nil, err
+	}
+
 	// Batch query user's liked and subscribed DAOs if user is logged in
 	// var userID string
 	// if baseInput.User != nil {
@@ -185,10 +201,51 @@ func (s *DaoService) ListDaos(baseInput types.BasicInput[*types.ListDaosInput]) 
 		// dao.Subscribed = &subscribed
 		dao.Chips = chips
 
+		dao.LastProposal = s.filterAndConvertToGqlProposal(proposalResults, dbDao.Code)
+
 		daos = append(daos, dao)
 	}
 
 	return daos, nil
+}
+
+func (s *DaoService) lastProposalMultiDaos(daoCodes []string) ([]dbmodels.ProposalTracking, error) {
+	if len(daoCodes) == 0 {
+		return nil, nil
+	}
+
+	var results []dbmodels.ProposalTracking
+	err := s.db.Raw(`
+			WITH RankedProposals AS (
+					SELECT
+							*,
+							ROW_NUMBER() OVER(PARTITION BY dao_code ORDER BY proposal_created_at DESC) as rn
+					FROM
+							dgv_proposal_tracking
+			)
+			SELECT
+				id,
+				dao_code,
+				chain_id,
+				proposal_link,
+				proposal_id,
+				state,
+				proposal_at_block,
+				proposal_created_at,
+				times_track,
+				time_next_track,
+				ctime,
+				utime
+			FROM
+					RankedProposals
+			WHERE
+					rn = 1 AND dao_code IN ?
+    `, daoCodes).Scan(&results).Error
+
+	if err != nil {
+		return nil, err
+	}
+	return results, nil
 }
 
 func (s *DaoService) RefreshDaoAndConfig(input types.RefreshDaoAndConfigInput) error {
