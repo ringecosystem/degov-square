@@ -30,6 +30,18 @@ export interface Chip {
   utime: string;
 }
 
+export interface LastProposal {
+  chainId: number;
+  daoCode: string;
+  proposalId: string;
+  proposalLink: string;
+  proposalCreatedAt: string;
+  proposalAtBlock: number;
+  state: string;
+  timeNextTrack: string;
+  timesTrack: number;
+}
+
 export interface Dao {
   id: string;
   name: string;
@@ -50,6 +62,8 @@ export interface Dao {
   endpoint: string;
   logo: string;
   chainLogo: string;
+  liked: boolean;
+  lastProposal: LastProposal | null;
 }
 
 export interface LikedDao {
@@ -62,7 +76,6 @@ export interface SubscribedDao {
 
 export interface DaosResponse {
   daos: Dao[];
-  likedDaos: LikedDao[];
   subscribedDaos: SubscribedDao[];
 }
 

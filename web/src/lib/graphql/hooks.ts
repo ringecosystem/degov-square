@@ -102,30 +102,45 @@ export const useModifyLikeDao = () => {
     onMutate: async (variables) => {
       // Cancel any outgoing refetches (so they don't overwrite our optimistic update)
       await queryClient.cancelQueries({ queryKey: QUERY_KEYS.daos() });
+      await queryClient.cancelQueries({ queryKey: ['daos-public'] });
 
-      // Snapshot the previous value
-      const previousData = queryClient.getQueryData([...QUERY_KEYS.daos(), token]);
+      // Snapshot the previous values
+      const previousAuthData = queryClient.getQueryData([...QUERY_KEYS.daos(), token]);
+      const previousPublicData = queryClient.getQueryData(['daos-public']);
 
-      // Optimistically update to the new value
-      queryClient.setQueryData([...QUERY_KEYS.daos(), token], (old: DaosResponse | undefined) => {
+      const isLikeAction = variables.input.action === 'LIKE';
+
+      // Update function to apply the optimistic update
+      const updateData = (old: DaosResponse | undefined) => {
         if (!old) return old;
         
-        const updatedLikedDaos = variables.input.action === 'LIKE'
-          ? [...(old.likedDaos || []), { code: variables.input.daoCode }]
-          : (old.likedDaos || []).filter((dao) => dao.code !== variables.input.daoCode);
+        // Update the liked field in the corresponding DAO object
+        const updatedDaos = old.daos.map((dao) => {
+          if (dao.code === variables.input.daoCode) {
+            return { ...dao, liked: isLikeAction };
+          }
+          return dao;
+        });
 
         return {
           ...old,
-          likedDaos: updatedLikedDaos
+          daos: updatedDaos
         };
-      });
+      };
 
-      return { previousData };
+      // Optimistically update both authenticated and public caches
+      queryClient.setQueryData([...QUERY_KEYS.daos(), token], updateData);
+      queryClient.setQueryData(['daos-public'], updateData);
+
+      return { previousAuthData, previousPublicData };
     },
     onError: (error, _variables, context) => {
       // If the mutation fails, use the context returned from onMutate to roll back
-      if (context?.previousData) {
-        queryClient.setQueryData([...QUERY_KEYS.daos(), token], context.previousData);
+      if (context?.previousAuthData) {
+        queryClient.setQueryData([...QUERY_KEYS.daos(), token], context.previousAuthData);
+      }
+      if (context?.previousPublicData) {
+        queryClient.setQueryData(['daos-public'], context.previousPublicData);
       }
       
       if (error instanceof Error && error.message.includes('401')) {
@@ -136,7 +151,7 @@ export const useModifyLikeDao = () => {
     onSettled: () => {
       // Always refetch after error or success
       queryClient.invalidateQueries({ 
-        predicate: (query) => query.queryKey[0] === 'daos'
+        predicate: (query) => query.queryKey[0] === 'daos' || query.queryKey[0] === 'daos-public'
       });
     }
   });

@@ -54,9 +54,18 @@ export const QUERY_DAOS = gql`
       endpoint
       logo
       chainLogo
-    }
-    likedDaos {
-      code
+      liked
+      lastProposal {
+        chainId
+        daoCode
+        proposalId
+        proposalLink
+        proposalCreatedAt
+        proposalAtBlock
+        state
+        timeNextTrack
+        timesTrack
+      }
     }
     subscribedDaos {
       code

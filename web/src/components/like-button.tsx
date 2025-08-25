@@ -25,10 +25,10 @@ export const LikeButton = ({ dao, isLiked, className }: LikeButtonProps) => {
     (_currentState, newState: boolean) => newState
   );
 
-  const { likeDao, unlikeDao, isPending } = useLikeDao();
+  const { likeDao, unlikeDao } = useLikeDao();
 
   const handleLike = async () => {
-    if (isAuthenticating || isLiking || isPending) {
+    if (isAuthenticating || isLiking) {
       return;
     }
 
@@ -64,7 +64,7 @@ export const LikeButton = ({ dao, isLiked, className }: LikeButtonProps) => {
     }
   };
 
-  const isLoading = isAuthenticating || isLiking || isPending;
+  const isLoading = isAuthenticating || isLiking;
 
   return (
     <button
