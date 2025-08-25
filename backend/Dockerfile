@@ -1,4 +1,5 @@
 FROM golang:1.25-rc-alpine AS builder
+ARG APP_VERSION
 
 WORKDIR /code
 
@@ -13,7 +14,7 @@ COPY . .
 
 # Build the application
 RUN go generate ./... \
-  && go build -o bin/degov-server cmd/main.go
+  && go build -ldflags="-X main.Version=${APP_VERSION}" -o bin/degov-server cmd/main.go
 
 # Final stage
 FROM alpine:3.22 AS runner

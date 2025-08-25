@@ -28,6 +28,17 @@ enum LikeAction {
   UNLIKE
 }
 
+enum ProposalState {
+  PENDING
+  ACTIVE
+  CANCELED
+  DEFEATED
+  SUCCEEDED
+  QUEUED
+  EXECUTED
+  EXPIRED
+}
+
 ### ==== entities
 
 type User {
@@ -62,9 +73,10 @@ type Dao {
   lastTrackingBlock: Int!
   ctime: Time!
   utime: Time
-  # liked: Boolean
+  liked: Boolean
   # subscribed: Boolean
   chips: [DaoChip!]
+  lastProposal: Proposal
 }
 
 type DaoChip {
@@ -73,6 +85,22 @@ type DaoChip {
   chipCode: String!
   flag: String!
   additional: String
+  ctime: Time!
+  utime: Time
+}
+
+type Proposal {
+  id: ID!
+  daoCode: String!
+  chainId: Int!
+  proposalLink: String!
+  proposalId: String!
+  state: ProposalState!
+  proposalAtBlock: Int!
+  proposalCreatedAt: Time!
+  timesTrack: Int!
+  timeNextTrack: Time
+  message: String
   ctime: Time!
   utime: Time
 }
