@@ -17,28 +17,22 @@ import (
 	"gorm.io/gorm"
 )
 
-// Defines the structure for the response from the Etherscan ABI API.
+// ... (etherscanAbiResponse, etherscanSourceCodeResult, etherscanSourceCodeResponse, swissKnifeResponse 结构体保持不变) ...
 type etherscanAbiResponse struct {
 	Status  string `json:"status"`
 	Message string `json:"message"`
 	Result  string `json:"result"`
 }
-
-// Defines the structure for the result from the Etherscan Source Code API.
 type etherscanSourceCodeResult struct {
 	Proxy          string `json:"Proxy"`
 	ABI            string `json:"ABI"`
 	Implementation string `json:"Implementation"`
 }
-
-// Defines the structure for the response from the Etherscan Source Code API.
 type etherscanSourceCodeResponse struct {
 	Status  string                      `json:"status"`
 	Message string                      `json:"message"`
 	Result  []etherscanSourceCodeResult `json:"result"`
 }
-
-// Defines the structure for the response from the Swiss-knife API.
 type swissKnifeResponse struct {
 	Status string `json:"status"`
 	Data   struct {
@@ -62,8 +56,6 @@ func NewEvmChainService() *EvmChainService {
 	}
 }
 
-// GetAbi is the main entry point for fetching contract ABI details.
-// It returns a slice of results: one for an implementation, or two (proxy + implementation) for a proxy.
 func (s *EvmChainService) GetAbi(input gqlmodels.EvmAbiInput) ([]*gqlmodels.EvmAbiOutput, error) {
 	initialAddress := strings.ToLower(input.Contract)
 	chainId := int(input.Chain)
@@ -71,84 +63,80 @@ func (s *EvmChainService) GetAbi(input gqlmodels.EvmAbiInput) ([]*gqlmodels.EvmA
 	// Use a map to detect circular dependencies in proxy contracts.
 	visited := make(map[string]bool)
 
-	// 1. Get information for the initial contract address.
-	initialContractInfo, err := s.getContractInfo(chainId, initialAddress)
+	// 1. Parse the contract chain (which may be a single implementation or multiple levels of proxy).
+	fullChain, err := s.resolveProxyChain(chainId, initialAddress, visited)
 	if err != nil {
-		return nil, fmt.Errorf("could not resolve initial contract %s on chain %d: %w", initialAddress, chainId, err)
+		return nil, fmt.Errorf("could not resolve contract chain for %s on chain %d: %w", initialAddress, chainId, err)
 	}
 
-	// 2. Check if the initial contract is a proxy or an implementation.
-	if initialContractInfo.Type == dbmodels.ContractsAbiTypeImplementation {
-		// It's a simple implementation contract.
+	// 2. Converts a database model to a GQL output model.
+	var results []*gqlmodels.EvmAbiOutput
+	for _, contract := range fullChain {
+		var gqlType gqlmodels.AbiType
+		switch contract.Type {
+		case dbmodels.ContractsAbiTypeProxy:
+			gqlType = gqlmodels.AbiTypeProxy
+		case dbmodels.ContractsAbiTypeImplementation:
+			gqlType = gqlmodels.AbiTypeImplementation
+		default:
+			return nil, fmt.Errorf("unknown contract type '%s' for address %s", contract.Type, contract.Address)
+		}
+
 		output := &gqlmodels.EvmAbiOutput{
-			Address:        initialContractInfo.Address,
-			Abi:            initialContractInfo.Abi,
-			Type:           gqlmodels.AbiTypeImplementation,
-			Implementation: &initialContractInfo.Implementation,
+			Address:        contract.Address,
+			Abi:            contract.Abi,
+			Type:           gqlType,
+			Implementation: &contract.Implementation,
 		}
-		return []*gqlmodels.EvmAbiOutput{output}, nil
+		results = append(results, output)
 	}
 
-	if initialContractInfo.Type == dbmodels.ContractsAbiTypeProxy {
-		// It's a proxy contract. We need to find the final implementation.
-		visited[initialAddress] = true // Mark initial address as visited.
-
-		finalImplementation, err := s.findFinalImplementation(chainId, initialContractInfo.Implementation, visited)
-		if err != nil {
-			return nil, fmt.Errorf("could not find final implementation for proxy %s: %w", initialAddress, err)
-		}
-
-		proxyOutput := &gqlmodels.EvmAbiOutput{
-			Address:        initialAddress,
-			Abi:            initialContractInfo.Abi,
-			Type:           gqlmodels.AbiTypeProxy,
-			Implementation: &initialContractInfo.Implementation,
-		}
-		implementationOutput := &gqlmodels.EvmAbiOutput{
-			Address:        finalImplementation.Address,
-			Abi:            finalImplementation.Abi,
-			Type:           gqlmodels.AbiTypeImplementation,
-			Implementation: &finalImplementation.Implementation,
-		}
-
-		return []*gqlmodels.EvmAbiOutput{proxyOutput, implementationOutput}, nil
-	}
-
-	return nil, fmt.Errorf("resolved contract %s has an unknown type: %s", initialAddress, initialContractInfo.Type)
+	return results, nil
 }
 
-// findFinalImplementation recursively traverses the proxy chain to find the ultimate implementation contract.
-func (s *EvmChainService) findFinalImplementation(chainId int, address string, visited map[string]bool) (*dbmodels.ContractsAbi, error) {
+// resolveProxyChain Recursively walk the proxy chain to find and return all contracts in the chain (including intermediate proxies and final implementations).
+func (s *EvmChainService) resolveProxyChain(chainId int, address string, visited map[string]bool) ([]*dbmodels.ContractsAbi, error) {
 	// Prevent circular proxy references.
 	if visited[address] {
 		return nil, fmt.Errorf("circular proxy dependency detected for address %s", address)
 	}
 	visited[address] = true
 
-	// Get info for the current address in the chain.
+	// Get the contract information of the current address.
 	contractInfo, err := s.getContractInfo(chainId, address)
 	if err != nil {
 		return nil, err
 	}
 
-	// Check the type to decide whether to continue recursion.
-	if contractInfo.Type == dbmodels.ContractsAbiTypeProxy && contractInfo.Implementation != "" {
-		slog.Info("Following proxy chain...", "from", address, "to", contractInfo.Implementation)
-		return s.findFinalImplementation(chainId, contractInfo.Implementation, visited)
-	}
-
+	// Check the type to decide whether to continue recursing.
 	if contractInfo.Type == dbmodels.ContractsAbiTypeImplementation {
-		// Found the end of the chain.
-		return contractInfo, nil
+		// The end of the chain is reached (the contract is fulfilled), and a slice containing only itself is returned.
+		return []*dbmodels.ContractsAbi{contractInfo}, nil
 	}
 
-	return nil, fmt.Errorf("contract %s is not a valid implementation or proxy", address)
+	if contractInfo.Type == dbmodels.ContractsAbiTypeProxy {
+		if contractInfo.Implementation == "" {
+			return nil, fmt.Errorf("proxy contract %s has no implementation address", address)
+		}
+		slog.Info("Following proxy chain...", "from", address, "to", contractInfo.Implementation)
+
+		// Call recursively to get the rest of the chain.
+		remainingChain, err := s.resolveProxyChain(chainId, contractInfo.Implementation, visited)
+		if err != nil {
+			return nil, err
+		}
+
+		// Prepend the current contract to the front of the result chain and return it.
+		return append([]*dbmodels.ContractsAbi{contractInfo}, remainingChain...), nil
+	}
+
+	return nil, fmt.Errorf("contract %s has an unknown or invalid type: %s", address, contractInfo.Type)
 }
 
-// getContractInfo fetches information for a single contract address from various sources.
-// It checks DB -> Explorer -> Swiss-knife and caches the result. It is not recursive.
+// getContractInfo retrieves information about a single contract address from various sources.
+// It checks the database -> blockchain explorer -> Swiss-knife in this order, and caches the results. It is not recursive.
 func (s *EvmChainService) getContractInfo(chainId int, address string) (*dbmodels.ContractsAbi, error) {
-	// 1. Try to read from the database.
+	// 1. Try reading from the database.
 	dbContract, err := s.getAbiFromDB(chainId, address)
 	if err != nil {
 		slog.Error("Error querying database", "chainId", chainId, "address", address, "error", err)
@@ -158,7 +146,7 @@ func (s *EvmChainService) getContractInfo(chainId int, address string) (*dbmodel
 		return dbContract, nil
 	}
 
-	// 2. If not in DB, try fetching from an Explorer.
+	// 2. If it's not in the database, try getting it from the browser.
 	slog.Info("Contract not in DB, trying Explorer...", "chainId", chainId, "address", address)
 	explorerContract, err := s.getAbiFromExplorer(chainId, address)
 	if err != nil {
@@ -171,7 +159,7 @@ func (s *EvmChainService) getContractInfo(chainId int, address string) (*dbmodel
 		return explorerContract, nil
 	}
 
-	// 3. If not in Explorer, try fetching from Swiss-knife.
+	// 3. If it's not available in your browser, try getting it from Swiss-knife.
 	slog.Info("Contract not in Explorer, trying Swiss-knife...", "chainId", chainId, "address", address)
 	swissKnifeContract, err := s.getAbiFromSwissKnife(chainId, address)
 	if err != nil {
@@ -188,43 +176,36 @@ func (s *EvmChainService) getContractInfo(chainId int, address string) (*dbmodel
 	return nil, fmt.Errorf("contract info not found for address %s on chain %d", address, chainId)
 }
 
-// getAbiFromDB retrieves contract information from the database.
 func (s *EvmChainService) getAbiFromDB(chainId int, address string) (*dbmodels.ContractsAbi, error) {
 	var contract dbmodels.ContractsAbi
 	err := s.db.Where("chain_id = ? AND address = ?", chainId, address).First(&contract).Error
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return nil, nil // Record not found is not considered an error.
+			return nil, nil
 		}
-		return nil, err // Other database errors.
+		return nil, err
 	}
 	return &contract, nil
 }
 
-// getAbiFromExplorer fetches the ABI from a blockchain explorer (like Etherscan).
 func (s *EvmChainService) getAbiFromExplorer(chainId int, address string) (*dbmodels.ContractsAbi, error) {
 	cfg := config.GetConfig()
 	apiUrl := cfg.GetString("ETHERSCAN_API_URL")
 	apiKey := cfg.GetString("ETHERSCAN_API_KEY")
-
 	if apiUrl == "" {
 		return nil, fmt.Errorf("ETHERSCAN_API_URL is not set in environment variables")
 	}
-
-	// 1. First, call getsourcecode to check if it's a proxy contract.
 	sourceCodeUrl := fmt.Sprintf("%s/v2/api?apikey=%s&chainid=%d&module=contract&action=getsourcecode&address=%s", apiUrl, apiKey, chainId, address)
 	resp, err := s.httpClient.Get(sourceCodeUrl)
 	if err != nil {
 		return nil, fmt.Errorf("failed to call explorer source code API: %w", err)
 	}
 	defer resp.Body.Close()
-
 	body, _ := io.ReadAll(resp.Body)
 	var sourceCodeResp etherscanSourceCodeResponse
 	if err := json.Unmarshal(body, &sourceCodeResp); err != nil {
 		return nil, fmt.Errorf("failed to parse explorer source code response: %w", err)
 	}
-
 	if sourceCodeResp.Status == "1" && len(sourceCodeResp.Result) > 0 && sourceCodeResp.Result[0].Proxy == "1" && sourceCodeResp.Result[0].Implementation != "" {
 		slog.Info("Explorer identified contract as a proxy", "address", address, "implementation", sourceCodeResp.Result[0].Implementation)
 		return &dbmodels.ContractsAbi{
@@ -235,21 +216,17 @@ func (s *EvmChainService) getAbiFromExplorer(chainId int, address string) (*dbmo
 			Implementation: strings.ToLower(sourceCodeResp.Result[0].Implementation),
 		}, nil
 	}
-
-	// 2. If it's not a proxy, call getabi to get the ABI.
 	abiUrl := fmt.Sprintf("%s/v2/api?apikey=%s&chainid=%d&module=contract&action=getabi&address=%s", apiUrl, apiKey, chainId, address)
 	resp, err = s.httpClient.Get(abiUrl)
 	if err != nil {
 		return nil, fmt.Errorf("failed to call explorer ABI API: %w", err)
 	}
 	defer resp.Body.Close()
-
 	body, _ = io.ReadAll(resp.Body)
 	var abiResp etherscanAbiResponse
 	if err := json.Unmarshal(body, &abiResp); err != nil {
 		return nil, fmt.Errorf("failed to parse explorer ABI response: %w", err)
 	}
-
 	if abiResp.Status == "1" && abiResp.Result != "Contract source code not verified" && abiResp.Result != "" {
 		slog.Info("Explorer found ABI for contract", "address", address)
 		return &dbmodels.ContractsAbi{
@@ -259,32 +236,26 @@ func (s *EvmChainService) getAbiFromExplorer(chainId int, address string) (*dbmo
 			Abi:     abiResp.Result,
 		}, nil
 	}
-
-	return nil, nil // Not found in Explorer.
+	return nil, nil
 }
 
-// getAbiFromSwissKnife fetches the ABI from the Swiss-knife.xyz API.
 func (s *EvmChainService) getAbiFromSwissKnife(chainId int, address string) (*dbmodels.ContractsAbi, error) {
 	url := fmt.Sprintf("https://swiss-knife.xyz/api/evm/contract/%s?network=%d", address, chainId)
 	req, _ := http.NewRequest("GET", url, nil)
 	req.Header.Set("User-Agent", "degov-app/1.0")
-
 	resp, err := s.httpClient.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to call Swiss-knife API: %w", err)
 	}
 	defer resp.Body.Close()
-
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("swiss-knife API returned non-200 status: %d", resp.StatusCode)
 	}
-
 	body, _ := io.ReadAll(resp.Body)
 	var swissResp swissKnifeResponse
 	if err := json.Unmarshal(body, &swissResp); err != nil {
 		return nil, fmt.Errorf("failed to parse Swiss-knife response: %w", err)
 	}
-
 	if swissResp.Status == "success" {
 		if swissResp.Data.IsProxy && swissResp.Data.ImplementationAddress != "" {
 			slog.Info("Swiss-knife identified contract as a proxy", "address", address, "implementation", swissResp.Data.ImplementationAddress)
@@ -305,24 +276,18 @@ func (s *EvmChainService) getAbiFromSwissKnife(chainId int, address string) (*db
 			}, nil
 		}
 	}
-
-	return nil, nil // Not found in Swiss-knife.
+	return nil, nil
 }
 
-// saveAbiToDB saves or updates contract information without using ON CONFLICT.
 func (s *EvmChainService) saveAbiToDB(contract *dbmodels.ContractsAbi) error {
 	var existing dbmodels.ContractsAbi
 	err := s.db.Where("chain_id = ? AND address = ?", contract.ChainId, contract.Address).First(&existing).Error
-
 	if err != nil && err != gorm.ErrRecordNotFound {
-		return err // A genuine database error.
+		return err
 	}
-
-	// The record already exists, so update it.
 	if err == nil {
 		existing.Type = contract.Type
 		existing.Implementation = contract.Implementation
-		// Only overwrite the ABI if the new one is not empty.
 		if contract.Abi != "" {
 			existing.Abi = contract.Abi
 		}
@@ -330,8 +295,6 @@ func (s *EvmChainService) saveAbiToDB(contract *dbmodels.ContractsAbi) error {
 		existing.UTime = &now
 		return s.db.Save(&existing).Error
 	}
-
-	// The record does not exist, so create it.
 	contract.ID = utils.NextIDString()
 	contract.CTime = time.Now()
 	now := time.Now()
