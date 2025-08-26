@@ -3,6 +3,9 @@ name: Check
 on:
   pull_request:
 
+permissions:
+  pull-requests: write
+
 jobs:
   check-web:
     name: Check Web
