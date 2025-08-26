@@ -6,13 +6,13 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
-	"os"
 	"strings"
 	"time"
 
 	"github.com/ringecosystem/degov-apps/database"
 	dbmodels "github.com/ringecosystem/degov-apps/database/models"
 	gqlmodels "github.com/ringecosystem/degov-apps/graph/models"
+	"github.com/ringecosystem/degov-apps/internal/config"
 	"github.com/ringecosystem/degov-apps/internal/utils"
 	"gorm.io/gorm"
 )
@@ -199,15 +199,16 @@ func (s *EvmChainService) getAbiFromDB(chainId int, address string) (*dbmodels.C
 
 // getAbiFromExplorer fetches the ABI from a blockchain explorer (like Etherscan).
 func (s *EvmChainService) getAbiFromExplorer(chainId int, address string) (*dbmodels.ContractsAbi, error) {
-	apiUrl := os.Getenv(fmt.Sprintf("ETHERSCAN_API_URL_%d", chainId))
-	apiKey := os.Getenv(fmt.Sprintf("ETHERSCAN_API_KEY_%d", chainId))
+	cfg := config.GetConfig()
+	apiUrl := cfg.GetString("ETHERSCAN_API_URL")
+	apiKey := cfg.GetString("ETHERSCAN_API_KEY")
 
 	if apiUrl == "" {
-		return nil, fmt.Errorf("ETHERSCAN_API_URL_%d is not set in environment variables", chainId)
+		return nil, fmt.Errorf("ETHERSCAN_API_URL is not set in environment variables")
 	}
 
 	// 1. First, call getsourcecode to check if it's a proxy contract.
-	sourceCodeUrl := fmt.Sprintf("%s?module=contract&action=getsourcecode&address=%s&apikey=%s", apiUrl, address, apiKey)
+	sourceCodeUrl := fmt.Sprintf("%s?chainid=%d&module=contract&action=getsourcecode&address=%s&apikey=%s", apiUrl, chainId, address, apiKey)
 	resp, err := s.httpClient.Get(sourceCodeUrl)
 	if err != nil {
 		return nil, fmt.Errorf("failed to call explorer source code API: %w", err)
@@ -270,7 +271,7 @@ func (s *EvmChainService) getAbiFromSwissKnife(chainId int, address string) (*db
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("Swiss-knife API returned non-200 status: %d", resp.StatusCode)
+		return nil, fmt.Errorf("swiss-knife API returned non-200 status: %d", resp.StatusCode)
 	}
 
 	body, _ := io.ReadAll(resp.Body)
