@@ -27,6 +27,7 @@ type etherscanAbiResponse struct {
 // Defines the structure for the result from the Etherscan Source Code API.
 type etherscanSourceCodeResult struct {
 	Proxy          string `json:"Proxy"`
+	ABI            string `json:"ABI"`
 	Implementation string `json:"Implementation"`
 }
 
@@ -208,7 +209,7 @@ func (s *EvmChainService) getAbiFromExplorer(chainId int, address string) (*dbmo
 	}
 
 	// 1. First, call getsourcecode to check if it's a proxy contract.
-	sourceCodeUrl := fmt.Sprintf("%s?chainid=%d&module=contract&action=getsourcecode&address=%s&apikey=%s", apiUrl, chainId, address, apiKey)
+	sourceCodeUrl := fmt.Sprintf("%s/v2/api?apikey=%s&chainid=%d&module=contract&action=getsourcecode&address=%s", apiUrl, apiKey, chainId, address)
 	resp, err := s.httpClient.Get(sourceCodeUrl)
 	if err != nil {
 		return nil, fmt.Errorf("failed to call explorer source code API: %w", err)
@@ -227,12 +228,13 @@ func (s *EvmChainService) getAbiFromExplorer(chainId int, address string) (*dbmo
 			ChainId:        chainId,
 			Address:        address,
 			Type:           dbmodels.ContractsAbiTypeProxy,
+			Abi:            sourceCodeResp.Result[0].ABI,
 			Implementation: strings.ToLower(sourceCodeResp.Result[0].Implementation),
 		}, nil
 	}
 
 	// 2. If it's not a proxy, call getabi to get the ABI.
-	abiUrl := fmt.Sprintf("%s?module=contract&action=getabi&address=%s&apikey=%s", apiUrl, address, apiKey)
+	abiUrl := fmt.Sprintf("%s/v2/api?apikey=%s&chainid=%d&module=contract&action=getabi&address=%s", apiUrl, apiKey, chainId, address)
 	resp, err = s.httpClient.Get(abiUrl)
 	if err != nil {
 		return nil, fmt.Errorf("failed to call explorer ABI API: %w", err)
