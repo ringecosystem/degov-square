@@ -17,7 +17,6 @@ import (
 	"gorm.io/gorm"
 )
 
-// ... (etherscanAbiResponse, etherscanSourceCodeResult, etherscanSourceCodeResponse, swissKnifeResponse 结构体保持不变) ...
 type etherscanAbiResponse struct {
 	Status  string `json:"status"`
 	Message string `json:"message"`
