@@ -29,12 +29,14 @@ export default function Home() {
     let filtered = daoData;
 
     if (selectedNetwork) {
-      filtered = daoData.filter(
+      filtered = filtered.filter(
         (dao) => dao.network.toLowerCase() === selectedNetwork.toLowerCase()
       );
-    } else if (searchQuery.trim()) {
+    }
+
+    if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase().trim();
-      filtered = daoData.filter(
+      filtered = filtered.filter(
         (dao) =>
           dao.name.toLowerCase().includes(query) ||
           dao.network.toLowerCase().includes(query) ||
