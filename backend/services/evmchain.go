@@ -81,9 +81,10 @@ func (s *EvmChainService) GetAbi(input gqlmodels.EvmAbiInput) ([]*gqlmodels.EvmA
 	if initialContractInfo.Type == dbmodels.ContractsAbiTypeImplementation {
 		// It's a simple implementation contract.
 		output := &gqlmodels.EvmAbiOutput{
-			Address: initialContractInfo.Address,
-			Abi:     initialContractInfo.Abi,
-			Type:    gqlmodels.AbiTypeImplementation,
+			Address:        initialContractInfo.Address,
+			Abi:            initialContractInfo.Abi,
+			Type:           gqlmodels.AbiTypeImplementation,
+			Implementation: &initialContractInfo.Implementation,
 		}
 		return []*gqlmodels.EvmAbiOutput{output}, nil
 	}
@@ -98,14 +99,16 @@ func (s *EvmChainService) GetAbi(input gqlmodels.EvmAbiInput) ([]*gqlmodels.EvmA
 		}
 
 		proxyOutput := &gqlmodels.EvmAbiOutput{
-			Address: initialAddress,
-			Abi:     initialContractInfo.Abi,
-			Type:    gqlmodels.AbiTypeProxy,
+			Address:        initialAddress,
+			Abi:            initialContractInfo.Abi,
+			Type:           gqlmodels.AbiTypeProxy,
+			Implementation: &initialContractInfo.Implementation,
 		}
 		implementationOutput := &gqlmodels.EvmAbiOutput{
-			Address: finalImplementation.Address,
-			Abi:     finalImplementation.Abi,
-			Type:    gqlmodels.AbiTypeImplementation,
+			Address:        finalImplementation.Address,
+			Abi:            finalImplementation.Abi,
+			Type:           gqlmodels.AbiTypeImplementation,
+			Implementation: &finalImplementation.Implementation,
 		}
 
 		return []*gqlmodels.EvmAbiOutput{proxyOutput, implementationOutput}, nil

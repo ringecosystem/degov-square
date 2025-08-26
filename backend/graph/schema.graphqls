@@ -96,6 +96,7 @@ type DaoChip {
 
 type EvmAbiOutput {
   address: String!
+  implementation: String
   abi: String!
   type: AbiType!
 }
