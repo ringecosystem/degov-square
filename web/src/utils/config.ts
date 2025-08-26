@@ -36,6 +36,7 @@ export interface DaoInfo extends Record<string, unknown> {
   chainId?: string;
   chips?: Chip[];
   lastProposal?: LastProposal | null;
+  onNetworkClick?: (network: string) => void;
 }
 
 export async function loadConfig(): Promise<ConfigData> {

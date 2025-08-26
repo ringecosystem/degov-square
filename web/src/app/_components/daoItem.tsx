@@ -9,7 +9,7 @@ import { formatNetworkName } from '@/utils/helper';
 type DaoItemProps = DaoInfo;
 
 export const DaoItem = (dao: DaoItemProps) => {
-  const { name, daoIcon, network, proposals, website, favorite } = dao;
+  const { name, daoIcon, network, proposals, website, favorite, onNetworkClick } = dao;
 
   return (
     <div className="bg-card flex flex-col gap-[10px] rounded-[14px] p-[10px]">

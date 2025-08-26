@@ -72,7 +72,7 @@ export default function Home() {
     const others = filtered.filter((dao) => !dao.favorite).sort(sortByLastProposal);
 
     return [...favorites, ...others];
-  }, [daoData, searchQuery, sortState]);
+  }, [daoData, searchQuery, selectedNetwork, sortState]);
 
   const columns: ColumnType<DaoInfo>[] = [
     {
@@ -246,7 +246,7 @@ export default function Home() {
             >
               Search
             </button>
-            {(searchQuery || selectedNetwork) && (
+            {searchQuery && (
               <button
                 onClick={clearSearch}
                 className="text-muted-foreground hover:text-foreground hidden items-center justify-center md:flex"
