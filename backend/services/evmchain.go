@@ -98,7 +98,7 @@ func (s *EvmChainService) GetAbi(input gqlmodels.EvmAbiInput) ([]*gqlmodels.EvmA
 
 		proxyOutput := &gqlmodels.EvmAbiOutput{
 			Address: initialAddress,
-			Abi:     "", // Proxy itself has no ABI.
+			Abi:     initialContractInfo.Abi,
 			Type:    gqlmodels.AbiTypeProxy,
 		}
 		implementationOutput := &gqlmodels.EvmAbiOutput{
