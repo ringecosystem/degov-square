@@ -218,18 +218,6 @@ export default function Home() {
               )}
             )
           </span>
-          {selectedNetwork && (
-            <div className="bg-muted text-muted-foreground hidden items-center gap-[5px] rounded-[12px] px-[8px] py-[4px] text-[12px] font-medium md:flex">
-              <span>Network: {formatNetworkName(selectedNetwork)}</span>
-              <button
-                onClick={clearSearch}
-                className="cursor-pointer rounded-full p-[2px] transition-colors hover:opacity-80"
-                title="Clear network filter"
-              >
-                <Image src="/close.svg" alt="clear" width={10} height={10} />
-              </button>
-            </div>
-          )}
         </div>
         <div className="flex items-center gap-[20px]">
           <div className="bg-card flex h-[36px] w-[109px] items-center gap-[13px] rounded-[19px] border px-[17px] py-[9px] md:h-auto md:w-[388px] md:gap-[10px]">
@@ -237,7 +225,7 @@ export default function Home() {
             <input
               className="placeholder:text-muted-foreground hidden h-[17px] w-full outline-none placeholder:text-[14px] md:block"
               placeholder="Search by DAO name or Chain name"
-              value={searchQuery}
+              value={selectedNetwork ? formatNetworkName(selectedNetwork) : searchQuery}
               onChange={handleDesktopSearch}
             />
             <button
@@ -246,7 +234,7 @@ export default function Home() {
             >
               Search
             </button>
-            {searchQuery && (
+            {(searchQuery || selectedNetwork) && (
               <button
                 onClick={clearSearch}
                 className="text-muted-foreground hover:text-foreground hidden items-center justify-center md:flex"
