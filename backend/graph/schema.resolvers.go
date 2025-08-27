@@ -33,6 +33,16 @@ func (r *mutationResolver) ModifyLikeDao(ctx context.Context, input gqlmodels.Mo
 	return result, err
 }
 
+// SubscribeDao is the resolver for the subscribeDao field.
+func (r *mutationResolver) SubscribeDao(ctx context.Context, input gqlmodels.SubscribeDaoInput) (*gqlmodels.SubscribedDaoOutput, error) {
+	panic(fmt.Errorf("not implemented: SubscribeDao - subscribeDao"))
+}
+
+// SubscribeProposal is the resolver for the subscribeProposal field.
+func (r *mutationResolver) SubscribeProposal(ctx context.Context, input gqlmodels.SubscribeProposalInput) (*gqlmodels.SubscribedProposalOutput, error) {
+	panic(fmt.Errorf("not implemented: SubscribeProposal - subscribeProposal"))
+}
+
 // Nonce is the resolver for the nonce field.
 func (r *queryResolver) Nonce(ctx context.Context, input gqlmodels.GetNonceInput) (string, error) {
 	nonce, err := r.authService.Nonce(input)
