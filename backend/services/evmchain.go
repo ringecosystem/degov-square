@@ -121,12 +121,17 @@ func (s *EvmChainService) resolveProxyChain(chainId int, address string, visited
 
 		// Call recursively to get the rest of the chain.
 		remainingChain, err := s.resolveProxyChain(chainId, contractInfo.Implementation, visited)
+
+		results := []*dbmodels.ContractsAbi{contractInfo}
 		if err != nil {
-			return nil, err
+			if contractInfo.Address == contractInfo.Implementation {
+				slog.Warn("Circular proxy detected", "address", address, "err", err)
+				return results, nil
+			}
 		}
 
 		// Prepend the current contract to the front of the result chain and return it.
-		return append([]*dbmodels.ContractsAbi{contractInfo}, remainingChain...), nil
+		return append(results, remainingChain...), err
 	}
 
 	return nil, fmt.Errorf("contract %s has an unknown or invalid type: %s", address, contractInfo.Type)
