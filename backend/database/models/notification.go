@@ -15,8 +15,8 @@ const (
 )
 
 const (
-	NotificationStatusSentOk   = "SENT_OK"
-	NotificationStatusSentFail = "SENT_FAIL"
+	NotificationStatusSentOk   NotificationStatus = "SENT_OK"
+	NotificationStatusSentFail NotificationStatus = "SENT_FAIL"
 )
 
 type NotificationRecord struct {

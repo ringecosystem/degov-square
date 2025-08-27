@@ -128,6 +128,9 @@ type LoginOutput {
   token: String!
 }
 
+type UserSubscribedDao {
+  daoCode: String!
+}
 
 ### === inputs
 
@@ -155,6 +158,10 @@ input ModifyLikeDaoInput {
 input EvmAbiInput {
   chain: Int!
   contract: String!
+}
+
+input SubscribeDaoInput {
+
 }
 
 ### ==== graphql
@@ -185,6 +192,8 @@ type Mutation {
   modifyLikeDao(input: ModifyLikeDaoInput!): Boolean! @auth
   # followDao(input: FollowDaoInput!): UserFollowedDao! @auth @authorize(rule: OWNER_ONLY)
   # unfollowDao(userId: String!, daoCode: String!): Boolean! @auth @authorize(rule: OWNER_ONLY)
+
+  subscribeDao(input: SubscribeDaoInput!): UserSubscribedDao! @auth
 }
 
 # type Subscription {
