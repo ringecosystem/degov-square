@@ -225,7 +225,7 @@ export default function Home() {
               </button>
             )}
           </div>
-          <div className="fixed right-0 bottom-[20px] left-[20px] grid grid-cols-[calc(100%-20px)_calc(50%-20px)] gap-[20px] md:static md:grid-cols-1 md:justify-end">
+          <div className="hidden gap-[20px] md:flex">
             <Button variant="outline" className="hidden rounded-[100px]" asChild>
               <Link href="/add/existing">Add Existing DAO</Link>
             </Button>
@@ -247,31 +247,6 @@ export default function Home() {
       </div>
 
       {
-        // <>
-        //   {filteredAndSortedData.length === 0 && searchQuery ? (
-        //     <div className="text-muted-foreground py-8 text-center">
-        //       <div className="mb-4">
-        //         <Image
-        //           src="/empty.svg"
-        //           alt="No results"
-        //           width={64}
-        //           height={64}
-        //           className="mx-auto"
-        //         />
-        //       </div>
-        //       <p className="text-lg">No DAOs found</p>
-        //       <p className="text-sm">Try searching with different keywords</p>
-        //       <button
-        //         onClick={clearSearch}
-        //         className="mt-2 text-blue-500 underline hover:text-blue-600"
-        //       >
-        //         View all DAOs
-        //       </button>
-        //     </div>
-        //   ) : (
-
-        //   )}
-        // </>
         <>
           <CustomTable
             columns={columns}
@@ -284,6 +259,18 @@ export default function Home() {
           <DaoList daoInfo={filteredAndSortedData} isLoading={isLoading} />
         </>
       }
+
+      <div className="flex flex-col py-[20px] md:hidden">
+        <Button variant="outline" className="!border-foreground rounded-[100px] p-[10px]" asChild>
+          <Link
+            href="https://docs.google.com/forms/u/1/d/e/1FAIpQLSdYjX87_xxTQFLl-brEj87vxU3ucH682nYy3bGUNpR4nL9HaQ/viewform"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            With Assistance
+          </Link>
+        </Button>
+      </div>
       <MobileSearchDialog
         open={openSearchDialog}
         onOpenChange={setOpenSearchDialog}
