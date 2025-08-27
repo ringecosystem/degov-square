@@ -4,11 +4,14 @@ import (
 	"time"
 )
 
+type NotificationType string
+type NotificationStatus string
+
 const (
-	NotificationTypeNewProposal     = "NEW_PROPOSAL"
-	NotificationTypeVote            = "VOTE"
-	NotificationTypeStatus          = "STATUS"
-	NotificationTypeVoteEndReminder = "VOTE_END_REMINDER"
+	NotificationTypeNewProposal     NotificationType = "NEW_PROPOSAL"
+	NotificationTypeVote            NotificationType = "VOTE"
+	NotificationTypeStatus          NotificationType = "STATUS"
+	NotificationTypeVoteEndReminder NotificationType = "VOTE_END_REMINDER"
 )
 
 const (
@@ -17,18 +20,17 @@ const (
 )
 
 type NotificationRecord struct {
-	ID         string    `gorm:"column:id;type:varchar(50);primaryKey" json:"id"`
-	ChainID    int       `gorm:"column:chain_id;not null" json:"chain_id"`
-	ChainName  string    `gorm:"column:chain_name;type:varchar(255);not null" json:"chain_name"`
-	DaoName    string    `gorm:"column:dao_name;type:varchar(255);not null" json:"dao_name"`
-	DaoCode    string    `gorm:"column:dao_code;type:varchar(50);not null" json:"dao_code"`
-	Type       string    `gorm:"column:type;type:varchar(50);not null" json:"type"`
-	TargetID   *string   `gorm:"column:target_id;type:varchar(255)" json:"target_id,omitempty"`
-	UserID     string    `gorm:"column:user_id;type:varchar(50);not null" json:"user_id"`
-	Status     string    `gorm:"column:status;type:varchar(50);not null" json:"status"`
-	Message    *string   `gorm:"column:message;type:text" json:"message,omitempty"`
-	RetryTimes int       `gorm:"column:retry_times;not null;default:0" json:"retry_times"`
-	CTime      time.Time `gorm:"column:ctime;default:now()" json:"ctime"`
+	ID         string             `gorm:"column:id;type:varchar(50);primaryKey" json:"id"`
+	ChainID    int                `gorm:"column:chain_id;not null" json:"chain_id"`
+	DaoCode    string             `gorm:"column:dao_code;type:varchar(50);not null" json:"dao_code"`
+	Type       NotificationType   `gorm:"column:type;type:varchar(50);not null" json:"type"`
+	ProposalID string             `gorm:"column:proposal_id;type:varchar(255)" json:"proposal_id"`
+	VoteID     *string            `gorm:"column:vote_id;type:varchar(255)" json:"vote_id,omitempty"`
+	UserID     string             `gorm:"column:user_id;type:varchar(50);not null" json:"user_id"`
+	Status     NotificationStatus `gorm:"column:status;type:varchar(50);not null" json:"status"`
+	Message    *string            `gorm:"column:message;type:text" json:"message,omitempty"`
+	RetryTimes int                `gorm:"column:retry_times;not null;default:0" json:"retry_times"`
+	CTime      time.Time          `gorm:"column:ctime;default:now()" json:"ctime"`
 }
 
 func (NotificationRecord) TableName() string {
