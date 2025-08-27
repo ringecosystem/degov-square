@@ -15,14 +15,11 @@ import '@rainbow-me/rainbowkit/styles.css';
 export function DAppProvider({ children }: React.PropsWithChildren<unknown>) {
   const rainbowKitTheme = useRainbowKitTheme();
   const authStatus = useAuthStatus();
-  
+
   return (
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>
-        <RainbowKitAuthenticationProvider
-          adapter={authenticationAdapter}
-          status={authStatus}
-        >
+        <RainbowKitAuthenticationProvider adapter={authenticationAdapter} status={authStatus}>
           <RainbowKitProvider
             theme={rainbowKitTheme}
             locale="en-US"

@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
@@ -25,7 +26,15 @@ import (
 	"github.com/vektah/gqlparser/v2/ast"
 )
 
+var Version string
+
 func main() {
+	if Version == "" {
+		fmt.Println("Version: Debug")
+	} else {
+		fmt.Println("Version:", Version)
+	}
+
 	// Initialize the application
 	internal.AppInit()
 

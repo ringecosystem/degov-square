@@ -29,6 +29,10 @@ type ListDaosInput struct {
 	Codes *[]string            `json:"codes"`
 }
 
+type QueryLastProposalMultiDaos struct {
+	Daos []string `json:"daos"`
+}
+
 // DaoConfig represents the structure of individual DAO config files
 type DaoConfig struct {
 	Name                  string `yaml:"name"`
