@@ -136,7 +136,7 @@ export default function Home() {
         const proposalTime = value?.lastProposal?.proposalCreatedAt;
 
         if (!proposalLink) {
-          return <span className="text-[16px]">-</span>;
+          return <span className="text-[16px]">No proposals yet</span>;
         }
 
         return (
