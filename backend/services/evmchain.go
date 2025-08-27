@@ -65,7 +65,7 @@ func (s *EvmChainService) GetAbi(input gqlmodels.EvmAbiInput) ([]*gqlmodels.EvmA
 	// 1. Parse the contract chain (which may be a single implementation or multiple levels of proxy).
 	fullChain, err := s.resolveProxyChain(chainId, initialAddress, visited)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("could not resolve contract chain for %s on chain %d: %w", initialAddress, chainId, err)
 	}
 
 	// 2. Converts a database model to a GQL output model.
@@ -99,8 +99,8 @@ func (s *EvmChainService) resolveProxyChain(chainId int, address string, visited
 	if visited[address] {
 		return nil, fmt.Errorf("circular proxy dependency detected for address %s", address)
 	}
-
 	visited[address] = true
+
 	// Get the contract information of the current address.
 	contractInfo, err := s.getContractInfo(chainId, address)
 	if err != nil {
