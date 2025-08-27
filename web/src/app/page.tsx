@@ -315,6 +315,8 @@ export default function Home() {
         onOpenChange={setOpenSearchDialog}
         onConfirm={handleSearch}
         initialQuery={searchQuery}
+        selectedNetwork={selectedNetwork}
+        formatNetworkName={formatNetworkName}
       />
     </div>
   );
