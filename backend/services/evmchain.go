@@ -65,7 +65,7 @@ func (s *EvmChainService) GetAbi(input gqlmodels.EvmAbiInput) ([]*gqlmodels.EvmA
 	// 1. Parse the contract chain (which may be a single implementation or multiple levels of proxy).
 	fullChain, err := s.resolveProxyChain(chainId, initialAddress, visited)
 	if err != nil {
-		return nil, fmt.Errorf("could not resolve contract chain for %s on chain %d: %w", initialAddress, chainId, err)
+		return nil, err
 	}
 
 	// 2. Converts a database model to a GQL output model.
@@ -99,8 +99,8 @@ func (s *EvmChainService) resolveProxyChain(chainId int, address string, visited
 	if visited[address] {
 		return nil, fmt.Errorf("circular proxy dependency detected for address %s", address)
 	}
-	visited[address] = true
 
+	visited[address] = true
 	// Get the contract information of the current address.
 	contractInfo, err := s.getContractInfo(chainId, address)
 	if err != nil {
@@ -121,12 +121,17 @@ func (s *EvmChainService) resolveProxyChain(chainId int, address string, visited
 
 		// Call recursively to get the rest of the chain.
 		remainingChain, err := s.resolveProxyChain(chainId, contractInfo.Implementation, visited)
+
+		results := []*dbmodels.ContractsAbi{contractInfo}
 		if err != nil {
-			return nil, err
+			if contractInfo.Address == contractInfo.Implementation {
+				slog.Warn("Circular proxy detected", "address", address, "err", err)
+				return results, nil
+			}
 		}
 
 		// Prepend the current contract to the front of the result chain and return it.
-		return append([]*dbmodels.ContractsAbi{contractInfo}, remainingChain...), nil
+		return append(results, remainingChain...), err
 	}
 
 	return nil, fmt.Errorf("contract %s has an unknown or invalid type: %s", address, contractInfo.Type)
