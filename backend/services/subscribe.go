@@ -321,6 +321,9 @@ func (s *SubscribeService) ListSubscribeUser(input types.ListSubscribeUserInput)
 	if len(strategies) == 0 {
 		return nil, fmt.Errorf("no strategies provided for feature %s", input.Feature)
 	}
+	if input.EventTime == nil {
+		return nil, fmt.Errorf("missing event time")
+	}
 
 	// build base sql
 	sql := "SELECT DISTINCT f.user_id, f.user_address, f.chain_id, f.dao_code FROM dgv_subscribed_feature AS f " +
@@ -343,8 +346,8 @@ func (s *SubscribeService) ListSubscribeUser(input types.ListSubscribeUserInput)
 		sql += "AND f.proposal_id IS NULL "
 	}
 
-	// require either dao subscription active or proposal subscription active
-	sql += "AND (d.state = 'ACTIVE' OR p.state = 'ACTIVE') "
+	sql += "AND ((d.state = 'ACTIVE' AND d.ctime <= ?) OR (p.state = 'ACTIVE' AND p.ctime <= ?)) "
+	queryParams = append(queryParams, input.EventTime, input.EventTime)
 
 	// ordering and pagination
 	if input.Limit <= 0 {
