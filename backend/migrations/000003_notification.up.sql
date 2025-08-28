@@ -4,6 +4,9 @@ ALTER TABLE dgv_user_subscribed_dao
 DROP COLUMN enable_new_proposal,
 DROP COLUMN enable_voting_end_reminder;
 
+alter table dgv_user_subscribed_dao
+add column utime timestamp;
+
 ----# dgv_notification_record
 alter table dgv_notification_record
 drop column chain_name,
