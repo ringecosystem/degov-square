@@ -16,6 +16,7 @@ const (
 )
 
 const (
+	NotificationStateWait     NotificationState = "WAIT"
 	NotificationStateSentOk   NotificationState = "SENT_OK"
 	NotificationStateSentFail NotificationState = "SENT_FAIL"
 )

@@ -17,6 +17,7 @@ type TrackingVoteTask struct {
 	daoService       *services.DaoService
 	proposalService  *services.ProposalService
 	daoConfigService *services.DaoConfigService
+	subscribeService *services.SubscribeService
 }
 
 func NewTrackingVoteTask() *TrackingVoteTask {
@@ -24,6 +25,7 @@ func NewTrackingVoteTask() *TrackingVoteTask {
 		daoService:       services.NewDaoService(),
 		proposalService:  services.NewProposalService(),
 		daoConfigService: services.NewDaoConfigService(),
+		subscribeService: services.NewSubscribeService(),
 	}
 }
 
@@ -92,6 +94,8 @@ func (t *TrackingVoteTask) trackingVoteByProposal(input trackingVoteInput) error
 	indexer := input.indexer
 	proposal := input.proposal
 	lastOffsetVote := proposal.OffsetTrackingVote
+
+	allVotes := []internal.VoteCast{}
 	for {
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		votes, err := indexer.QueryVotesOffset(ctx, lastOffsetVote, proposal.ProposalId)
@@ -106,9 +110,10 @@ func (t *TrackingVoteTask) trackingVoteByProposal(input trackingVoteInput) error
 			break
 		}
 
-		for _, vote := range votes {
-
-		}
+		allVotes = append(allVotes, votes...)
+		lastOffsetVote += len(votes)
+		t.proposalService.UpdateOffsetTrackingVote(proposal.ProposalId, proposal.DaoCode, lastOffsetVote)
 	}
+
 	return nil
 }

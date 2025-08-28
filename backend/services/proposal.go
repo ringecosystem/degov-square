@@ -135,6 +135,15 @@ func (s *ProposalService) UpdateProposalTrackingError(proposalID, daoCode string
 		}).Error
 }
 
+func (s *ProposalService) UpdateOffsetTrackingVote(proposalID, daoCode string, offset int) error {
+	return s.db.Model(&dbmodels.ProposalTracking{}).
+		Where("proposal_id = ? AND dao_code = ?", proposalID, daoCode).
+		Updates(map[string]interface{}{
+			"offset_tracking_vote": offset,
+			"utime":                time.Now(),
+		}).Error
+}
+
 // ProposalStateCount returns count of proposals by DAO and state for active DAOs
 func (s *ProposalService) ProposalStateCount() ([]types.ProposalStateCountResult, error) {
 	var results []types.ProposalStateCountResult
