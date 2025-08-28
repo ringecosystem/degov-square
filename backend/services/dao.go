@@ -3,6 +3,7 @@ package services
 import (
 	"encoding/json"
 	"errors"
+	"log/slog"
 	"strings"
 	"time"
 
@@ -405,6 +406,20 @@ func (s *DaoConfigService) Inspect(daoCode string) (*dbmodels.DgvDaoConfig, erro
 		return nil, err
 	}
 	return &config, nil
+}
+
+func (s *DaoConfigService) StandardConfig(daoCode string) (*types.DaoConfig, error) {
+	rawDaoConfig, err := s.Inspect(daoCode)
+	if err != nil {
+		return nil, err
+	}
+
+	var daoConfig types.DaoConfig
+	if err := yaml.Unmarshal([]byte(rawDaoConfig.Config), &daoConfig); err != nil {
+		slog.Error("failed to parse daoconfig", "err", err)
+		return nil, err
+	}
+	return &daoConfig, nil
 }
 
 func (s *DaoConfigService) RawConfig(input gqlmodels.GetDaoConfigInput) (string, error) {

@@ -39,6 +39,22 @@ type ProposalsResponse struct {
 	Proposals []Proposal `json:"proposals"`
 }
 
+type VoteCast struct {
+	ProposalID      string `json:"proposalId"`
+	Reason          string `json:"reason"`
+	Support         int    `json:"support"`
+	Voter           string `json:"voter"`
+	Weight          string `json:"weight"`
+	TransactionHash string `json:"transactionHash"`
+	ID              string `json:"id"`
+	BlockNumber     string `json:"blockNumber"`
+	BlockTimestamp  string `json:"blockTimestamp"`
+}
+
+type VoteCastsResponse struct {
+	VoteCasts []VoteCast `json:"voteCasts"`
+}
+
 // DegovIndexer handles GraphQL queries to fetch governance data
 type DegovIndexer struct {
 	client   *graphql.Client
@@ -93,10 +109,10 @@ func (d *DegovIndexer) QueryGlobalDataMetrics(ctx context.Context) (*DataMetrics
 	return nil, fmt.Errorf("no data metrics found for global id")
 }
 
-// QueryProposalsAfterBlock executes the QueryProposalsAfterBlock GraphQL query and returns proposals list
-func (d *DegovIndexer) QueryProposalsAfterBlock(ctx context.Context, offset int) ([]Proposal, error) {
+// QueryProposalsOffset executes the QueryProposalsOffset GraphQL query and returns proposals list
+func (d *DegovIndexer) QueryProposalsOffset(ctx context.Context, offset int) ([]Proposal, error) {
 	query := `
-		query QueryProposalsAfterBlock($limit: Int!, $offset: Int!) {
+		query QueryProposalsOffset($limit: Int!, $offset: Int!) {
 			proposals(orderBy: blockNumber_ASC_NULLS_FIRST, limit: $limit, offset: $offset) {
 				id
 				blockNumber
@@ -112,8 +128,37 @@ func (d *DegovIndexer) QueryProposalsAfterBlock(ctx context.Context, offset int)
 
 	var response ProposalsResponse
 	if err := d.client.Run(ctx, req, &response); err != nil {
-		return nil, fmt.Errorf("failed to execute QueryProposalsAfterBlock: %w", err)
+		return nil, fmt.Errorf("failed to execute QueryProposalsOffset: %w", err)
 	}
 
 	return response.Proposals, nil
+}
+
+func (d *DegovIndexer) QueryVotesOffset(ctx context.Context, offset int, proposalId string) ([]VoteCast, error) {
+	query := `
+		query QueryVotesOffset($limit: Int!, $offset: Int!, $proposalId: String!) {
+			voteCasts(orderBy: blockNumber_ASC_NULLS_FIRST, limit: $limit, offset: $offset, where: {proposalId_eq: $proposalId}) {
+				proposalId
+				reason
+				support
+				voter
+				weight
+				transactionHash
+				id
+				blockNumber
+				blockTimestamp
+			}
+		}
+	`
+	req := graphql.NewRequest(query)
+	req.Var("limit", 30)
+	req.Var("offset", offset)
+	req.Var("proposalId", proposalId)
+
+	var response VoteCastsResponse
+	if err := d.client.Run(ctx, req, &response); err != nil {
+		return nil, fmt.Errorf("failed to execute QueryVotesOffset: %w", err)
+	}
+
+	return response.VoteCasts, nil
 }

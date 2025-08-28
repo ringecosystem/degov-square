@@ -15,11 +15,13 @@ add column utime timestamp;
 alter table dgv_notification_record
 drop column chain_name,
 drop column dao_name,
-drop column target_id;
+drop column target_id,
+drop column status;
 
 alter table dgv_notification_record
 add column proposal_id varchar(255) not null,
-add column vote_id varchar(255);
+add column vote_id varchar(255),
+add column state varchar(50) not null;
 
 COMMENT ON COLUMN dgv_notification_record.proposal_id IS 'proposal id';
 

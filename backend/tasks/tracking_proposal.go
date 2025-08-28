@@ -7,8 +7,6 @@ import (
 	"strconv"
 	"time"
 
-	"gopkg.in/yaml.v3"
-
 	dbmodels "github.com/ringecosystem/degov-apps/database/models"
 	gqlmodels "github.com/ringecosystem/degov-apps/graph/models"
 	"github.com/ringecosystem/degov-apps/internal"
@@ -55,17 +53,9 @@ func (t *TrackingProposalTask) TrackingProposal() error {
 
 	// Iterate through each DAO and get its config from DaoConfigService
 	for _, dao := range daos {
-		// Get DAO config from DaoConfigService by DaoCode
-		daoConfigRaw, err := t.daoConfigService.Inspect(dao.Code)
+		daoConfig, err := t.daoConfigService.StandardConfig(dao.Code)
 		if err != nil {
 			slog.Error("Failed to get DAO config", "dao_code", dao.Code, "error", err)
-			continue
-		}
-
-		// Convert YAML string to types.DaoConfig
-		var daoConfig types.DaoConfig
-		if err := yaml.Unmarshal([]byte(daoConfigRaw.Config), &daoConfig); err != nil {
-			slog.Error("Failed to parse DAO config YAML", "dao_code", dao.Code, "error", err)
 			continue
 		}
 
@@ -91,7 +81,7 @@ func (t *TrackingProposalTask) TrackingProposal() error {
 	return nil
 }
 
-func (t *TrackingProposalTask) storeProposals(dao *gqlmodels.Dao, daoConfig types.DaoConfig) error {
+func (t *TrackingProposalTask) storeProposals(dao *gqlmodels.Dao, daoConfig *types.DaoConfig) error {
 	indexer := internal.NewDegovIndexer(daoConfig.Indexer.Endpoint)
 
 	offsetTrackingProposal := int(dao.OffsetTrackingProposal)
@@ -106,7 +96,7 @@ func (t *TrackingProposalTask) storeProposals(dao *gqlmodels.Dao, daoConfig type
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 
 		// Query proposals after the last tracked block (correct parameter order)
-		proposals, err := indexer.QueryProposalsAfterBlock(ctx, lastOffsetTrackingProposal)
+		proposals, err := indexer.QueryProposalsOffset(ctx, lastOffsetTrackingProposal)
 		cancel()
 
 		if err != nil {
@@ -197,7 +187,7 @@ func (t *TrackingProposalTask) storeProposals(dao *gqlmodels.Dao, daoConfig type
 	return nil
 }
 
-func (t *TrackingProposalTask) updateProposalsStates(dao *gqlmodels.Dao, daoConfig types.DaoConfig) error {
+func (t *TrackingProposalTask) updateProposalsStates(dao *gqlmodels.Dao, daoConfig *types.DaoConfig) error {
 	proposals, err := t.proposalService.TrackingStateProposals(types.TrackingStateProposalsInput{
 		DaoCode: dao.Code,
 		States: []dbmodels.ProposalState{

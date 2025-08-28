@@ -17,13 +17,15 @@ DROP COLUMN utime;
 -- Remove the newly added columns
 ALTER TABLE dgv_notification_record
 DROP COLUMN proposal_id,
-DROP COLUMN vote_id;
+DROP COLUMN vote_id,
+DROP COLUMN state;
 
 -- Add back the dropped columns
 ALTER TABLE dgv_notification_record
 ADD COLUMN chain_name varchar(255) not null,
 ADD COLUMN dao_name varchar(255) not null,
-ADD COLUMN target_id varchar(255);
+ADD COLUMN target_id varchar(255),
+ADD COLUMN status varchar(50) not null;
 
 ----# subscribe feature rollback
 -- Drop the table created in up.sql

@@ -69,25 +69,6 @@ func (s *SubscribeService) buildDaoFeatures(
 		return features
 	}
 
-	// determine feature strategies; default to false -> "disable" when nil
-	enableProposal := false
-	enableVotingEndReminder := false
-	if featureInput.EnableProposal != nil && *featureInput.EnableProposal {
-		enableProposal = true
-	}
-	if featureInput.EnableVotingEndReminder != nil && *featureInput.EnableVotingEndReminder {
-		enableVotingEndReminder = true
-	}
-
-	proposalStrategy := "disable"
-	if enableProposal {
-		proposalStrategy = "enable"
-	}
-	votingEndStrategy := "disable"
-	if enableVotingEndReminder {
-		votingEndStrategy = "enable"
-	}
-
 	if featureInput.EnableProposal != nil {
 		features = append(features, dbmodels.SubscribeFeature{
 			ID:       utils.NextIDString(),
@@ -95,7 +76,7 @@ func (s *SubscribeService) buildDaoFeatures(
 			DaoCode:  input.DaoCode,
 			UserID:   input.UserID,
 			Feature:  dbmodels.SubscribeFeatureEnableProposal,
-			Strategy: proposalStrategy,
+			Strategy: utils.SafeBoolString(featureInput.EnableProposal),
 		})
 	}
 
@@ -106,7 +87,61 @@ func (s *SubscribeService) buildDaoFeatures(
 			DaoCode:  input.DaoCode,
 			UserID:   input.UserID,
 			Feature:  dbmodels.SubscribeFeatureEnableVotingEndReminder,
-			Strategy: votingEndStrategy,
+			Strategy: utils.SafeBoolString(featureInput.EnableVotingEndReminder),
+		})
+	}
+
+	return features
+}
+
+// buildProposalFeatures builds SubscribeFeature records for a proposal based on the
+// provided FeatureSettingsProposalInput. It defaults missing booleans to false and
+// only creates feature rows for fields that were explicitly provided (non-nil).
+func (s *SubscribeService) buildProposalFeatures(input *buildProposalFeatureInput) []dbmodels.SubscribeFeature {
+	featureInput := input.FeatureInput
+	var features []dbmodels.SubscribeFeature
+
+	if featureInput == nil {
+		return features
+	}
+
+	pid := input.ProposalID
+	if featureInput.EnableVotingEndReminder != nil {
+		features = append(features, dbmodels.SubscribeFeature{
+			ID:          utils.NextIDString(),
+			ChainID:     input.ChainID,
+			DaoCode:     input.DaoCode,
+			UserID:      input.UserID,
+			UserAddress: input.UserAddress,
+			Feature:     dbmodels.SubscribeFeatureEnableVotingEndReminder,
+			Strategy:    utils.SafeBoolString(featureInput.EnableVotingEndReminder),
+			ProposalID:  &pid,
+		})
+	}
+
+	if featureInput.EnableVoted != nil {
+		features = append(features, dbmodels.SubscribeFeature{
+			ID:          utils.NextIDString(),
+			ChainID:     input.ChainID,
+			DaoCode:     input.DaoCode,
+			UserID:      input.UserID,
+			UserAddress: input.UserAddress,
+			Feature:     dbmodels.SubscribeFeatureEnableVoted,
+			Strategy:    utils.SafeBoolString(featureInput.EnableVoted),
+			ProposalID:  &pid,
+		})
+	}
+
+	if featureInput.EnableStateChanged != nil {
+		features = append(features, dbmodels.SubscribeFeature{
+			ID:          utils.NextIDString(),
+			ChainID:     input.ChainID,
+			DaoCode:     input.DaoCode,
+			UserID:      input.UserID,
+			UserAddress: input.UserAddress,
+			Feature:     dbmodels.SubscribeFeatureEnableStateChanged,
+			Strategy:    utils.SafeBoolString(featureInput.EnableStateChanged),
+			ProposalID:  &pid,
 		})
 	}
 
@@ -280,6 +315,52 @@ func (s *SubscribeService) SubscribeProposal(baseInput types.BasicInput[gqlmodel
 	return output, nil
 }
 
+func (s *SubscribeService) ListSubscribeUser(input types.ListSubscribeUserInput) ([]types.ListSubscribedUserOutput, error) {
+	// strategies - default to ["enable"] if not provided
+	strategies := input.Strategies
+	if len(strategies) == 0 {
+		return nil, fmt.Errorf("no strategies provided for feature %s", input.Feature)
+	}
+
+	// build base sql
+	sql := "SELECT DISTINCT f.user_id, f.user_address, f.chain_id, f.dao_code FROM dgv_subscribed_feature AS f " +
+		"LEFT JOIN dgv_user_subscribed_dao AS d ON f.user_id = d.user_id AND f.dao_code = d.dao_code " +
+		"LEFT JOIN dgv_user_subscribed_proposal AS p ON f.user_id = p.user_id AND f.proposal_id = p.proposal_id " +
+		"WHERE f.feature = ? AND f.strategy in ? AND f.dao_code = ? "
+
+	queryParams := make([]interface{}, 0)
+	queryParams = append(queryParams, input.Feature)
+	queryParams = append(queryParams, strategies)
+
+	// dao code
+	queryParams = append(queryParams, input.DaoCode)
+
+	// proposal id handling
+	if input.ProposalId != nil {
+		sql += "AND (f.proposal_id = ? OR f.proposal_id IS NULL) "
+		queryParams = append(queryParams, *input.ProposalId)
+	} else {
+		sql += "AND f.proposal_id IS NULL "
+	}
+
+	// require either dao subscription active or proposal subscription active
+	sql += "AND (d.state = 'ACTIVE' OR p.state = 'ACTIVE') "
+
+	// ordering and pagination
+	if input.Limit <= 0 {
+		input.Limit = 100
+	}
+	sql += "ORDER BY f.ctime ASC, f.user_id ASC LIMIT ? OFFSET ?"
+	queryParams = append(queryParams, input.Limit, input.Offset)
+
+	var outputs []types.ListSubscribedUserOutput
+	if err := s.db.Raw(sql, queryParams...).Scan(&outputs).Error; err != nil {
+		return nil, err
+	}
+
+	return outputs, nil
+}
+
 func (s *SubscribeService) resetDaoFeatures(input resetDaoFeaturesInput) error {
 	if err := s.db.Where(
 		"dao_code = ? and (user_id =? or user_address = ?)",
@@ -295,87 +376,6 @@ func (s *SubscribeService) resetDaoFeatures(input resetDaoFeaturesInput) error {
 		return s.db.CreateInBatches(input.Features, len(input.Features)).Error
 	}
 	return nil
-}
-
-// buildProposalFeatures builds SubscribeFeature records for a proposal based on the
-// provided FeatureSettingsProposalInput. It defaults missing booleans to false and
-// only creates feature rows for fields that were explicitly provided (non-nil).
-func (s *SubscribeService) buildProposalFeatures(input *buildProposalFeatureInput) []dbmodels.SubscribeFeature {
-	featureInput := input.FeatureInput
-	var features []dbmodels.SubscribeFeature
-
-	if featureInput == nil {
-		return features
-	}
-
-	// determine feature strategies; default to false -> "disable" when nil
-	enableVotingEndReminder := false
-	enableVoted := false
-	enableStateChanged := false
-	if featureInput.EnableVotingEndReminder != nil && *featureInput.EnableVotingEndReminder {
-		enableVotingEndReminder = true
-	}
-	if featureInput.EnableVoted != nil && *featureInput.EnableVoted {
-		enableVoted = true
-	}
-	if featureInput.EnableStateChanged != nil && *featureInput.EnableStateChanged {
-		enableStateChanged = true
-	}
-
-	votingEndStrategy := "disable"
-	if enableVotingEndReminder {
-		votingEndStrategy = "enable"
-	}
-	votedStrategy := "disable"
-	if enableVoted {
-		votedStrategy = "enable"
-	}
-	stateChangedStrategy := "disable"
-	if enableStateChanged {
-		stateChangedStrategy = "enable"
-	}
-
-	pid := input.ProposalID
-	if featureInput.EnableVotingEndReminder != nil {
-		features = append(features, dbmodels.SubscribeFeature{
-			ID:          utils.NextIDString(),
-			ChainID:     input.ChainID,
-			DaoCode:     input.DaoCode,
-			UserID:      input.UserID,
-			UserAddress: input.UserAddress,
-			Feature:     dbmodels.SubscribeFeatureEnableVotingEndReminder,
-			Strategy:    votingEndStrategy,
-			ProposalID:  &pid,
-		})
-	}
-
-	if featureInput.EnableVoted != nil {
-		features = append(features, dbmodels.SubscribeFeature{
-			ID:          utils.NextIDString(),
-			ChainID:     input.ChainID,
-			DaoCode:     input.DaoCode,
-			UserID:      input.UserID,
-			UserAddress: input.UserAddress,
-			Feature:     dbmodels.SubscribeFeatureEnableVoted,
-			Strategy:    votedStrategy,
-			ProposalID:  &pid,
-		})
-	}
-
-	if featureInput.EnableStateChanged != nil {
-		features = append(features, dbmodels.SubscribeFeature{
-			ID:          utils.NextIDString(),
-			ChainID:     input.ChainID,
-			DaoCode:     input.DaoCode,
-			UserID:      input.UserID,
-			UserAddress: input.UserAddress,
-			Feature:     dbmodels.SubscribeFeatureEnableStateChanged,
-			Strategy:    stateChangedStrategy,
-			ProposalID:  &pid,
-		})
-	}
-
-	return features
 }
 
 // resetProposalFeatures deletes existing features scoped to the dao + proposal + user

@@ -65,13 +65,10 @@ func (s *ProposalService) StoreProposalTracking(input types.ProposalTrackingInpu
 func (s *ProposalService) TrackingStateProposals(input types.TrackingStateProposalsInput) ([]*dbmodels.ProposalTracking, error) {
 	var proposals []*dbmodels.ProposalTracking
 
-	// // Define the states we want to track
-	// trackingStates := []dbmodels.ProposalState{
-	// 	dbmodels.ProposalStatePending,
-	// 	dbmodels.ProposalStateActive,
-	// 	dbmodels.ProposalStateSucceeded,
-	// 	dbmodels.ProposalStateQueued,
-	// }
+	timesTrack := 10
+	if input.TimesTrack != nil {
+		timesTrack = *input.TimesTrack
+	}
 
 	// Query proposals with specific states, tracking limits, and time conditions
 	err := s.db.Where(`dao_code = ?
@@ -80,7 +77,7 @@ func (s *ProposalService) TrackingStateProposals(input types.TrackingStatePropos
 		AND (time_next_track IS NULL OR time_next_track <= ?)`,
 		input.DaoCode,
 		input.States,
-		10,
+		timesTrack,
 		time.Now(),
 	).
 		Order("proposal_created_at asc").
