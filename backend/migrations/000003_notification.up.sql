@@ -45,3 +45,5 @@ COMMENT ON COLUMN dgv_subscribed_feature.feature IS 'subscribe feature';
 COMMENT ON COLUMN dgv_subscribed_feature.strategy IS 'subscribe strategy';
 
 COMMENT ON COLUMN dgv_subscribed_feature.proposal_id IS 'proposal id';
+
+

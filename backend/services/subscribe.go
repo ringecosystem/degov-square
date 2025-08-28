@@ -54,6 +54,11 @@ type resetProposalFeaturesInput struct {
 	Features   []dbmodels.SubscribeFeature
 }
 
+type InspectSubscribeProposalInput struct {
+	DaoCode    string
+	ProposalID string
+}
+
 func (s *SubscribeService) buildDaoFeatures(
 	input *buildDaoFeatureInput,
 ) []dbmodels.SubscribeFeature {
@@ -188,6 +193,26 @@ func (s *SubscribeService) InspectSubscribeDao(baseInput types.BasicInput[string
 	return &subscribedDao, nil
 }
 
+func (s *SubscribeService) InspectSubscribeProposal(baseInput types.BasicInput[InspectSubscribeProposalInput]) (*dbmodels.UserSubscribedProposal, error) {
+	user := baseInput.User
+	input := baseInput.Input
+
+	var subscribedProposal dbmodels.UserSubscribedProposal
+	err := s.db.
+		Where(
+			"(user_id = ? or user_address= ?) AND dao_code = ? AND proposal_id = ?",
+			user.Id,
+			user.Address,
+			input.DaoCode,
+			input.ProposalID,
+		).
+		First(&subscribedProposal).Error
+	if err != nil {
+		return nil, err
+	}
+	return &subscribedProposal, nil
+}
+
 func (s *SubscribeService) SubscribeProposal(baseInput types.BasicInput[gqlmodels.SubscribeProposalInput]) (*gqlmodels.SubscribedProposalOutput, error) {
 	user := baseInput.User
 	spInput := baseInput.Input
@@ -201,6 +226,34 @@ func (s *SubscribeService) SubscribeProposal(baseInput types.BasicInput[gqlmodel
 		return nil, fmt.Errorf("failed to inspect existing DAO: %w", err)
 	}
 	chainId := int(existingDao.ChainID)
+
+	// check existing subscribed proposal
+	existingSubscribedProposal, err1 := s.InspectSubscribeProposal(types.BasicInput[InspectSubscribeProposalInput]{
+		User: user,
+		Input: InspectSubscribeProposalInput{
+			DaoCode:    spInput.DaoCode,
+			ProposalID: spInput.ProposalID,
+		},
+	})
+	if err1 == nil {
+		existingSubscribedProposal.UTime = time.Now()
+		if err := s.db.Save(existingSubscribedProposal).Error; err != nil {
+			return nil, err
+		}
+	} else {
+		newSubscribedProposal := dbmodels.UserSubscribedProposal{
+			ID:          utils.NextIDString(),
+			ChainID:     chainId,
+			DaoCode:     spInput.DaoCode,
+			UserID:      user.Id,
+			UserAddress: user.Address,
+			State:       dbmodels.SubscribeStateActive,
+			ProposalID:  spInput.ProposalID,
+		}
+		if err := s.db.Create(&newSubscribedProposal).Error; err != nil {
+			return nil, err
+		}
+	}
 
 	features := s.buildProposalFeatures(&buildProposalFeatureInput{
 		ChainID:      chainId,
