@@ -46,4 +46,6 @@ COMMENT ON COLUMN dgv_subscribed_feature.strategy IS 'subscribe strategy';
 
 COMMENT ON COLUMN dgv_subscribed_feature.proposal_id IS 'proposal id';
 
-
+----# dgv_proposal_tracking
+alter table dgv_proposal_tracking
+add column last_tracking_vote_offset int default 0;
