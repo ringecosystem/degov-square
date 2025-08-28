@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"strconv"
 	"time"
 
 	dbmodels "github.com/ringecosystem/degov-apps/database/models"
@@ -93,49 +94,157 @@ func (t *TrackingVoteTask) TrackingVote() error {
 }
 
 func (t *TrackingVoteTask) trackingVoteByProposal(input trackingVoteInput) error {
-	indexer := input.indexer
-	proposal := input.proposal
-	lastOffsetVote := proposal.OffsetTrackingVote
+	// 1. Fetch and process all new votes at once
+	processedVotes, err := t.fetchAllAndProcessVotes(input)
+	if err != nil {
+		return err // error already wrapped internally
+	}
 
-	allVotes := []internal.VoteCast{}
+	if len(processedVotes) == 0 {
+		slog.Info("No new votes to process", "dao_code", input.proposal.DaoCode, "proposal", input.proposal.ProposalId)
+		return nil
+	}
+
+	// 2. Find the earliest event time from processed votes
+	minEventTime := findMinEventTime(processedVotes)
+
+	// 3. Page through subscribed users using the earliest time and generate notifications
+	return t.generateAndStoreNotifications(input.proposal, processedVotes, minEventTime)
+}
+
+func (t *TrackingVoteTask) fetchAllAndProcessVotes(input trackingVoteInput) ([]processedVote, error) {
+	var (
+		indexer        = input.indexer
+		proposal       = input.proposal
+		lastOffsetVote = proposal.OffsetTrackingVote
+		processedVotes = make([]processedVote, 0)
+	)
+
 	for {
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		votes, err := indexer.QueryVotesOffset(ctx, lastOffsetVote, proposal.ProposalId)
 		cancel()
 
 		if err != nil {
-			return fmt.Errorf("failed to query votes: %w", err)
+			return nil, fmt.Errorf("failed to query votes: %w", err)
 		}
-
 		if len(votes) == 0 {
-			slog.Info("No more votes found for this proposal", "dao_code", proposal.DaoCode, "proposal", proposal.ProposalId)
 			break
 		}
 
-		allVotes = append(allVotes, votes...)
+		for _, v := range votes {
+			ts, err := parseTimestamp(v.BlockTimestamp)
+			if err != nil {
+				slog.Warn("Skipping vote due to unparsable timestamp", "vote_id", v.ID, "timestamp", v.BlockTimestamp, "error", err)
+				continue
+			}
+			processedVotes = append(processedVotes, processedVote{Vote: v, Timestamp: ts})
+		}
+
 		lastOffsetVote += len(votes)
+		// Considering transactional safety, offset could be persisted after the whole task succeeds
 		t.proposalService.UpdateOffsetTrackingVote(proposal.ProposalId, proposal.DaoCode, lastOffsetVote)
 	}
+	return processedVotes, nil
+}
 
-	offset := 0
-	limit := 1000
+func (t *TrackingVoteTask) generateAndStoreNotifications(proposal *dbmodels.ProposalTracking, processedVotes []processedVote, minEventTime *time.Time) error {
+	var (
+		offset     = 0
+		limit      = 1000
+		recordsBuf = make([]dbmodels.NotificationRecord, 0, 256)
+		batchSize  = 200
+	)
+
 	for {
 		subscribedUsers, err := t.subscribeService.ListSubscribedUser(types.ListSubscribeUserInput{
 			Feature:    dbmodels.SubscribeFeatureEnableVoted,
 			Strategies: []string{"true"},
 			DaoCode:    proposal.DaoCode,
 			ProposalId: &proposal.ProposalId,
-			EventTime:  time.Now(),
+			EventTime:  minEventTime,
 			Limit:      limit,
 			Offset:     offset,
 		})
-
 		if err != nil {
 			return fmt.Errorf("failed to list subscribed users: %w", err)
 		}
 
+		for _, pv := range processedVotes {
+			for _, su := range subscribedUsers {
+				// Core check: subscription time must be earlier than vote time
+				if su.CTime.After(pv.Timestamp) {
+					continue
+				}
+
+				voteID := pv.Vote.ID
+				rec := dbmodels.NotificationRecord{
+					ChainID:     proposal.ChainId,
+					DaoCode:     proposal.DaoCode,
+					Type:        dbmodels.NotificationTypeVote,
+					ProposalID:  proposal.ProposalId,
+					VoteID:      &voteID,
+					UserID:      su.UserID,
+					UserAddress: su.UserAddress,
+					State:       dbmodels.NotificationStateWait,
+					CTime:       time.Now(),
+				}
+				recordsBuf = append(recordsBuf, rec)
+
+				if len(recordsBuf) >= batchSize {
+					if err := t.notificationService.StoreRecords(recordsBuf); err != nil {
+						return fmt.Errorf("failed to store notification records: %w", err)
+					}
+					recordsBuf = recordsBuf[:0] // reset buffer
+				}
+			}
+		}
+		if len(subscribedUsers) < limit {
+			break // last page
+		}
 		offset += limit
 	}
 
+	// flush remaining buffered records
+	if len(recordsBuf) > 0 {
+		if err := t.notificationService.StoreRecords(recordsBuf); err != nil {
+			return fmt.Errorf("failed to store notification records: %w", err)
+		}
+	}
 	return nil
+}
+
+func findMinEventTime(processedVotes []processedVote) *time.Time {
+	var minTime *time.Time
+	for _, pv := range processedVotes {
+		if minTime == nil || pv.Timestamp.Before(*minTime) {
+			// copy to avoid pointer aliasing issues
+			tsCopy := pv.Timestamp
+			minTime = &tsCopy
+		}
+	}
+	// if no valid timestamps, fallback to now
+	if minTime == nil {
+		now := time.Now()
+		minTime = &now
+	}
+	return minTime
+}
+
+func parseTimestamp(tsStr string) (time.Time, error) {
+	if tsStr == "" {
+		return time.Time{}, fmt.Errorf("timestamp string is empty")
+	}
+
+	// prefer parsing millisecond unix timestamps first
+	if unixMilli, err := strconv.ParseInt(tsStr, 10, 64); err == nil {
+		return time.UnixMilli(unixMilli), nil
+	}
+
+	return time.Time{}, fmt.Errorf("failed to parse timestamp in any known format: %s", tsStr)
+}
+
+type processedVote struct {
+	Vote      internal.VoteCast
+	Timestamp time.Time
 }
