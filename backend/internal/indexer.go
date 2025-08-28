@@ -94,10 +94,10 @@ func (d *DegovIndexer) QueryGlobalDataMetrics(ctx context.Context) (*DataMetrics
 }
 
 // QueryProposalsAfterBlock executes the QueryProposalsAfterBlock GraphQL query and returns proposals list
-func (d *DegovIndexer) QueryProposalsAfterBlock(ctx context.Context, blockNumber int, limit int) ([]Proposal, error) {
+func (d *DegovIndexer) QueryProposalsAfterBlock(ctx context.Context, offset int) ([]Proposal, error) {
 	query := `
-		query QueryProposalsAfterBlock($limit: Int!, $offset: Int!, $blockNumber: BigInt!) {
-			proposals(orderBy: blockNumber_ASC_NULLS_FIRST, limit: $limit, offset: $offset, where: {blockNumber_gt: $blockNumber}) {
+		query QueryProposalsAfterBlock($limit: Int!, $offset: Int!) {
+			proposals(orderBy: blockNumber_ASC_NULLS_FIRST, limit: $limit, offset: $offset) {
 				id
 				blockNumber
 				blockTimestamp
@@ -107,9 +107,8 @@ func (d *DegovIndexer) QueryProposalsAfterBlock(ctx context.Context, blockNumber
 	`
 
 	req := graphql.NewRequest(query)
-	req.Var("limit", limit)
-	req.Var("offset", 0)
-	req.Var("blockNumber", blockNumber)
+	req.Var("limit", 30)
+	req.Var("offset", offset)
 
 	var response ProposalsResponse
 	if err := d.client.Run(ctx, req, &response); err != nil {

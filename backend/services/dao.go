@@ -266,19 +266,19 @@ func (s *DaoService) RefreshDaoAndConfig(input types.RefreshDaoAndConfigInput) e
 	if result.Error == gorm.ErrRecordNotFound {
 		// Insert new DAO
 		dao := &dbmodels.Dao{
-			ID:                utils.NextIDString(),
-			ChainID:           input.Config.Chain.ID,
-			ChainName:         input.Config.Chain.Name,
-			ChainLogo:         input.Config.Chain.Logo,
-			Name:              input.Config.Name,
-			Code:              input.Code,
-			Logo:              input.Config.Logo,
-			Endpoint:          input.Config.SiteURL,
-			State:             input.State,
-			Tags:              tagsJson,
-			ConfigLink:        input.ConfigLink,
-			TimeSyncd:         utils.TimePtrNow(),
-			LastTrackingBlock: 0, // Default to 0 for new DAOs
+			ID:                  utils.NextIDString(),
+			ChainID:             input.Config.Chain.ID,
+			ChainName:           input.Config.Chain.Name,
+			ChainLogo:           input.Config.Chain.Logo,
+			Name:                input.Config.Name,
+			Code:                input.Code,
+			Logo:                input.Config.Logo,
+			Endpoint:            input.Config.SiteURL,
+			State:               input.State,
+			Tags:                tagsJson,
+			ConfigLink:          input.ConfigLink,
+			TimeSyncd:           utils.TimePtrNow(),
+			OffsetTrackingBlock: 0, // Default to 0 for new DAOs
 		}
 
 		// Set metrics fields if they are provided (not nil)
@@ -370,10 +370,10 @@ func (s *DaoService) MarkInactiveDAOs(activeCodes map[string]bool) error {
 }
 
 // UpdateDaoLastTrackingBlock updates the last tracking block for a DAO
-func (s *DaoService) UpdateDaoLastTrackingBlock(daoCode string, blockNumber int) error {
+func (s *DaoService) UpdateDaoOffsetTrackingProposal(daoCode string, offset int) error {
 	return s.db.Model(&dbmodels.Dao{}).
 		Where("code = ?", daoCode).
-		Update("last_tracking_block", blockNumber).Error
+		Update("offset_tracking_proposal", offset).Error
 }
 
 // getMapKeys extracts keys from a map[string]bool

@@ -27,7 +27,10 @@ func NewProposalService() *ProposalService {
 func (s *ProposalService) StoreProposalTracking(input types.ProposalTrackingInput) (bool, error) {
 	// Check if proposal already exists
 	var existingProposal dbmodels.ProposalTracking
-	err := s.db.Where("proposal_id = ? AND dao_code = ?", input.ProposalID, input.DaoCode).First(&existingProposal).Error
+	err := s.db.
+		Where("proposal_id = ? AND dao_code = ?", input.ProposalID, input.DaoCode).
+		First(&existingProposal).
+		Error
 
 	if err == nil {
 		// Proposal already exists

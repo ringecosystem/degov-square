@@ -94,21 +94,19 @@ func (t *ProposalTrackingTask) TrackingProposal() error {
 func (t *ProposalTrackingTask) storeProposals(dao *gqlmodels.Dao, daoConfig types.DaoConfig) error {
 	indexer := internal.NewDegovIndexer(daoConfig.Indexer.Endpoint)
 
-	lastBlockNumber := int(dao.LastTrackingBlock)
+	offsetTrackingProposal := int(dao.OffsetTrackingProposal)
 
-	limit := 20
-	maxBlockNumber := lastBlockNumber
+	lastOffsetTrackingProposal := offsetTrackingProposal
 
 	slog.Info("Starting proposal tracking",
 		"dao_code", dao.Code,
-		"start_block", lastBlockNumber,
-		"limit", limit)
+		"start_block", lastOffsetTrackingProposal)
 
 	for {
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 
 		// Query proposals after the last tracked block (correct parameter order)
-		proposals, err := indexer.QueryProposalsAfterBlock(ctx, lastBlockNumber, limit)
+		proposals, err := indexer.QueryProposalsAfterBlock(ctx, lastOffsetTrackingProposal)
 		cancel()
 
 		if err != nil {
@@ -180,29 +178,19 @@ func (t *ProposalTrackingTask) storeProposals(dao *gqlmodels.Dao, daoConfig type
 					"proposal_id", proposal.ProposalID)
 			}
 
-			// Update max block number
-			if blockNumber > maxBlockNumber {
-				maxBlockNumber = blockNumber
-			}
+			// Update offset tracking proposal
+			lastOffsetTrackingProposal += 1
 		}
 
-		// If we got less than the limit, we've reached the end
-		if len(proposals) < limit {
-			slog.Info("Reached end of proposals", "dao_code", dao.Code, "final_count", len(proposals))
-			break
-		}
-
-		// Update DAO's LastTrackingBlock if we found new proposals using DaoService
-		if maxBlockNumber > lastBlockNumber {
-			if err := t.daoService.UpdateDaoLastTrackingBlock(dao.Code, maxBlockNumber); err != nil {
+		if lastOffsetTrackingProposal != offsetTrackingProposal {
+			if err := t.daoService.UpdateDaoOffsetTrackingProposal(dao.Code, lastOffsetTrackingProposal); err != nil {
 				return fmt.Errorf("failed to update last tracking block: %w", err)
 			}
 
-			slog.Info("Updated last tracking block",
+			slog.Info("Updated last tracking offset",
 				"dao_code", dao.Code,
-				"old_block", lastBlockNumber,
-				"new_block", maxBlockNumber)
-			lastBlockNumber = maxBlockNumber
+				"old_offset", offsetTrackingProposal,
+				"new_offset", lastOffsetTrackingProposal)
 		}
 	}
 
