@@ -14,18 +14,20 @@ import (
 )
 
 type TrackingVoteTask struct {
-	daoService       *services.DaoService
-	proposalService  *services.ProposalService
-	daoConfigService *services.DaoConfigService
-	subscribeService *services.SubscribeService
+	daoService          *services.DaoService
+	proposalService     *services.ProposalService
+	daoConfigService    *services.DaoConfigService
+	notificationService *services.NotificationService
+	subscribeService    *services.SubscribeService
 }
 
 func NewTrackingVoteTask() *TrackingVoteTask {
 	return &TrackingVoteTask{
-		daoService:       services.NewDaoService(),
-		proposalService:  services.NewProposalService(),
-		daoConfigService: services.NewDaoConfigService(),
-		subscribeService: services.NewSubscribeService(),
+		daoService:          services.NewDaoService(),
+		proposalService:     services.NewProposalService(),
+		daoConfigService:    services.NewDaoConfigService(),
+		notificationService: services.NewNotificationService(),
+		subscribeService:    services.NewSubscribeService(),
 	}
 }
 
@@ -113,6 +115,26 @@ func (t *TrackingVoteTask) trackingVoteByProposal(input trackingVoteInput) error
 		allVotes = append(allVotes, votes...)
 		lastOffsetVote += len(votes)
 		t.proposalService.UpdateOffsetTrackingVote(proposal.ProposalId, proposal.DaoCode, lastOffsetVote)
+	}
+
+	offset := 0
+	limit := 1000
+	for {
+		subscribedUsers, err := t.subscribeService.ListSubscribedUser(types.ListSubscribeUserInput{
+			Feature:    dbmodels.SubscribeFeatureEnableVoted,
+			Strategies: []string{"true"},
+			DaoCode:    proposal.DaoCode,
+			ProposalId: &proposal.ProposalId,
+			EventTime:  time.Now(),
+			Limit:      limit,
+			Offset:     offset,
+		})
+
+		if err != nil {
+			return fmt.Errorf("failed to list subscribed users: %w", err)
+		}
+
+		offset += limit
 	}
 
 	return nil

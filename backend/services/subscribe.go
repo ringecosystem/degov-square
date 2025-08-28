@@ -315,28 +315,19 @@ func (s *SubscribeService) SubscribeProposal(baseInput types.BasicInput[gqlmodel
 	return output, nil
 }
 
-func (s *SubscribeService) ListSubscribeUser(input types.ListSubscribeUserInput) ([]types.ListSubscribedUserOutput, error) {
-	// strategies - default to ["enable"] if not provided
+func (s *SubscribeService) ListSubscribedUser(input types.ListSubscribeUserInput) ([]types.ListSubscribedUserOutput, error) {
 	strategies := input.Strategies
 	if len(strategies) == 0 {
 		return nil, fmt.Errorf("no strategies provided for feature %s", input.Feature)
 	}
-	if input.EventTime == nil {
-		return nil, fmt.Errorf("missing event time")
-	}
 
-	// build base sql
-	sql := "SELECT DISTINCT f.user_id, f.user_address, f.chain_id, f.dao_code FROM dgv_subscribed_feature AS f " +
+	sql := "SELECT DISTINCT f.user_id, f.user_address, f.chain_id, f.dao_code, LEAST(d.ctime, p.ctime) AS ctime FROM dgv_subscribed_feature AS f " +
 		"LEFT JOIN dgv_user_subscribed_dao AS d ON f.user_id = d.user_id AND f.dao_code = d.dao_code " +
 		"LEFT JOIN dgv_user_subscribed_proposal AS p ON f.user_id = p.user_id AND f.proposal_id = p.proposal_id " +
-		"WHERE f.feature = ? AND f.strategy in ? AND f.dao_code = ? "
+		"WHERE f.feature = ? AND f.strategy IN ? AND f.dao_code = ? "
 
 	queryParams := make([]interface{}, 0)
-	queryParams = append(queryParams, input.Feature)
-	queryParams = append(queryParams, strategies)
-
-	// dao code
-	queryParams = append(queryParams, input.DaoCode)
+	queryParams = append(queryParams, input.Feature, strategies, input.DaoCode)
 
 	// proposal id handling
 	if input.ProposalId != nil {
@@ -346,8 +337,12 @@ func (s *SubscribeService) ListSubscribeUser(input types.ListSubscribeUserInput)
 		sql += "AND f.proposal_id IS NULL "
 	}
 
-	sql += "AND ((d.state = 'ACTIVE' AND d.ctime <= ?) OR (p.state = 'ACTIVE' AND p.ctime <= ?)) "
-	queryParams = append(queryParams, input.EventTime, input.EventTime)
+	if input.EventTime != nil {
+		sql += "AND ((d.state = 'ACTIVE' AND d.ctime <= ?) OR (p.state = 'ACTIVE' AND p.ctime <= ?)) "
+		queryParams = append(queryParams, *input.EventTime, *input.EventTime)
+	} else {
+		sql += "AND (d.state = 'ACTIVE' OR p.state = 'ACTIVE') "
+	}
 
 	// ordering and pagination
 	if input.Limit <= 0 {
@@ -376,7 +371,7 @@ func (s *SubscribeService) resetDaoFeatures(input resetDaoFeaturesInput) error {
 	}
 
 	if len(input.Features) > 0 {
-		return s.db.CreateInBatches(input.Features, len(input.Features)).Error
+		return s.db.Create(input.Features).Error
 	}
 	return nil
 }
@@ -396,7 +391,7 @@ func (s *SubscribeService) resetProposalFeatures(input resetProposalFeaturesInpu
 	}
 
 	if len(input.Features) > 0 {
-		return s.db.CreateInBatches(input.Features, len(input.Features)).Error
+		return s.db.Create(input.Features).Error
 	}
 	return nil
 }

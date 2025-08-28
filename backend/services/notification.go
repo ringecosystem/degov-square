@@ -4,7 +4,8 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/ringecosystem/degov-apps/database"
-	"github.com/ringecosystem/degov-apps/types"
+	dbmodels "github.com/ringecosystem/degov-apps/database/models"
+	"github.com/ringecosystem/degov-apps/internal/utils"
 )
 
 type NotificationService struct {
@@ -17,15 +18,18 @@ func NewNotificationService() *NotificationService {
 	}
 }
 
-func (s *NotificationService) StoreVoteNotification(input *types.StoreVoteNotificationInput) error {
-	// return s.db.Create(notification).Error
+func (s *NotificationService) StoreRecords(records []dbmodels.NotificationRecord) error {
+	if len(records) == 0 {
+		return nil
+	}
 
-	/*
+	for i := range records {
+		records[i].ID = utils.NextIDString()
+	}
 
-		select * from dgv_subscribed_feature as f
-		where feature='ENABLE_VOTED' and strategy='enable' and dao_code='x'
-
-	*/
+	if err := s.db.Create(&records).Error; err != nil {
+		return err
+	}
 
 	return nil
 }

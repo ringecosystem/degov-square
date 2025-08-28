@@ -1,5 +1,7 @@
 package types
 
-type StoreVoteNotificationInput struct {
-	VoteId string
-}
+// type StoreVoteNotificationInput struct {
+// 	DaoCode    string
+// 	ProposalId *string
+// 	Votes      []internal.VoteCast
+// }

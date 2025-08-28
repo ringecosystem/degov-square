@@ -23,4 +23,5 @@ type ListSubscribedUserOutput struct {
 	UserAddress string
 	ChainID     int
 	DaoCode     string
+	CTime       time.Time `gorm:"column:ctime"`
 }
