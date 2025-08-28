@@ -7,6 +7,8 @@ type SubscribeFeatureName string
 const (
 	SubscribeFeatureEnableProposal          SubscribeFeatureName = "ENABLE_PROPOSAL"
 	SubscribeFeatureEnableVotingEndReminder SubscribeFeatureName = "ENABLE_VOTING_END_REMINDER"
+	SubscribeFeatureEnableVoted             SubscribeFeatureName = "ENABLE_VOTED"
+	SubscribeFeatureEnableStateChanged      SubscribeFeatureName = "ENABLE_STATE_CHANGED"
 )
 
 type UserSubscribedDao struct {

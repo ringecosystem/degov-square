@@ -38,6 +38,22 @@ type resetDaoFeaturesInput struct {
 	Features []dbmodels.SubscribeFeature
 }
 
+type buildProposalFeatureInput struct {
+	ChainID      int
+	DaoCode      string
+	ProposalID   string
+	UserID       string
+	UserAddress  string
+	FeatureInput *gqlmodels.FeatureSettingsProposalInput
+}
+
+type resetProposalFeaturesInput struct {
+	DaoCode    string
+	UserID     string
+	ProposalID string
+	Features   []dbmodels.SubscribeFeature
+}
+
 func (s *SubscribeService) buildDaoFeatures(
 	input *buildDaoFeatureInput,
 ) []dbmodels.SubscribeFeature {
@@ -51,13 +67,11 @@ func (s *SubscribeService) buildDaoFeatures(
 	// determine feature strategies; default to false -> "disable" when nil
 	enableProposal := false
 	enableVotingEndReminder := false
-	if featureInput != nil {
-		if featureInput.EnableProposal != nil && *featureInput.EnableProposal {
-			enableProposal = true
-		}
-		if featureInput.EnableVotingEndReminder != nil && *featureInput.EnableVotingEndReminder {
-			enableVotingEndReminder = true
-		}
+	if featureInput.EnableProposal != nil && *featureInput.EnableProposal {
+		enableProposal = true
+	}
+	if featureInput.EnableVotingEndReminder != nil && *featureInput.EnableVotingEndReminder {
+		enableVotingEndReminder = true
 	}
 
 	proposalStrategy := "disable"
@@ -175,14 +189,149 @@ func (s *SubscribeService) InspectSubscribeDao(baseInput types.BasicInput[string
 }
 
 func (s *SubscribeService) SubscribeProposal(baseInput types.BasicInput[gqlmodels.SubscribeProposalInput]) (*gqlmodels.SubscribedProposalOutput, error) {
-	// Implement subscription logic here
-	return nil, nil
+	user := baseInput.User
+	spInput := baseInput.Input
+	featureInput := spInput.Feature
+
+	existingDao, err := s.daoService.Inspect(types.BasicInput[string]{
+		User:  user,
+		Input: spInput.DaoCode,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to inspect existing DAO: %w", err)
+	}
+	chainId := int(existingDao.ChainID)
+
+	features := s.buildProposalFeatures(&buildProposalFeatureInput{
+		ChainID:      chainId,
+		DaoCode:      spInput.DaoCode,
+		ProposalID:   spInput.ProposalID,
+		UserID:       user.Id,
+		UserAddress:  user.Address,
+		FeatureInput: featureInput,
+	})
+
+	if err := s.resetProposalFeatures(resetProposalFeaturesInput{
+		UserID:     user.Id,
+		DaoCode:    spInput.DaoCode,
+		ProposalID: spInput.ProposalID,
+		Features:   features,
+	}); err != nil {
+		return nil, err
+	}
+
+	output := &gqlmodels.SubscribedProposalOutput{
+		DaoCode:    spInput.DaoCode,
+		ProposalID: spInput.ProposalID,
+	}
+	return output, nil
 }
 
 func (s *SubscribeService) resetDaoFeatures(input resetDaoFeaturesInput) error {
 	if err := s.db.Where(
 		"dao_code = ? and (user_id =? or user_address = ?)",
 		input.DaoCode,
+		input.UserID,
+		input.UserID,
+	).
+		Delete(&dbmodels.SubscribeFeature{}).Error; err != nil {
+		return err
+	}
+
+	if len(input.Features) > 0 {
+		return s.db.CreateInBatches(input.Features, len(input.Features)).Error
+	}
+	return nil
+}
+
+// buildProposalFeatures builds SubscribeFeature records for a proposal based on the
+// provided FeatureSettingsProposalInput. It defaults missing booleans to false and
+// only creates feature rows for fields that were explicitly provided (non-nil).
+func (s *SubscribeService) buildProposalFeatures(input *buildProposalFeatureInput) []dbmodels.SubscribeFeature {
+	featureInput := input.FeatureInput
+	var features []dbmodels.SubscribeFeature
+
+	if featureInput == nil {
+		return features
+	}
+
+	// determine feature strategies; default to false -> "disable" when nil
+	enableVotingEndReminder := false
+	enableVoted := false
+	enableStateChanged := false
+	if featureInput.EnableVotingEndReminder != nil && *featureInput.EnableVotingEndReminder {
+		enableVotingEndReminder = true
+	}
+	if featureInput.EnableVoted != nil && *featureInput.EnableVoted {
+		enableVoted = true
+	}
+	if featureInput.EnableStateChanged != nil && *featureInput.EnableStateChanged {
+		enableStateChanged = true
+	}
+
+	votingEndStrategy := "disable"
+	if enableVotingEndReminder {
+		votingEndStrategy = "enable"
+	}
+	votedStrategy := "disable"
+	if enableVoted {
+		votedStrategy = "enable"
+	}
+	stateChangedStrategy := "disable"
+	if enableStateChanged {
+		stateChangedStrategy = "enable"
+	}
+
+	pid := input.ProposalID
+	if featureInput.EnableVotingEndReminder != nil {
+		features = append(features, dbmodels.SubscribeFeature{
+			ID:          utils.NextIDString(),
+			ChainID:     input.ChainID,
+			DaoCode:     input.DaoCode,
+			UserID:      input.UserID,
+			UserAddress: input.UserAddress,
+			Feature:     dbmodels.SubscribeFeatureEnableVotingEndReminder,
+			Strategy:    votingEndStrategy,
+			ProposalID:  &pid,
+		})
+	}
+
+	if featureInput.EnableVoted != nil {
+		features = append(features, dbmodels.SubscribeFeature{
+			ID:          utils.NextIDString(),
+			ChainID:     input.ChainID,
+			DaoCode:     input.DaoCode,
+			UserID:      input.UserID,
+			UserAddress: input.UserAddress,
+			Feature:     dbmodels.SubscribeFeatureEnableVoted,
+			Strategy:    votedStrategy,
+			ProposalID:  &pid,
+		})
+	}
+
+	if featureInput.EnableStateChanged != nil {
+		features = append(features, dbmodels.SubscribeFeature{
+			ID:          utils.NextIDString(),
+			ChainID:     input.ChainID,
+			DaoCode:     input.DaoCode,
+			UserID:      input.UserID,
+			UserAddress: input.UserAddress,
+			Feature:     dbmodels.SubscribeFeatureEnableStateChanged,
+			Strategy:    stateChangedStrategy,
+			ProposalID:  &pid,
+		})
+	}
+
+	return features
+}
+
+// resetProposalFeatures deletes existing features scoped to the dao + proposal + user
+// and inserts the provided features (if any).
+func (s *SubscribeService) resetProposalFeatures(input resetProposalFeaturesInput) error {
+	if err := s.db.Where(
+		"dao_code = ? and proposal_id = ? and (user_id = ? or user_address = ?)",
+		input.DaoCode,
+		input.ProposalID,
 		input.UserID,
 		input.UserID,
 	).
