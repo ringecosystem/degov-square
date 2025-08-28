@@ -12,6 +12,8 @@ interface SearchDialogProps {
   placeholder?: string;
   onConfirm?: (query: string) => void;
   initialQuery?: string;
+  selectedNetwork?: string;
+  formatNetworkName?: (network: string) => string;
 }
 
 export function MobileSearchDialog({
@@ -19,7 +21,9 @@ export function MobileSearchDialog({
   onOpenChange,
   isLoading = false,
   onConfirm,
-  initialQuery = ''
+  initialQuery = '',
+  selectedNetwork,
+  formatNetworkName
 }: SearchDialogProps) {
   const [searchQuery, setSearchQuery] = useState(initialQuery);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -66,7 +70,7 @@ export function MobileSearchDialog({
             ref={inputRef}
             className="placeholder:text-muted-foreground h-[17px] w-full outline-none placeholder:text-[14px]"
             placeholder="Search by DAO name or Chain name"
-            value={searchQuery}
+            value={selectedNetwork && formatNetworkName ? formatNetworkName(selectedNetwork) : searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
@@ -74,7 +78,7 @@ export function MobileSearchDialog({
               }
             }}
           />
-          {searchQuery && (
+          {(searchQuery || selectedNetwork) && (
             <button
               onClick={handleClear}
               className="text-muted-foreground hover:text-foreground flex items-center justify-center"
@@ -93,7 +97,7 @@ export function MobileSearchDialog({
           >
             Search
           </LoadedButton>
-          {searchQuery && (
+          {(searchQuery || selectedNetwork) && (
             <LoadedButton className="rounded-[100px]" variant="outline" onClick={handleClear}>
               Clear
             </LoadedButton>
