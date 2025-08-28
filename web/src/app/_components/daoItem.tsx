@@ -4,12 +4,12 @@ import Link from 'next/link';
 import { LikeButton } from '@/components/like-button';
 import { Separator } from '@/components/ui/separator';
 import type { DaoInfo } from '@/utils/config';
-import { formatNetworkName, formatTimeAgo } from '@/utils/helper';
+import { formatNetworkName } from '@/utils/helper';
 
 type DaoItemProps = DaoInfo;
 
 export const DaoItem = (dao: DaoItemProps) => {
-  const { name, daoIcon, network, proposals, website, favorite, lastProposal } = dao;
+  const { name, daoIcon, network, proposals, website, favorite, onNetworkClick } = dao;
 
   return (
     <div className="bg-card flex flex-col gap-[10px] rounded-[14px] p-[10px]">
@@ -26,7 +26,12 @@ export const DaoItem = (dao: DaoItemProps) => {
           </Link>
         </div>
 
-        <p className="text-muted-foreground text-[14px]">{formatNetworkName(network)}</p>
+        <p
+          className="text-muted-foreground cursor-pointer text-[14px] transition-opacity hover:opacity-80"
+          onClick={() => onNetworkClick?.(network)}
+        >
+          {formatNetworkName(network)}
+        </p>
       </div>
       <Separator className="my-0" />
       <div className="flex items-center justify-between">

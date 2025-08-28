@@ -24,13 +24,20 @@ export default function Home() {
   const [sortState, setSortState] = useState<SortState | undefined>(undefined);
   const [searchQuery, setSearchQuery] = useState('');
   const [openSearchDialog, setOpenSearchDialog] = useState(false);
+  const [selectedNetwork, setSelectedNetwork] = useState<string>('');
 
   const filteredAndSortedData = useMemo(() => {
     let filtered = daoData;
 
+    if (selectedNetwork) {
+      filtered = filtered.filter(
+        (dao) => dao.network.toLowerCase() === selectedNetwork.toLowerCase()
+      );
+    }
+
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase().trim();
-      filtered = daoData.filter(
+      filtered = filtered.filter(
         (dao) =>
           dao.name.toLowerCase().includes(query) ||
           dao.network.toLowerCase().includes(query) ||
@@ -65,7 +72,7 @@ export default function Home() {
     const others = filtered.filter((dao) => !dao.favorite).sort(sortByLastProposal);
 
     return [...favorites, ...others];
-  }, [daoData, searchQuery, sortState]);
+  }, [daoData, searchQuery, selectedNetwork, sortState]);
 
   const columns: ColumnType<DaoInfo>[] = [
     {
@@ -101,7 +108,13 @@ export default function Home() {
       className: 'w-[18.97%] text-left',
       render(value) {
         return (
-          <div className="flex items-center justify-start gap-[10px]">
+          <div
+            className="flex cursor-pointer items-center justify-start gap-[10px] transition-opacity hover:opacity-80"
+            onClick={() => {
+              setSelectedNetwork(value?.network || '');
+              setSearchQuery('');
+            }}
+          >
             <Image
               src={value?.networkIcon}
               alt="network"
@@ -123,7 +136,7 @@ export default function Home() {
         const proposalTime = value?.lastProposal?.proposalCreatedAt;
 
         if (!proposalLink) {
-          return <span className="text-[16px]">-</span>;
+          return <span className="text-[16px]">No proposals yet</span>;
         }
 
         return (
@@ -169,15 +182,18 @@ export default function Home() {
 
   const handleSearch = useCallback((query: string) => {
     setSearchQuery(query);
+    setSelectedNetwork('');
     setOpenSearchDialog(false);
   }, []);
 
   const handleDesktopSearch = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
+    setSelectedNetwork('');
   }, []);
 
   const clearSearch = useCallback(() => {
     setSearchQuery('');
+    setSelectedNetwork('');
   }, []);
 
   const openMobileSearch = useCallback(() => {
@@ -193,20 +209,23 @@ export default function Home() {
   return (
     <div className="container flex flex-col gap-[20px]">
       <div className="flex items-center justify-between">
-        <span className="text-[18px] font-semibold">
-          All DAOs({filteredAndSortedData.length}
-          {searchQuery && daoData.length !== filteredAndSortedData.length && (
-            <span className="text-muted-foreground">/{daoData.length}</span>
-          )}
-          )
-        </span>
+        <div className="flex items-center gap-[10px]">
+          <span className="text-[18px] font-semibold">
+            All DAOs({filteredAndSortedData.length}
+            {(searchQuery || selectedNetwork) &&
+              daoData.length !== filteredAndSortedData.length && (
+                <span className="text-muted-foreground">/{daoData.length}</span>
+              )}
+            )
+          </span>
+        </div>
         <div className="flex items-center gap-[20px]">
           <div className="bg-card flex h-[36px] w-[109px] items-center gap-[13px] rounded-[19px] border px-[17px] py-[9px] md:h-auto md:w-[388px] md:gap-[10px]">
             <Image src="/search.svg" alt="search" width={16} height={16} />
             <input
               className="placeholder:text-muted-foreground hidden h-[17px] w-full outline-none placeholder:text-[14px] md:block"
               placeholder="Search by DAO name or Chain name"
-              value={searchQuery}
+              value={selectedNetwork ? formatNetworkName(selectedNetwork) : searchQuery}
               onChange={handleDesktopSearch}
             />
             <button
@@ -215,7 +234,7 @@ export default function Home() {
             >
               Search
             </button>
-            {searchQuery && (
+            {(searchQuery || selectedNetwork) && (
               <button
                 onClick={clearSearch}
                 className="text-muted-foreground hover:text-foreground hidden items-center justify-center md:flex"
@@ -256,7 +275,14 @@ export default function Home() {
             isLoading={isLoading}
             emptyText="No DAOs found"
           />
-          <DaoList daoInfo={filteredAndSortedData} isLoading={isLoading} />
+          <DaoList
+            daoInfo={filteredAndSortedData}
+            isLoading={isLoading}
+            onNetworkClick={(network) => {
+              setSelectedNetwork(network);
+              setSearchQuery('');
+            }}
+          />
         </>
       }
 
@@ -276,6 +302,8 @@ export default function Home() {
         onOpenChange={setOpenSearchDialog}
         onConfirm={handleSearch}
         initialQuery={searchQuery}
+        selectedNetwork={selectedNetwork}
+        formatNetworkName={formatNetworkName}
       />
     </div>
   );
