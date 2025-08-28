@@ -16,15 +16,15 @@ import (
 	"github.com/ringecosystem/degov-apps/types"
 )
 
-type ProposalTrackingTask struct {
+type TrackingProposalTask struct {
 	daoService       *services.DaoService
 	daoConfigService *services.DaoConfigService
 	proposalService  *services.ProposalService
 	chipService      *services.DaoChipService
 }
 
-func NewProposalTrackingTask() *ProposalTrackingTask {
-	return &ProposalTrackingTask{
+func NewTrackingProposalTask() *TrackingProposalTask {
+	return &TrackingProposalTask{
 		daoService:       services.NewDaoService(),
 		daoConfigService: services.NewDaoConfigService(),
 		proposalService:  services.NewProposalService(),
@@ -33,17 +33,17 @@ func NewProposalTrackingTask() *ProposalTrackingTask {
 }
 
 // Name returns the task name
-func (t *ProposalTrackingTask) Name() string {
-	return "proposal-tracking-sync"
+func (t *TrackingProposalTask) Name() string {
+	return "tracking-proposal"
 }
 
 // Execute performs the DAO synchronization
-func (t *ProposalTrackingTask) Execute() error {
+func (t *TrackingProposalTask) Execute() error {
 	return t.TrackingProposal()
 }
 
 // TrackingProposal tracks proposals for DAOs
-func (t *ProposalTrackingTask) TrackingProposal() error {
+func (t *TrackingProposalTask) TrackingProposal() error {
 	// Get all DAOs from DaoService.ListDaos
 	daos, err := t.daoService.ListDaos(types.BasicInput[*types.ListDaosInput]{})
 	if err != nil {
@@ -91,7 +91,7 @@ func (t *ProposalTrackingTask) TrackingProposal() error {
 	return nil
 }
 
-func (t *ProposalTrackingTask) storeProposals(dao *gqlmodels.Dao, daoConfig types.DaoConfig) error {
+func (t *TrackingProposalTask) storeProposals(dao *gqlmodels.Dao, daoConfig types.DaoConfig) error {
 	indexer := internal.NewDegovIndexer(daoConfig.Indexer.Endpoint)
 
 	offsetTrackingProposal := int(dao.OffsetTrackingProposal)
@@ -197,7 +197,7 @@ func (t *ProposalTrackingTask) storeProposals(dao *gqlmodels.Dao, daoConfig type
 	return nil
 }
 
-func (t *ProposalTrackingTask) updateProposalsStates(dao *gqlmodels.Dao, daoConfig types.DaoConfig) error {
+func (t *TrackingProposalTask) updateProposalsStates(dao *gqlmodels.Dao, daoConfig types.DaoConfig) error {
 	proposals, err := t.proposalService.TrackingStateProposals(types.TrackingStateProposalsInput{
 		DaoCode: dao.Code,
 		States: []dbmodels.ProposalState{
@@ -298,7 +298,7 @@ func (t *ProposalTrackingTask) updateProposalsStates(dao *gqlmodels.Dao, daoConf
 	return nil
 }
 
-func (t *ProposalTrackingTask) updateDaoChips() error {
+func (t *TrackingProposalTask) updateDaoChips() error {
 	// Get proposal state counts for all active DAOs
 	counts, err := t.proposalService.ProposalStateCount()
 	if err != nil {

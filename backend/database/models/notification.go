@@ -6,6 +6,7 @@ import (
 
 type NotificationType string
 type NotificationStatus string
+type UserChannelType string
 
 const (
 	NotificationTypeNewProposal     NotificationType = "NEW_PROPOSAL"
@@ -38,19 +39,18 @@ func (NotificationRecord) TableName() string {
 }
 
 const (
-	ChannelTypeEmail = "EMAIL"
-	ChannelTypeSMS   = "SMS"
-	ChannelTypePush  = "PUSH"
+	ChannelTypeEmail   UserChannelType = "EMAIL"
+	ChannelTypeWebhook UserChannelType = "WEBHOOK"
 )
 
 type UserChannel struct {
-	ID           string    `gorm:"column:id;type:varchar(50);primaryKey" json:"id"`
-	UserID       string    `gorm:"column:user_id;type:varchar(50);not null" json:"user_id"`
-	Verified     int       `gorm:"column:verified;not null;default:0" json:"verified"`
-	ChannelType  string    `gorm:"column:channel_type;type:varchar(50);not null" json:"channel_type"`
-	ChannelValue string    `gorm:"column:channel_value;type:varchar(500);not null" json:"channel_value"`
-	Payload      *string   `gorm:"column:payload;type:text" json:"payload,omitempty"`
-	CTime        time.Time `gorm:"column:ctime;default:now()" json:"ctime"`
+	ID           string          `gorm:"column:id;type:varchar(50);primaryKey" json:"id"`
+	UserID       string          `gorm:"column:user_id;type:varchar(50);not null" json:"user_id"`
+	Verified     int             `gorm:"column:verified;not null;default:0" json:"verified"`
+	ChannelType  UserChannelType `gorm:"column:channel_type;type:varchar(50);not null" json:"channel_type"`
+	ChannelValue string          `gorm:"column:channel_value;type:varchar(500);not null" json:"channel_value"`
+	Payload      *string         `gorm:"column:payload;type:text" json:"payload,omitempty"`
+	CTime        time.Time       `gorm:"column:ctime;default:now()" json:"ctime"`
 }
 
 func (UserChannel) TableName() string {
