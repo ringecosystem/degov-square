@@ -74,6 +74,7 @@ create table
     vote_id varchar(255),
     reached int not null default 0,
     state varchar(50) not null,
+    time_event timestamp,
     payload text,
     ctime timestamp default now (),
     primary key (id)

@@ -103,11 +103,8 @@ func (t *TrackingVoteTask) trackingVoteByProposal(input trackingVoteInput) error
 		return nil
 	}
 
-	// 2. Find the earliest event time from processed votes
-	minEventTime := findMinEventTime(processedVotes)
-
-	// 3. Page through subscribed users using the earliest time and generate notifications
-	return t.generateAndStoreNotifications(input.proposal, processedVotes, minEventTime)
+	// 2. Page through subscribed users using the earliest time and generate notifications
+	return t.generateAndStoreNotifications(input.proposal, processedVotes)
 }
 
 func (t *TrackingVoteTask) fetchAllAndProcessVotes(input trackingVoteInput) ([]processedVote, error) {
@@ -140,13 +137,29 @@ func (t *TrackingVoteTask) fetchAllAndProcessVotes(input trackingVoteInput) ([]p
 		}
 
 		lastOffsetVote += len(votes)
-		// Considering transactional safety, offset could be persisted after the whole task succeeds
-		t.proposalService.UpdateOffsetTrackingVote(proposal.ProposalId, proposal.DaoCode, lastOffsetVote)
+		if err := t.proposalService.UpdateOffsetTrackingVote(proposal.ProposalId, proposal.DaoCode, lastOffsetVote); err != nil {
+			return nil, fmt.Errorf("failed to update offset tracking vote: %w", err)
+		}
 	}
 	return processedVotes, nil
 }
 
-func (t *TrackingVoteTask) generateAndStoreNotifications(proposal *dbmodels.ProposalTracking, processedVotes []processedVote, minEventTime *time.Time) error {
+func (t *TrackingVoteTask) generateAndStoreNotifications(proposal *dbmodels.ProposalTracking, processedVotes []processedVote) error {
+	notificationEvents := []dbmodels.NotificationEvent{}
+	for _, vote := range processedVotes {
+		ne := dbmodels.NotificationEvent{
+			ChainID:    proposal.ChainId,
+			DaoCode:    proposal.DaoCode,
+			Type:       dbmodels.NotificationTypeVote,
+			ProposalID: proposal.ProposalId,
+			VoteID:     &vote.Vote.ID,
+			Reached:    0,
+			State:      dbmodels.NotificationEventStatePending,
+			TimeEvent:  vote.Timestamp,
+		}
+		notificationEvents = append(notificationEvents, ne)
+	}
+	return t.notificationService.SaveEvents(notificationEvents)
 
 	// var (
 	// 	offset     = 0
@@ -211,23 +224,6 @@ func (t *TrackingVoteTask) generateAndStoreNotifications(proposal *dbmodels.Prop
 	// 	}
 	// }
 	// return nil
-}
-
-func findMinEventTime(processedVotes []processedVote) *time.Time {
-	var minTime *time.Time
-	for _, pv := range processedVotes {
-		if minTime == nil || pv.Timestamp.Before(*minTime) {
-			// copy to avoid pointer aliasing issues
-			tsCopy := pv.Timestamp
-			minTime = &tsCopy
-		}
-	}
-	// if no valid timestamps, fallback to now
-	if minTime == nil {
-		now := time.Now()
-		minTime = &now
-	}
-	return minTime
 }
 
 func parseTimestamp(tsStr string) (time.Time, error) {

@@ -59,6 +59,7 @@ type NotificationEvent struct {
 	Reached    int                    `gorm:"column:reached;not null;default:0" json:"reached"`
 	State      NotificationEventState `gorm:"column:state;type:varchar(50);not null" json:"state"`
 	Payload    string                 `gorm:"column:payload;type:text" json:"payload"`
+	TimeEvent  time.Time              `gorm:"column:time_event" json:"time_event"`
 	CTime      time.Time              `gorm:"column:ctime;default:now()" json:"ctime"`
 }
 
