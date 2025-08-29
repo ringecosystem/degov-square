@@ -72,7 +72,6 @@ create table
     type varchar(50) not null,
     proposal_id varchar(255) not null,
     vote_id varchar(255),
-    offset_receiver int not null default 0,
     reached int not null default 0,
     state varchar(50) not null,
     payload text,

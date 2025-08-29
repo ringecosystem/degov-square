@@ -19,7 +19,6 @@ type TrackingVoteTask struct {
 	proposalService     *services.ProposalService
 	daoConfigService    *services.DaoConfigService
 	notificationService *services.NotificationService
-	subscribeService    *services.SubscribeService
 }
 
 func NewTrackingVoteTask() *TrackingVoteTask {
@@ -28,7 +27,6 @@ func NewTrackingVoteTask() *TrackingVoteTask {
 		proposalService:     services.NewProposalService(),
 		daoConfigService:    services.NewDaoConfigService(),
 		notificationService: services.NewNotificationService(),
-		subscribeService:    services.NewSubscribeService(),
 	}
 }
 
@@ -149,69 +147,70 @@ func (t *TrackingVoteTask) fetchAllAndProcessVotes(input trackingVoteInput) ([]p
 }
 
 func (t *TrackingVoteTask) generateAndStoreNotifications(proposal *dbmodels.ProposalTracking, processedVotes []processedVote, minEventTime *time.Time) error {
-	var (
-		offset     = 0
-		limit      = 1000
-		recordsBuf = make([]dbmodels.NotificationRecord, 0, 256)
-		batchSize  = 200
-	)
 
-	for {
-		subscribedUsers, err := t.subscribeService.ListSubscribedUser(types.ListSubscribeUserInput{
-			Feature:    dbmodels.SubscribeFeatureEnableVoted,
-			Strategies: []string{"true"},
-			DaoCode:    proposal.DaoCode,
-			ProposalId: &proposal.ProposalId,
-			EventTime:  minEventTime,
-			Limit:      limit,
-			Offset:     offset,
-		})
-		if err != nil {
-			return fmt.Errorf("failed to list subscribed users: %w", err)
-		}
+	// var (
+	// 	offset     = 0
+	// 	limit      = 1000
+	// 	recordsBuf = make([]dbmodels.NotificationRecord, 0, 256)
+	// 	batchSize  = 200
+	// )
 
-		for _, pv := range processedVotes {
-			for _, su := range subscribedUsers {
-				// Core check: subscription time must be earlier than vote time
-				if su.CTime.After(pv.Timestamp) {
-					continue
-				}
+	// for {
+	// 	subscribedUsers, err := t.subscribeService.ListSubscribedUser(types.ListSubscribeUserInput{
+	// 		Feature:    dbmodels.SubscribeFeatureEnableVoted,
+	// 		Strategies: []string{"true"},
+	// 		DaoCode:    proposal.DaoCode,
+	// 		ProposalId: &proposal.ProposalId,
+	// 		EventTime:  minEventTime,
+	// 		Limit:      limit,
+	// 		Offset:     offset,
+	// 	})
+	// 	if err != nil {
+	// 		return fmt.Errorf("failed to list subscribed users: %w", err)
+	// 	}
 
-				voteID := pv.Vote.ID
-				rec := dbmodels.NotificationRecord{
-					ChainID:     proposal.ChainId,
-					DaoCode:     proposal.DaoCode,
-					Type:        dbmodels.NotificationTypeVote,
-					ProposalID:  proposal.ProposalId,
-					VoteID:      &voteID,
-					UserID:      su.UserID,
-					UserAddress: su.UserAddress,
-					State:       dbmodels.NotificationRecordStateWait,
-					CTime:       time.Now(),
-				}
-				recordsBuf = append(recordsBuf, rec)
+	// 	for _, pv := range processedVotes {
+	// 		for _, su := range subscribedUsers {
+	// 			// Core check: subscription time must be earlier than vote time
+	// 			if su.CTime.After(pv.Timestamp) {
+	// 				continue
+	// 			}
 
-				if len(recordsBuf) >= batchSize {
-					if err := t.notificationService.StoreRecords(recordsBuf); err != nil {
-						return fmt.Errorf("failed to store notification records: %w", err)
-					}
-					recordsBuf = recordsBuf[:0] // reset buffer
-				}
-			}
-		}
-		if len(subscribedUsers) < limit {
-			break // last page
-		}
-		offset += limit
-	}
+	// 			voteID := pv.Vote.ID
+	// 			rec := dbmodels.NotificationRecord{
+	// 				ChainID:     proposal.ChainId,
+	// 				DaoCode:     proposal.DaoCode,
+	// 				Type:        dbmodels.NotificationTypeVote,
+	// 				ProposalID:  proposal.ProposalId,
+	// 				VoteID:      &voteID,
+	// 				UserID:      su.UserID,
+	// 				UserAddress: su.UserAddress,
+	// 				State:       dbmodels.NotificationRecordStateWait,
+	// 				CTime:       time.Now(),
+	// 			}
+	// 			recordsBuf = append(recordsBuf, rec)
 
-	// flush remaining buffered records
-	if len(recordsBuf) > 0 {
-		if err := t.notificationService.StoreRecords(recordsBuf); err != nil {
-			return fmt.Errorf("failed to store notification records: %w", err)
-		}
-	}
-	return nil
+	// 			if len(recordsBuf) >= batchSize {
+	// 				if err := t.notificationService.StoreRecords(recordsBuf); err != nil {
+	// 					return fmt.Errorf("failed to store notification records: %w", err)
+	// 				}
+	// 				recordsBuf = recordsBuf[:0] // reset buffer
+	// 			}
+	// 		}
+	// 	}
+	// 	if len(subscribedUsers) < limit {
+	// 		break // last page
+	// 	}
+	// 	offset += limit
+	// }
+
+	// // flush remaining buffered records
+	// if len(recordsBuf) > 0 {
+	// 	if err := t.notificationService.StoreRecords(recordsBuf); err != nil {
+	// 		return fmt.Errorf("failed to store notification records: %w", err)
+	// 	}
+	// }
+	// return nil
 }
 
 func findMinEventTime(processedVotes []processedVote) *time.Time {

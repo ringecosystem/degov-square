@@ -18,6 +18,22 @@ func NewNotificationService() *NotificationService {
 	}
 }
 
+func (s *NotificationService) SaveEvents(events []dbmodels.NotificationEvent) error {
+	if len(events) == 0 {
+		return nil
+	}
+
+	for i := range events {
+		events[i].ID = utils.NextIDString()
+	}
+
+	if err := s.db.Create(&events).Error; err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (s *NotificationService) StoreRecords(records []dbmodels.NotificationRecord) error {
 	if len(records) == 0 {
 		return nil
