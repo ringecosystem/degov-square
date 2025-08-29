@@ -22,6 +22,15 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       const storedToken = localStorage.getItem(AUTH_TOKEN_KEY);
       setTokenState(storedToken);
       setIsInitialized(true);
+
+      // Listen for auth token changes (from SIWE adapter)
+      const handleTokenChange = (e: Event) => {
+        const customEvent = e as CustomEvent<{ token: string | null }>;
+        setTokenState(customEvent.detail.token);
+      };
+      
+      window.addEventListener('auth-token-change', handleTokenChange);
+      return () => window.removeEventListener('auth-token-change', handleTokenChange);
     }
   }, []);
 
