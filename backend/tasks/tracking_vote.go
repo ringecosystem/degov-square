@@ -186,7 +186,7 @@ func (t *TrackingVoteTask) generateAndStoreNotifications(proposal *dbmodels.Prop
 					VoteID:      &voteID,
 					UserID:      su.UserID,
 					UserAddress: su.UserAddress,
-					State:       dbmodels.NotificationStateWait,
+					State:       dbmodels.NotificationRecordStateWait,
 					CTime:       time.Now(),
 				}
 				recordsBuf = append(recordsBuf, rec)

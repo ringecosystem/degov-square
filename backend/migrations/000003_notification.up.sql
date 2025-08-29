@@ -22,7 +22,10 @@ alter table dgv_notification_record
 add column proposal_id varchar(255) not null,
 add column vote_id varchar(255),
 add column state varchar(50) not null,
-add column payload text;
+add column payload text,
+add column event_id varchar(255) not null;
+
+create unique index uq_notification_record_event_id_user_id on dgv_notification_record (event_id, user_id);
 
 COMMENT ON COLUMN dgv_notification_record.proposal_id IS 'proposal id';
 
@@ -59,3 +62,22 @@ drop column last_tracking_block;
 
 alter table dgv_dao
 add column offset_tracking_proposal int default 0;
+
+----# dgv_notification_event
+create table
+  if not exists dgv_notification_event (
+    id varchar(50) not null,
+    chain_id int not null,
+    dao_code varchar(255) not null,
+    type varchar(50) not null,
+    proposal_id varchar(255) not null,
+    vote_id varchar(255),
+    offset_receiver int not null default 0,
+    reached int not null default 0,
+    state varchar(50) not null,
+    payload text,
+    ctime timestamp default now (),
+    primary key (id)
+  );
+
+COMMENT ON COLUMN dgv_notification_event.event_type IS 'event type';

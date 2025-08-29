@@ -19,7 +19,8 @@ ALTER TABLE dgv_notification_record
 DROP COLUMN proposal_id,
 DROP COLUMN vote_id,
 DROP COLUMN state,
-DROP COLUMN payload;
+DROP COLUMN payload,
+DROP COLUMN event_id;
 
 -- Add back the dropped columns
 ALTER TABLE dgv_notification_record
@@ -45,3 +46,6 @@ DROP COLUMN offset_tracking_proposal;
 -- Add back the dropped column
 ALTER TABLE dgv_dao
 ADD COLUMN last_tracking_block int default 0;
+
+----# dgv_notification_event
+drop table if exists dgv_notification_event;
