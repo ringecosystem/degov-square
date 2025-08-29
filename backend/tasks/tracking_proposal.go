@@ -15,18 +15,20 @@ import (
 )
 
 type TrackingProposalTask struct {
-	daoService       *services.DaoService
-	daoConfigService *services.DaoConfigService
-	proposalService  *services.ProposalService
-	chipService      *services.DaoChipService
+	daoService          *services.DaoService
+	daoConfigService    *services.DaoConfigService
+	proposalService     *services.ProposalService
+	chipService         *services.DaoChipService
+	notificationService *services.NotificationService
 }
 
 func NewTrackingProposalTask() *TrackingProposalTask {
 	return &TrackingProposalTask{
-		daoService:       services.NewDaoService(),
-		daoConfigService: services.NewDaoConfigService(),
-		proposalService:  services.NewProposalService(),
-		chipService:      services.NewDaoChipService(),
+		daoService:          services.NewDaoService(),
+		daoConfigService:    services.NewDaoConfigService(),
+		proposalService:     services.NewProposalService(),
+		chipService:         services.NewDaoChipService(),
+		notificationService: services.NewNotificationService(),
 	}
 }
 
@@ -274,6 +276,26 @@ func (t *TrackingProposalTask) updateProposalsStates(dao *gqlmodels.Dao, daoConf
 						"original_error", err,
 						"update_error", updateErr)
 				}
+				continue
+			}
+
+			payload := "{\"old_state\": \"" + string(proposal.State) + "\", \"new_state\": \"" + string(newState) + "\"}"
+			if proposal.State == dbmodels.ProposalStateUnknown {
+				payload = "{\"new_state\": \"" + string(newState) + "\"}"
+			}
+			if err := t.notificationService.SaveEvent(dbmodels.NotificationEvent{
+				ChainID:    proposal.ChainId,
+				DaoCode:    proposal.DaoCode,
+				Type:       dbmodels.NotificationTypeStateChanged,
+				ProposalID: proposal.ProposalId,
+				TimeEvent:  proposal.CTime,
+				Payload:    payload,
+			}); err != nil {
+				slog.Error("Failed to save state change notification event",
+					"dao_code", dao.Code,
+					"proposal_id", proposal.ProposalId,
+					"error", err,
+				)
 				continue
 			}
 

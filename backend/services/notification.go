@@ -18,6 +18,10 @@ func NewNotificationService() *NotificationService {
 	}
 }
 
+func (s *NotificationService) SaveEvent(event dbmodels.NotificationEvent) error {
+	return s.SaveEvents([]dbmodels.NotificationEvent{event})
+}
+
 func (s *NotificationService) SaveEvents(events []dbmodels.NotificationEvent) error {
 	if len(events) == 0 {
 		return nil
@@ -25,6 +29,8 @@ func (s *NotificationService) SaveEvents(events []dbmodels.NotificationEvent) er
 
 	for i := range events {
 		events[i].ID = utils.NextIDString()
+		events[i].Reached = 0
+		events[i].State = dbmodels.NotificationEventStatePending
 	}
 
 	if err := s.db.Create(&events).Error; err != nil {

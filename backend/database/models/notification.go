@@ -12,7 +12,7 @@ type NotificationEventState string
 const (
 	NotificationTypeNewProposal     NotificationType = "NEW_PROPOSAL"
 	NotificationTypeVote            NotificationType = "VOTE"
-	NotificationTypeStatus          NotificationType = "STATUS"
+	NotificationTypeStateChanged    NotificationType = "STATE_CHANGED"
 	NotificationTypeVoteEndReminder NotificationType = "VOTE_END_REMINDER"
 )
 

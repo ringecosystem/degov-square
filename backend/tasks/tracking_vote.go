@@ -153,8 +153,6 @@ func (t *TrackingVoteTask) generateAndStoreNotifications(proposal *dbmodels.Prop
 			Type:       dbmodels.NotificationTypeVote,
 			ProposalID: proposal.ProposalId,
 			VoteID:     &vote.Vote.ID,
-			Reached:    0,
-			State:      dbmodels.NotificationEventStatePending,
 			TimeEvent:  vote.Timestamp,
 		}
 		notificationEvents = append(notificationEvents, ne)
