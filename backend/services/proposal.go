@@ -2,6 +2,7 @@ package services
 
 import (
 	"errors"
+	"log/slog"
 	"time"
 
 	"gorm.io/gorm"
@@ -13,12 +14,14 @@ import (
 )
 
 type ProposalService struct {
-	db *gorm.DB
+	db                  *gorm.DB
+	notificationService *NotificationService
 }
 
 func NewProposalService() *ProposalService {
 	return &ProposalService{
-		db: database.GetDB(),
+		db:                  database.GetDB(),
+		notificationService: NewNotificationService(),
 	}
 }
 
@@ -57,6 +60,16 @@ func (s *ProposalService) StoreProposalTracking(input types.ProposalTrackingInpu
 
 	if err := s.db.Create(newProposal).Error; err != nil {
 		return false, err
+	}
+
+	if err := s.notificationService.SaveEvent(dbmodels.NotificationEvent{
+		ChainID:    newProposal.ChainId,
+		DaoCode:    newProposal.DaoCode,
+		Type:       dbmodels.NotificationTypeNewProposal,
+		ProposalID: newProposal.ProposalId,
+		TimeEvent:  newProposal.CTime,
+	}); err != nil {
+		slog.Warn("failed to save notification event for new proposal", "error", err, "proposal_id", newProposal.ProposalId, "dao_code", newProposal.DaoCode)
 	}
 
 	return true, nil
