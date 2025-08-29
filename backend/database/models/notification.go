@@ -32,6 +32,7 @@ type NotificationRecord struct {
 	UserAddress string            `gorm:"column:user_address;type:varchar(255);not null" json:"user_address"`
 	State       NotificationState `gorm:"column:state;type:varchar(50);not null" json:"state"`
 	Message     *string           `gorm:"column:message;type:text" json:"message,omitempty"`
+	Payload     *string           `gorm:"column:payload;type:text" json:"payload,omitempty"`
 	RetryTimes  int               `gorm:"column:retry_times;not null;default:0" json:"retry_times"`
 	CTime       time.Time         `gorm:"column:ctime;default:now()" json:"ctime"`
 }

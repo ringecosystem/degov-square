@@ -21,7 +21,8 @@ drop column status;
 alter table dgv_notification_record
 add column proposal_id varchar(255) not null,
 add column vote_id varchar(255),
-add column state varchar(50) not null;
+add column state varchar(50) not null,
+add column payload text;
 
 COMMENT ON COLUMN dgv_notification_record.proposal_id IS 'proposal id';
 

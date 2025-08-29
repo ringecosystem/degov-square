@@ -18,7 +18,8 @@ DROP COLUMN utime;
 ALTER TABLE dgv_notification_record
 DROP COLUMN proposal_id,
 DROP COLUMN vote_id,
-DROP COLUMN state;
+DROP COLUMN state,
+DROP COLUMN payload;
 
 -- Add back the dropped columns
 ALTER TABLE dgv_notification_record
