@@ -10,11 +10,15 @@ import (
 
 type NotificationDispatcherTask struct {
 	notificationService *services.NotificationService
+	daoService          *services.DaoService
+	proposalService     *services.ProposalService
 }
 
 func NewNotificationDispatcherTask() *NotificationDispatcherTask {
 	return &NotificationDispatcherTask{
 		notificationService: services.NewNotificationService(),
+		daoService:          services.NewDaoService(),
+		proposalService:     services.NewProposalService(),
 	}
 }
 
@@ -69,5 +73,32 @@ func (t *NotificationDispatcherTask) dispatcherNotificationRecord() error {
 }
 
 func (t *NotificationDispatcherTask) dispatchNotificationRecordByRecord(record *dbmodels.NotificationRecord) error {
+	dao, err := t.daoService.Inspect(types.BasicInput[string]{
+		User:  nil,
+		Input: record.DaoCode,
+	})
+	if err != nil {
+		return err
+	}
+
+	proposal, err := t.proposalService.InspectProposal(types.InpspectProposalInput{
+		DaoCode:    record.DaoCode,
+		ProposalID: record.ProposalID,
+	})
+	if err != nil {
+		return err
+	}
+
+	switch record.Type {
+	case dbmodels.SubscribeFeatureProposalNew:
+		break
+	case dbmodels.SubscribeFeatureProposalStateChanged:
+		break
+	case dbmodels.SubscribeFeatureVoteEnd:
+		break
+	case dbmodels.SubscribeFeatureVoteEmitted:
+		break
+	}
+
 	return nil
 }

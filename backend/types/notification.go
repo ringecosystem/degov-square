@@ -1,6 +1,9 @@
 package types
 
-import dbmodels "github.com/ringecosystem/degov-apps/database/models"
+import (
+	dbmodels "github.com/ringecosystem/degov-apps/database/models"
+	gqlmodels "github.com/ringecosystem/degov-apps/graph/models"
+)
 
 type InspectNotificationEventInput struct {
 	DaoCode    string
@@ -40,4 +43,9 @@ type UpdateRecordRetryTimes struct {
 	ID         string
 	TimesRetry int
 	Message    string
+}
+
+type NotifyProposalTemplateInput struct {
+	Dao      gqlmodels.Dao
+	Proposal dbmodels.ProposalTracking
 }
