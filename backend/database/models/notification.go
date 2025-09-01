@@ -10,7 +10,7 @@ type UserChannelType string
 type NotificationEventState string
 
 const (
-	NotificationRecordStateWait     NotificationRecordState = "WAIT"
+	NotificationRecordStatePending  NotificationRecordState = "PENDING"
 	NotificationRecordStateSentOk   NotificationRecordState = "SENT_OK"
 	NotificationRecordStateSentFail NotificationRecordState = "SENT_FAIL"
 )
@@ -25,6 +25,7 @@ const (
 type NotificationRecord struct {
 	ID          string                  `gorm:"column:id;type:varchar(50);primaryKey" json:"id"`
 	Code        string                  `gorm:"column:code;type:varchar(100);not null;uniqueIndex:uq_notification_record_code" json:"code"`
+	EventID     string                  `gorm:"column:event_id;type:varchar(255);not null;uniqueIndex:uq_notification_record_event_id_user_id" json:"event_id"`
 	ChainID     int                     `gorm:"column:chain_id;not null" json:"chain_id"`
 	DaoCode     string                  `gorm:"column:dao_code;type:varchar(255);not null" json:"dao_code"`
 	Type        SubscribeFeatureName    `gorm:"column:type;type:varchar(50);not null" json:"type"`
@@ -35,9 +36,8 @@ type NotificationRecord struct {
 	State       NotificationRecordState `gorm:"column:state;type:varchar(50);not null" json:"state"`
 	Message     *string                 `gorm:"column:message;type:text" json:"message,omitempty"`
 	Payload     *string                 `gorm:"column:payload;type:text" json:"payload,omitempty"`
-	RetryTimes  int                     `gorm:"column:retry_times;not null;default:0" json:"retry_times"`
+	TimesRetry  int                     `gorm:"column:times_retry;not null;default:0" json:"times_retry"`
 	CTime       time.Time               `gorm:"column:ctime;default:now()" json:"ctime"`
-	EventID     string                  `gorm:"column:event_id;type:varchar(255);not null;uniqueIndex:uq_notification_record_event_id_user_id" json:"event_id"`
 }
 
 func (NotificationRecord) TableName() string {
@@ -56,6 +56,7 @@ type NotificationEvent struct {
 	Payload    string                 `gorm:"column:payload;type:text" json:"payload"`
 	Message    string                 `gorm:"column:message;type:text" json:"message"`
 	TimeEvent  time.Time              `gorm:"column:time_event" json:"time_event"`
+	TimesRetry int                    `gorm:"column:times_retry;not null;default:0" json:"times_retry"`
 	CTime      time.Time              `gorm:"column:ctime;default:now()" json:"ctime"`
 }
 

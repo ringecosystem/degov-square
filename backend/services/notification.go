@@ -94,3 +94,15 @@ func (s *NotificationService) ListLimitEvents(input types.ListLimitEventsInput) 
 func (s *NotificationService) UpdateEventState(input types.UpdateEventStateInput) error {
 	return s.db.Model(&dbmodels.NotificationEvent{}).Where("id = ?", input.ID).Update("state", input.State).Error
 }
+
+func (s *NotificationService) UpdateRetryTimes(input types.UpdateEventRetryTimes) error {
+	updates := map[string]interface{}{
+		"times_retry": input.TimesRetry,
+	}
+
+	if input.TimesRetry > 3 {
+		updates["state"] = dbmodels.NotificationEventStateFailed
+	}
+
+	return s.db.Model(&dbmodels.NotificationEvent{}).Where("id = ?", input.ID).Updates(updates).Error
+}

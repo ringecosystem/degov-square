@@ -151,7 +151,7 @@ create table
     user_id varchar(50) not null,
     user_address varchar(255) not null,
     message text,
-    retry_times int not null default 0, -- number of times to retry sending
+    times_retry int not null default 0, -- number of times to retry sending
     proposal_id varchar(255) not null,
     vote_id varchar(255),
     state varchar(50) not null,
@@ -260,6 +260,7 @@ create table
     vote_id varchar(255),
     reached int not null default 0,
     state varchar(50) not null,
+    times_retry int not null default 0,
     time_event timestamp,
     payload text,
     message text,

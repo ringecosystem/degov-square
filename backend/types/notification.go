@@ -19,3 +19,8 @@ type UpdateEventStateInput struct {
 	ID    string
 	State dbmodels.NotificationEventState
 }
+
+type UpdateEventRetryTimes struct {
+	ID         string
+	TimesRetry int
+}
