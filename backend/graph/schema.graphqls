@@ -103,7 +103,7 @@ type EvmAbiOutput {
 
 type Proposal {
   id: ID!
-  # title: String!
+  title: String!
   daoCode: String!
   chainId: Int!
   proposalLink: String!

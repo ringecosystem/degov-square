@@ -50,6 +50,7 @@ func (s *ProposalService) StoreProposalTracking(input types.ProposalTrackingInpu
 		ID:                utils.NextIDString(),
 		DaoCode:           input.DaoCode,
 		ChainId:           input.ChainId,
+		Title:             input.Title,
 		ProposalLink:      input.ProposalLink,
 		ProposalId:        input.ProposalID,
 		State:             dbmodels.ProposalStateUnknown, // Default state

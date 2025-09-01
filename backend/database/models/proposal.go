@@ -20,6 +20,7 @@ type ProposalTracking struct {
 	ID                 string        `gorm:"column:id;type:varchar(50);primaryKey" json:"id"`
 	DaoCode            string        `gorm:"column:dao_code;type:varchar(255);not null" json:"dao_code"`
 	ChainId            int           `gorm:"column:chain_id;not null" json:"chain_id"` // Chain ID for the DAO
+	Title              string        `gorm:"column:title;type:varchar(500);not null" json:"title"`
 	ProposalLink       string        `gorm:"column:proposal_link;type:varchar(255);not null" json:"proposal_link"`
 	ProposalId         string        `gorm:"column:proposal_id;type:varchar(50);not null" json:"proposal_id"`
 	State              ProposalState `gorm:"column:state;type:varchar(50);not null" json:"state"`

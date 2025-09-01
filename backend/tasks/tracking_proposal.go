@@ -61,10 +61,12 @@ func (t *TrackingProposalTask) TrackingProposal() error {
 			continue
 		}
 
-		slog.Info("Processing DAO",
+		slog.Info(
+			"Processing DAO",
 			"dao_code", dao.Code,
 			"dao_name", daoConfig.Name,
-			"indexer_endpoint", daoConfig.Indexer.Endpoint)
+			"indexer_endpoint", daoConfig.Indexer.Endpoint,
+		)
 
 		if err := t.storeProposals(dao, daoConfig); err != nil {
 			slog.Error("Failed to process proposal tracking", "dao_code", dao.Code, "error", err)
@@ -142,6 +144,7 @@ func (t *TrackingProposalTask) storeProposals(dao *gqlmodels.Dao, daoConfig *typ
 			input := types.ProposalTrackingInput{
 				DaoCode:           dao.Code,
 				ChainId:           daoConfig.Chain.ID,
+				Title:             proposal.Title,
 				ProposalLink:      proposalLink,
 				ProposalID:        proposal.ProposalID,
 				ProposalCreatedAt: proposalCreatedAt,

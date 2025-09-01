@@ -9,6 +9,7 @@ import (
 type ProposalTrackingInput struct {
 	DaoCode           string
 	ChainId           int
+	Title             string
 	ProposalLink      string
 	ProposalID        string
 	ProposalCreatedAt *time.Time
