@@ -70,7 +70,7 @@ func (t *TrackingVoteEndTask) trackingVoteEnd() error {
 				"proposal_id", proposal.ProposalID,
 				"vote_end_time", proposal.VoteEndTimestamp,
 			)
-			existingEvent, _ := t.notificationService.InspectEvent(types.InspectNotificationEventInput{
+			existingEvent, _ := t.notificationService.InspectEventWithProposal(types.InspectNotificationEventInput{
 				DaoCode:    dao.Code,
 				ProposalID: proposal.ProposalID,
 				Type:       dbmodels.SubscribeFeatureVoteEnd,

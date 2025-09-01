@@ -1,16 +1,20 @@
 package tasks
 
-import "github.com/ringecosystem/degov-apps/services"
+import (
+	"log/slog"
+
+	dbmodels "github.com/ringecosystem/degov-apps/database/models"
+	"github.com/ringecosystem/degov-apps/services"
+	"github.com/ringecosystem/degov-apps/types"
+)
 
 type NotificationDispatcherTask struct {
-	daoService     *services.DaoService
-	daoChipService *services.DaoChipService
+	notificationService *services.NotificationService
 }
 
 func NewNotificationDispatcherTask() *NotificationDispatcherTask {
 	return &NotificationDispatcherTask{
-		daoService:     services.NewDaoService(),
-		daoChipService: services.NewDaoChipService(),
+		notificationService: services.NewNotificationService(),
 	}
 }
 
@@ -19,9 +23,51 @@ func (t *NotificationDispatcherTask) Name() string {
 }
 
 func (t *NotificationDispatcherTask) Execute() error {
-	return t.DispatcherNotificationRecord()
+	return t.dispatcherNotificationRecord()
 }
 
-func (t *NotificationDispatcherTask) DispatcherNotificationRecord() error {
+func (t *NotificationDispatcherTask) dispatcherNotificationRecord() error {
+	records, err := t.notificationService.ListLimitRecords(types.ListLimitRecordsInput{
+		Limit: 10,
+	})
+	if err != nil {
+		return err
+	}
+	for _, record := range records {
+		if err := t.dispatchNotificationRecordByRecord(&record); err != nil {
+			slog.Error("Failed to dispatch notification record", "record_id", record.ID, "error", err)
+
+			timesRetry := record.TimesRetry + 1
+			if err := t.notificationService.UpdateEventRetryTimes(types.UpdateEventRetryTimes{
+				ID:         record.ID,
+				TimesRetry: timesRetry,
+				Message:    *record.Message + "\n\nFailed to build notification record: " + err.Error(),
+			}); err != nil {
+				slog.Error("Failed to update record retry times", "record_id", record.ID, "error", err)
+			}
+
+			if timesRetry > 4 {
+				if err := t.notificationService.UpdateRecordState(types.UpdateRecordStateInput{
+					ID:    record.ID,
+					State: dbmodels.NotificationRecordStateSentFail,
+				}); err != nil {
+					slog.Error("Failed to update record state to failed", "record_id", record.ID, "error", err)
+				}
+			}
+			continue
+		}
+
+		if err := t.notificationService.UpdateRecordState(types.UpdateRecordStateInput{
+			ID:    record.ID,
+			State: dbmodels.NotificationRecordStateSentOk,
+		}); err != nil {
+			slog.Error("Failed to update record state to send_ok", "record_id", record.ID, "error", err)
+			continue
+		}
+	}
+	return nil
+}
+
+func (t *NotificationDispatcherTask) dispatchNotificationRecordByRecord(record *dbmodels.NotificationRecord) error {
 	return nil
 }

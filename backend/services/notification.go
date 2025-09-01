@@ -41,7 +41,7 @@ func (s *NotificationService) SaveEvents(events []dbmodels.NotificationEvent) er
 	return nil
 }
 
-func (s *NotificationService) InspectEvent(input types.InspectNotificationEventInput) (*dbmodels.NotificationEvent, error) {
+func (s *NotificationService) InspectEventWithProposal(input types.InspectNotificationEventInput) (*dbmodels.NotificationEvent, error) {
 	var event dbmodels.NotificationEvent
 	query := s.db.Where("dao_code = ? AND proposal_id = ? AND type = ?", input.DaoCode, input.ProposalID, input.Type)
 
@@ -131,9 +131,10 @@ func (s *NotificationService) UpdateEventState(input types.UpdateEventStateInput
 	return s.db.Model(&dbmodels.NotificationEvent{}).Where("id = ?", input.ID).Update("state", input.State).Error
 }
 
-func (s *NotificationService) UpdateRetryTimes(input types.UpdateEventRetryTimes) error {
+func (s *NotificationService) UpdateEventRetryTimes(input types.UpdateEventRetryTimes) error {
 	updates := map[string]interface{}{
 		"times_retry": input.TimesRetry,
+		"message":     input.Message,
 	}
 
 	if input.TimesRetry > 3 {
@@ -141,4 +142,35 @@ func (s *NotificationService) UpdateRetryTimes(input types.UpdateEventRetryTimes
 	}
 
 	return s.db.Model(&dbmodels.NotificationEvent{}).Where("id = ?", input.ID).Updates(updates).Error
+}
+
+func (s *NotificationService) ListLimitRecords(input types.ListLimitRecordsInput) ([]dbmodels.NotificationRecord, error) {
+	var records []dbmodels.NotificationRecord
+	query := s.db.Model(&dbmodels.NotificationRecord{})
+
+	if input.States != nil && len(*input.States) > 0 {
+		query = query.Where("state IN ?", *input.States)
+	}
+
+	if err := query.Order("ctime asc").Limit(input.Limit).Find(&records).Error; err != nil {
+		return nil, err
+	}
+	return records, nil
+}
+
+func (s *NotificationService) UpdateRecordState(input types.UpdateRecordStateInput) error {
+	return s.db.Model(&dbmodels.NotificationRecord{}).Where("id = ?", input.ID).Update("state", input.State).Error
+}
+
+func (s *NotificationService) UpdateRecordRetryTimes(input types.UpdateRecordRetryTimes) error {
+	updates := map[string]interface{}{
+		"times_retry": input.TimesRetry,
+		"message":     input.Message,
+	}
+
+	if input.TimesRetry > 3 {
+		updates["state"] = dbmodels.NotificationEventStateFailed
+	}
+
+	return s.db.Model(&dbmodels.NotificationRecord{}).Where("id = ?", input.ID).Updates(updates).Error
 }

@@ -51,9 +51,10 @@ func (t *NotificationEventTask) buildNotificationRecord() error {
 
 		if err := t.buildNotificationRecordByEvent(&event); err != nil {
 			slog.Error("Failed to build notification record", "event_id", event.ID, "error", err)
-			if err := t.notificationService.UpdateRetryTimes(types.UpdateEventRetryTimes{
+			if err := t.notificationService.UpdateEventRetryTimes(types.UpdateEventRetryTimes{
 				ID:         event.ID,
 				TimesRetry: event.TimesRetry + 1,
+				Message:    event.Message + "\n\nFailed to build notification record: " + err.Error(),
 			}); err != nil {
 				slog.Error("Failed to update event retry times", "event_id", event.ID, "error", err)
 			}

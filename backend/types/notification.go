@@ -15,6 +15,11 @@ type ListLimitEventsInput struct {
 	States *[]dbmodels.NotificationEventState
 }
 
+type ListLimitRecordsInput struct {
+	Limit  int
+	States *[]dbmodels.NotificationRecordState
+}
+
 type UpdateEventStateInput struct {
 	ID    string
 	State dbmodels.NotificationEventState
@@ -23,4 +28,16 @@ type UpdateEventStateInput struct {
 type UpdateEventRetryTimes struct {
 	ID         string
 	TimesRetry int
+	Message    string
+}
+
+type UpdateRecordStateInput struct {
+	ID    string
+	State dbmodels.NotificationRecordState
+}
+
+type UpdateRecordRetryTimes struct {
+	ID         string
+	TimesRetry int
+	Message    string
 }
