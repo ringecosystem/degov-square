@@ -157,6 +157,7 @@ create table
     state varchar(50) not null,
     payload text,
     event_id varchar(255) not null,
+    time_next_execute timestamp not null,
     ctime timestamp default now (),
     primary key (id)
   );

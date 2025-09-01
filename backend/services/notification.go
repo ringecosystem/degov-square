@@ -1,6 +1,9 @@
 package services
 
 import (
+	"math"
+	"time"
+
 	"gorm.io/gorm"
 
 	"github.com/ringecosystem/degov-apps/database"
@@ -104,6 +107,7 @@ func (s *NotificationService) StoreRecords(records []dbmodels.NotificationRecord
 
 	for i := range recordsToCreate {
 		recordsToCreate[i].ID = utils.NextIDString()
+		recordsToCreate[i].TimeNextExecute = time.Now()
 	}
 
 	if err := s.db.Create(&recordsToCreate).Error; err != nil {
@@ -152,7 +156,9 @@ func (s *NotificationService) ListLimitRecords(input types.ListLimitRecordsInput
 		query = query.Where("state IN ?", *input.States)
 	}
 
-	if err := query.Order("ctime asc").Limit(input.Limit).Find(&records).Error; err != nil {
+	query = query.Where("next_executable_time <= ?", time.Now())
+
+	if err := query.Order("next_executable_time asc, ctime asc").Limit(input.Limit).Find(&records).Error; err != nil {
 		return nil, err
 	}
 	return records, nil
@@ -163,9 +169,17 @@ func (s *NotificationService) UpdateRecordState(input types.UpdateRecordStateInp
 }
 
 func (s *NotificationService) UpdateRecordRetryTimes(input types.UpdateRecordRetryTimes) error {
+	backoffMinutes := math.Pow(2, float64(input.TimesRetry))
+	if backoffMinutes > 1440 {
+		backoffMinutes = 1440
+	}
+	delay := time.Duration(backoffMinutes) * time.Minute
+	NextExecutableTime := time.Now().Add(delay)
+
 	updates := map[string]interface{}{
-		"times_retry": input.TimesRetry,
-		"message":     input.Message,
+		"times_retry":       input.TimesRetry,
+		"message":           input.Message,
+		"time_next_execute": NextExecutableTime,
 	}
 
 	if input.TimesRetry > 3 {
