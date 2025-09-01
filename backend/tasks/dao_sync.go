@@ -66,11 +66,11 @@ func (t *DaoSyncTask) Name() string {
 
 // Execute performs the DAO synchronization
 func (t *DaoSyncTask) Execute() error {
-	return t.SyncDaos()
+	return t.syncDaos()
 }
 
 // SyncDaos fetches the latest DAO configuration and syncs it with the database
-func (t *DaoSyncTask) SyncDaos() error {
+func (t *DaoSyncTask) syncDaos() error {
 	startTime := time.Now()
 	slog.Info("Starting DAO synchronization", "timestamp", startTime.Format(time.RFC3339))
 

@@ -33,10 +33,10 @@ func (t *TrackingVoteEndTask) Name() string {
 
 // Execute performs the DAO synchronization
 func (t *TrackingVoteEndTask) Execute() error {
-	return t.TrackingVoteEnd()
+	return t.trackingVoteEnd()
 }
 
-func (t *TrackingVoteEndTask) TrackingVoteEnd() error {
+func (t *TrackingVoteEndTask) trackingVoteEnd() error {
 	daos, err := t.daoService.ListDaos(types.BasicInput[*types.ListDaosInput]{})
 	if err != nil {
 		slog.Error("Failed to list DAOs", "error", err)

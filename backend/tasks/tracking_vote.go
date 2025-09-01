@@ -37,7 +37,7 @@ func (t *TrackingVoteTask) Name() string {
 
 // Execute performs the DAO synchronization
 func (t *TrackingVoteTask) Execute() error {
-	return t.TrackingVote()
+	return t.trackingVote()
 }
 
 type trackingVoteInput struct {
@@ -47,7 +47,7 @@ type trackingVoteInput struct {
 	proposal  *dbmodels.ProposalTracking
 }
 
-func (t *TrackingVoteTask) TrackingVote() error {
+func (t *TrackingVoteTask) trackingVote() error {
 	daos, err := t.daoService.ListDaos(types.BasicInput[*types.ListDaosInput]{})
 	if err != nil {
 		slog.Error("Failed to list DAOs", "error", err)

@@ -39,11 +39,11 @@ func (t *TrackingProposalTask) Name() string {
 
 // Execute performs the DAO synchronization
 func (t *TrackingProposalTask) Execute() error {
-	return t.TrackingProposal()
+	return t.trackingProposal()
 }
 
 // TrackingProposal tracks proposals for DAOs
-func (t *TrackingProposalTask) TrackingProposal() error {
+func (t *TrackingProposalTask) trackingProposal() error {
 	// Get all DAOs from DaoService.ListDaos
 	daos, err := t.daoService.ListDaos(types.BasicInput[*types.ListDaosInput]{})
 	if err != nil {
