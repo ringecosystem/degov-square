@@ -25,3 +25,8 @@ type ListSubscribedUserOutput struct {
 	DaoCode     string
 	CTime       time.Time `gorm:"column:ctime"`
 }
+
+type ListFeaturesInput struct {
+	DaoCode    string
+	ProposalID *string
+}

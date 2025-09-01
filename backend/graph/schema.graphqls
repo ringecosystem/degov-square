@@ -219,8 +219,8 @@ type Query {
   evmAbi(input: EvmAbiInput!): [EvmAbiOutput!] @auth(required: false)
 
   # subscribe
-  subscribedDaos: [SubscribedDao!]!
-  subscribedProposals: [SubscribedProposal!]!
+  subscribedDaos: [SubscribedDao!]! @auth
+  subscribedProposals: [SubscribedProposal!]! @auth
 
 }
 

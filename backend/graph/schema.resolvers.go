@@ -104,7 +104,11 @@ func (r *queryResolver) EvmAbi(ctx context.Context, input gqlmodels.EvmAbiInput)
 
 // SubscribedDaos is the resolver for the subscribedDaos field.
 func (r *queryResolver) SubscribedDaos(ctx context.Context) ([]*gqlmodels.SubscribedDao, error) {
-	panic(fmt.Errorf("not implemented: SubscribedDaos - subscribedDaos"))
+	user, _ := r.authUtils.GetUser(ctx)
+	return r.userSubscribedService.SubscribedDaos(types.BasicInput[*string]{
+		User:  user,
+		Input: nil,
+	})
 }
 
 // SubscribedProposals is the resolver for the subscribedProposals field.

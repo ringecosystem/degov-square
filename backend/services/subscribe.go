@@ -395,3 +395,106 @@ func (s *SubscribeService) resetProposalFeatures(input resetProposalFeaturesInpu
 	}
 	return nil
 }
+
+func (s *SubscribeService) ListFeatures(baseInput types.BasicInput[types.ListFeaturesInput]) ([]dbmodels.SubscribeFeature, error) {
+	if baseInput.User == nil {
+		return nil, fmt.Errorf("not logged in")
+	}
+
+	var features []dbmodels.SubscribeFeature
+	query := s.db.Table("dgv_subscribed_feature").
+		Select("dgv_subscribed_feature.*").
+		Where("dgv_subscribed_feature.dao_code = ?", baseInput.Input.DaoCode)
+
+	if baseInput.Input.ProposalID != nil && *baseInput.Input.ProposalID != "" {
+		query = query.Where("dgv_subscribed_feature.proposal_id = ?", *baseInput.Input.ProposalID)
+	} else {
+		query = query.Where("dgv_subscribed_feature.proposal_id IS NULL OR dgv_subscribed_feature.proposal_id = ''")
+	}
+
+	err := query.Scan(&features).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return features, nil
+}
+
+type UserSubscribedDaoService struct {
+	db               *gorm.DB
+	daoService       *DaoService
+	subscribeService *SubscribeService
+}
+
+func NewUserSubscribedDaoService() *UserSubscribedDaoService {
+	return &UserSubscribedDaoService{
+		db:               database.GetDB(),
+		daoService:       NewDaoService(),
+		subscribeService: NewSubscribeService(),
+	}
+}
+
+func (s *UserSubscribedDaoService) SubscribedDaos(baseInput types.BasicInput[*string]) ([]*gqlmodels.SubscribedDao, error) {
+	if baseInput.User == nil {
+		return nil, fmt.Errorf("not logged in")
+	}
+
+	// First get subscribed dao codes by joining with dgv_dao to ensure only ACTIVE DAOs
+	var daoCodes []string
+	err := s.db.Table("dgv_user_subscribed_dao").
+		Select("dgv_user_subscribed_dao.dao_code").
+		Joins("INNER JOIN dgv_dao ON dgv_user_subscribed_dao.dao_code = dgv_dao.code").
+		Where("dgv_user_subscribed_dao.user_id = ? AND dgv_user_subscribed_dao.state = ? AND dgv_dao.state = ?",
+			baseInput.User.Id, "ACTIVE", "ACTIVE").
+		Pluck("dao_code", &daoCodes).
+		Error
+	if err != nil {
+		return nil, err
+	}
+
+	// If no subscribed DAOs found, return empty array
+	if len(daoCodes) == 0 {
+		return []*gqlmodels.SubscribedDao{}, nil
+	}
+
+	// Use existing ListDaos method to get the DAOs with all their data
+	daos, err := s.daoService.ListDaos(types.BasicInput[*types.ListDaosInput]{
+		Input: &types.ListDaosInput{
+			Codes: &daoCodes,
+		},
+		User: baseInput.User,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	results := []*gqlmodels.SubscribedDao{}
+
+	for _, dao := range daos {
+		features, err := s.subscribeService.ListFeatures(types.BasicInput[types.ListFeaturesInput]{
+			User: baseInput.User,
+			Input: types.ListFeaturesInput{
+				DaoCode:    dao.Code,
+				ProposalID: nil,
+			},
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		subscribeFeatures := []*gqlmodels.SubscribedFeature{}
+		for _, f := range features {
+			subscribeFeatures = append(subscribeFeatures, &gqlmodels.SubscribedFeature{
+				Name:     string(f.Feature),
+				Strategy: f.Strategy,
+			})
+		}
+
+		results = append(results, &gqlmodels.SubscribedDao{
+			Dao:      dao,
+			Features: subscribeFeatures,
+		})
+	}
+
+	return results, nil
+}

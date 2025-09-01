@@ -110,7 +110,7 @@ create table
     dao_code varchar(255) not null,
     user_id varchar(50) not null,
     user_address varchar(255) not null,
-    state varchar(50) not null, -- { SUBSCRIBED, UNSUBSCRIBED }
+    state varchar(50) not null, -- { ACTIVE, INACTIVE }
     ctime timestamp default now (),
     utime timestamp,
     primary key (id)
