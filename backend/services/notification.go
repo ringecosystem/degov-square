@@ -66,11 +66,47 @@ func (s *NotificationService) StoreRecords(records []dbmodels.NotificationRecord
 		return nil
 	}
 
-	for i := range records {
-		records[i].ID = utils.NextIDString()
+	codes := make([]string, 0, len(records))
+	for _, record := range records {
+		if record.Code != "" {
+			codes = append(codes, record.Code)
+		}
 	}
 
-	if err := s.db.Create(&records).Error; err != nil {
+	if len(codes) == 0 {
+		return nil
+	}
+
+	var existingCodes []string
+	if err := s.db.
+		Model(&dbmodels.NotificationRecord{}).
+		Where("code IN ?", codes).
+		Pluck("code", &existingCodes).
+		Error; err != nil {
+		return err
+	}
+
+	existingCodeSet := make(map[string]struct{}, len(existingCodes))
+	for _, code := range existingCodes {
+		existingCodeSet[code] = struct{}{}
+	}
+
+	recordsToCreate := make([]dbmodels.NotificationRecord, 0)
+	for _, record := range records {
+		if _, exists := existingCodeSet[record.Code]; !exists {
+			recordsToCreate = append(recordsToCreate, record)
+		}
+	}
+
+	if len(recordsToCreate) == 0 {
+		return nil
+	}
+
+	for i := range recordsToCreate {
+		recordsToCreate[i].ID = utils.NextIDString()
+	}
+
+	if err := s.db.Create(&recordsToCreate).Error; err != nil {
 		return err
 	}
 
