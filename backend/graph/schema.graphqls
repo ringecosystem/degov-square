@@ -146,11 +146,13 @@ type LoginOutput {
 
 type SubscribedDaoOutput {
   daoCode: String!
+  state: String!
 }
 
 type SubscribedProposalOutput {
   daoCode: String!
   proposalId: String!
+  state: String!
 }
 
 ### === inputs
@@ -204,6 +206,15 @@ input SubscribeProposalInput {
   feature: FeatureSettingsProposalInput
 }
 
+input UnsubscribeDaoInput {
+  daoCode: String!
+}
+
+input UnsubscribeProposalInput {
+  daoCode: String!
+  proposalId: String!
+}
+
 ### ==== graphql
 
 type Query {
@@ -233,6 +244,8 @@ type Mutation {
 
   subscribeDao(input: SubscribeDaoInput!): SubscribedDaoOutput! @auth
   subscribeProposal(input: SubscribeProposalInput!): SubscribedProposalOutput! @auth
+  unsubscribeDao(input: UnsubscribeDaoInput!): SubscribedDaoOutput! @auth
+  unsubscribeProposal(input: UnsubscribeProposalInput!): SubscribedProposalOutput! @auth
 }
 
 # type Subscription {

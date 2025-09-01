@@ -53,6 +53,24 @@ func (r *mutationResolver) SubscribeProposal(ctx context.Context, input gqlmodel
 	return result, err
 }
 
+// UnsubscribeDao is the resolver for the unsubscribeDao field.
+func (r *mutationResolver) UnsubscribeDao(ctx context.Context, input gqlmodels.UnsubscribeDaoInput) (*gqlmodels.SubscribedDaoOutput, error) {
+	user, _ := r.authUtils.GetUser(ctx)
+	return r.subscribeService.UnsubscribeDao(types.BasicInput[gqlmodels.UnsubscribeDaoInput]{
+		User:  user,
+		Input: input,
+	})
+}
+
+// UnsubscribeProposal is the resolver for the unsubscribeProposal field.
+func (r *mutationResolver) UnsubscribeProposal(ctx context.Context, input gqlmodels.UnsubscribeProposalInput) (*gqlmodels.SubscribedProposalOutput, error) {
+	user, _ := r.authUtils.GetUser(ctx)
+	return r.subscribeService.UnsubscribeProposal(types.BasicInput[gqlmodels.UnsubscribeProposalInput]{
+		User:  user,
+		Input: input,
+	})
+}
+
 // Nonce is the resolver for the nonce field.
 func (r *queryResolver) Nonce(ctx context.Context, input gqlmodels.GetNonceInput) (string, error) {
 	nonce, err := r.authService.Nonce(input)

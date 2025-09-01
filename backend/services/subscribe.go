@@ -205,6 +205,30 @@ func (s *SubscribeService) SubscribeDao(baseInput types.BasicInput[gqlmodels.Sub
 
 	output := &gqlmodels.SubscribedDaoOutput{
 		DaoCode: sdInput.DaoCode,
+		State:   string(dbmodels.SubscribeStateActive),
+	}
+	return output, nil
+}
+
+func (s *SubscribeService) UnsubscribeDao(baseInput types.BasicInput[gqlmodels.UnsubscribeDaoInput]) (*gqlmodels.SubscribedDaoOutput, error) {
+	user := baseInput.User
+	input := baseInput.Input
+
+	existingSubscribedDao, err := s.InspectSubscribeDao(types.BasicInput[string]{
+		User:  user,
+		Input: input.DaoCode,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to inspect existing subscribed DAO: %w", err)
+	}
+
+	if err := s.db.Update("state", dbmodels.SubscribeStateInactive).Where("id = ?", existingSubscribedDao.ID).Error; err != nil {
+		return nil, fmt.Errorf("failed to unsusbscribe dao %w", err)
+	}
+
+	output := &gqlmodels.SubscribedDaoOutput{
+		DaoCode: input.DaoCode,
+		State:   string(dbmodels.SubscribeStateInactive),
 	}
 	return output, nil
 }
@@ -311,6 +335,34 @@ func (s *SubscribeService) SubscribeProposal(baseInput types.BasicInput[gqlmodel
 	output := &gqlmodels.SubscribedProposalOutput{
 		DaoCode:    spInput.DaoCode,
 		ProposalID: spInput.ProposalID,
+		State:      string(dbmodels.SubscribeStateActive),
+	}
+	return output, nil
+}
+
+func (s *SubscribeService) UnsubscribeProposal(baseInput types.BasicInput[gqlmodels.UnsubscribeProposalInput]) (*gqlmodels.SubscribedProposalOutput, error) {
+	user := baseInput.User
+	input := baseInput.Input
+
+	existingSubscribedProposal, err := s.InspectSubscribeProposal(types.BasicInput[InspectSubscribeProposalInput]{
+		User: user,
+		Input: InspectSubscribeProposalInput{
+			DaoCode:    input.DaoCode,
+			ProposalID: input.ProposalID,
+		},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to inspect existing subscribed proposal: %w", err)
+	}
+
+	if err := s.db.Update("state", dbmodels.SubscribeStateInactive).Where("id = ?", existingSubscribedProposal.ID).Error; err != nil {
+		return nil, fmt.Errorf("failed to unsubscribe proposal: %w", err)
+	}
+
+	output := &gqlmodels.SubscribedProposalOutput{
+		DaoCode:    input.DaoCode,
+		ProposalID: input.ProposalID,
+		State:      string(dbmodels.SubscribeStateInactive),
 	}
 	return output, nil
 }
