@@ -169,7 +169,6 @@ func (s *SubscribeService) SubscribeDao(baseInput types.BasicInput[gqlmodels.Sub
 
 	if err1 == nil {
 		existingSubscribedDao.UTime = time.Now()
-		// You may want to save the updated time to DB here, e.g.:
 		if err := s.db.Save(existingSubscribedDao).Error; err != nil {
 			return nil, err
 		}
