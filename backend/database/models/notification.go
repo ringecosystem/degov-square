@@ -37,7 +37,7 @@ type NotificationRecord struct {
 	Message         *string                 `gorm:"column:message;type:text" json:"message,omitempty"`
 	Payload         *string                 `gorm:"column:payload;type:text" json:"payload,omitempty"`
 	TimesRetry      int                     `gorm:"column:times_retry;not null;default:0" json:"times_retry"`
-	TimeNextExecute time.Time               `gorm:"column:time_next_execute;" json:"ctime"`
+	TimeNextExecute time.Time               `gorm:"column:time_next_execute;" json:"time_next_execute"`
 	CTime           time.Time               `gorm:"column:ctime;default:now()" json:"ctime"`
 }
 
