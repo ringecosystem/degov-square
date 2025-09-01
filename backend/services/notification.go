@@ -6,6 +6,7 @@ import (
 	"github.com/ringecosystem/degov-apps/database"
 	dbmodels "github.com/ringecosystem/degov-apps/database/models"
 	"github.com/ringecosystem/degov-apps/internal/utils"
+	"github.com/ringecosystem/degov-apps/types"
 )
 
 type NotificationService struct {
@@ -38,6 +39,26 @@ func (s *NotificationService) SaveEvents(events []dbmodels.NotificationEvent) er
 	}
 
 	return nil
+}
+
+func (s *NotificationService) InspectEvent(input types.InspectNotificationEventInput) (*dbmodels.NotificationEvent, error) {
+	var event dbmodels.NotificationEvent
+	query := s.db.Where("dao_code = ? AND proposal_id = ? AND type = ?", input.DaoCode, input.ProposalID, input.Type)
+
+	// Add VoteID condition if provided
+	if input.VoteID != nil {
+		query = query.Where("vote_id = ?", *input.VoteID)
+	}
+
+	// Add States condition if provided
+	if input.States != nil && len(*input.States) > 0 {
+		query = query.Where("state IN ?", *input.States)
+	}
+
+	if err := query.First(&event).Error; err != nil {
+		return nil, err
+	}
+	return &event, nil
 }
 
 func (s *NotificationService) StoreRecords(records []dbmodels.NotificationRecord) error {

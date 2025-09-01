@@ -4,12 +4,12 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"strconv"
 	"time"
 
 	dbmodels "github.com/ringecosystem/degov-apps/database/models"
 	gqlmodels "github.com/ringecosystem/degov-apps/graph/models"
 	"github.com/ringecosystem/degov-apps/internal"
+	"github.com/ringecosystem/degov-apps/internal/utils"
 	"github.com/ringecosystem/degov-apps/services"
 	"github.com/ringecosystem/degov-apps/types"
 )
@@ -128,7 +128,7 @@ func (t *TrackingVoteTask) fetchAllAndProcessVotes(input trackingVoteInput) ([]p
 		}
 
 		for _, v := range votes {
-			ts, err := parseTimestamp(v.BlockTimestamp)
+			ts, err := utils.ParseTimestamp(v.BlockTimestamp)
 			if err != nil {
 				slog.Warn("Skipping vote due to unparsable timestamp", "vote_id", v.ID, "timestamp", v.BlockTimestamp, "error", err)
 				continue
@@ -222,19 +222,6 @@ func (t *TrackingVoteTask) generateAndStoreNotifications(proposal *dbmodels.Prop
 	// 	}
 	// }
 	// return nil
-}
-
-func parseTimestamp(tsStr string) (time.Time, error) {
-	if tsStr == "" {
-		return time.Time{}, fmt.Errorf("timestamp string is empty")
-	}
-
-	// prefer parsing millisecond unix timestamps first
-	if unixMilli, err := strconv.ParseInt(tsStr, 10, 64); err == nil {
-		return time.UnixMilli(unixMilli), nil
-	}
-
-	return time.Time{}, fmt.Errorf("failed to parse timestamp in any known format: %s", tsStr)
 }
 
 type processedVote struct {

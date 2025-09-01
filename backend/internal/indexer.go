@@ -3,6 +3,7 @@ package internal
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/machinebox/graphql"
 )
@@ -26,12 +27,28 @@ type DataMetricsResponse struct {
 	DataMetrics []DataMetrics `json:"dataMetrics"`
 }
 
-// Proposal represents the proposal structure from GraphQL response
+// Proposal represents the structure of a governance proposal.
 type Proposal struct {
-	ID             string `json:"id"`
-	BlockNumber    string `json:"blockNumber"`
-	BlockTimestamp string `json:"blockTimestamp"`
-	ProposalID     string `json:"proposalId"`
+	ID                           string  `json:"id"`
+	ProposalID                   string  `json:"proposalId"`
+	Title                        string  `json:"title"`
+	Quorum                       string  `json:"quorum"`
+	VoteStartTimestamp           string  `json:"voteStartTimestamp"`
+	VoteEndTimestamp             string  `json:"voteEndTimestamp"`
+	VoteStart                    string  `json:"voteStart"`
+	VoteEnd                      string  `json:"voteEnd"`
+	Decimals                     string  `json:"decimals"`
+	BlockInterval                string  `json:"blockInterval"`
+	ClockMode                    string  `json:"clockMode"`
+	Proposer                     string  `json:"proposer"`
+	BlockNumber                  string  `json:"blockNumber"`
+	BlockTimestamp               string  `json:"blockTimestamp"`
+	TransactionHash              string  `json:"transactionHash"`
+	MetricsVotesCount            *int    `json:"metricsVotesCount"`
+	MetricsVotesWeightAbstainSum *string `json:"metricsVotesWeightAbstainSum"`
+	MetricsVotesWeightAgainstSum *string `json:"metricsVotesWeightAgainstSum"`
+	MetricsVotesWeightForSum     *string `json:"metricsVotesWeightForSum"`
+	Description                  string  `json:"description"`
 }
 
 // ProposalsResponse represents the GraphQL response structure for proposals
@@ -115,9 +132,21 @@ func (d *DegovIndexer) QueryProposalsOffset(ctx context.Context, offset int) ([]
 		query QueryProposalsOffset($limit: Int!, $offset: Int!) {
 			proposals(orderBy: blockNumber_ASC_NULLS_FIRST, limit: $limit, offset: $offset) {
 				id
+				proposalId
+				title
+				quorum
+				voteStartTimestamp
+				voteEndTimestamp
+				voteStart
+				voteEnd
+				decimals
+				blockInterval
+				clockMode
+				proposer
 				blockNumber
 				blockTimestamp
-				proposalId
+				transactionHash
+				description
 			}
 		}
 	`
@@ -161,4 +190,71 @@ func (d *DegovIndexer) QueryVotesOffset(ctx context.Context, offset int, proposa
 	}
 
 	return response.VoteCasts, nil
+}
+
+func (d *DegovIndexer) QueryExpiringProposals(ctx context.Context) ([]Proposal, error) {
+	query := `
+	query QueryExpiringProposals($limit: Int!, $offset: Int!, $start: BigInt!, $end: BigInt!) {
+	  proposals(
+	    limit: $limit
+	    offset: $offset
+	    orderBy: blockTimestamp_ASC_NULLS_FIRST
+	    where: {
+	      voteEndTimestamp_gte: $start
+	      voteEndTimestamp_lt: $end
+	    }
+	  ) {
+	    id
+	    proposalId
+	    title
+	    quorum
+	    voteStartTimestamp
+	    voteEndTimestamp
+	    voteStart
+	    voteEnd
+	    decimals
+	    blockInterval
+	    clockMode
+	    proposer
+	    blockNumber
+	    blockTimestamp
+	    transactionHash
+	    metricsVotesCount
+	    metricsVotesWeightAbstainSum
+	    metricsVotesWeightAgainstSum
+	    metricsVotesWeightForSum
+	    description
+	  }
+	}
+	`
+
+	const limit = 50
+	var offset = 0
+	var allProposals []Proposal
+
+	now := time.Now()
+	startTimestamp := now.UnixMilli()
+	endTimestamp := now.Add(20 * time.Minute).UnixMilli()
+
+	for {
+		req := graphql.NewRequest(query)
+
+		req.Var("limit", limit)
+		req.Var("offset", offset)
+		req.Var("start", startTimestamp)
+		req.Var("end", endTimestamp)
+
+		var response ProposalsResponse
+
+		if err := d.client.Run(ctx, req, &response); err != nil {
+			return nil, fmt.Errorf("graphql query failed on offset %d: %w", offset, err)
+		}
+		if len(response.Proposals) == 0 {
+			break
+		}
+		allProposals = append(allProposals, response.Proposals...)
+		offset += len(response.Proposals)
+	}
+
+	return allProposals, nil
 }

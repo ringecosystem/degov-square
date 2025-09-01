@@ -106,6 +106,8 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("TASK_DAO_SYNC_INTERVAL", "5m")
 	v.SetDefault("TASK_VOTE_TRACKING_ENABLED", true)
 	v.SetDefault("TASK_VOTE_TRACKING_INTERVAL", "3m")
+	v.SetDefault("TASK_VOTE_END_TRACKING_ENABLED", true)
+	v.SetDefault("TASK_VOTE_END_TRACKING_INTERVAL", "10m")
 	v.SetDefault("TASK_PROPOSAL_TRACKING_ENABLED", true)
 	v.SetDefault("TASK_PROPOSAL_TRACKING_INTERVAL", "3m")
 }
@@ -201,6 +203,14 @@ func (c *Config) GetTaskVoteTrackingEnabled() bool {
 
 func (c *Config) GetTaskVoteTrackingInterval() time.Duration {
 	return c.viper.GetDuration("TASK_VOTE_TRACKING_INTERVAL")
+}
+
+func (c *Config) GetTaskVoteEndTrackingEnabled() bool {
+	return c.viper.GetBool("TASK_VOTE_END_TRACKING_ENABLED")
+}
+
+func (c *Config) GetTaskVoteEndTrackingInterval() time.Duration {
+	return c.viper.GetDuration("TASK_VOTE_END_TRACKING_INTERVAL")
 }
 
 func (c *Config) GetTaskProposalTrackingEnabled() bool {
