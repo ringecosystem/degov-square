@@ -120,13 +120,13 @@ type Proposal {
 
 type SubscribedDao {
   dao: Dao!
-  feature: [SubscribedFeature!]!
+  features: [SubscribedFeature!]!
 }
 
 type SubscribedProposal {
   dao: Dao!
   proposal: Proposal!
-  features: [SubscribedFeature!]!
+  featuress: [SubscribedFeature!]!
 }
 
 type SubscribedFeature {
