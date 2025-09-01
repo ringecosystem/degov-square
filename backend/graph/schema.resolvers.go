@@ -88,15 +88,6 @@ func (r *queryResolver) LikedDaos(ctx context.Context) ([]*gqlmodels.Dao, error)
 	})
 }
 
-// SubscribedDaos is the resolver for the subscribedDaos field.
-func (r *queryResolver) SubscribedDaos(ctx context.Context) ([]*gqlmodels.Dao, error) {
-	user, _ := r.authUtils.GetUser(ctx)
-	return r.userSubscribedService.SubscribedDaos(types.BasicInput[*string]{
-		User:  user,
-		Input: nil,
-	})
-}
-
 // DaoConfig is the resolver for the daoConfig field.
 func (r *queryResolver) DaoConfig(ctx context.Context, input *gqlmodels.GetDaoConfigInput) (string, error) {
 	return r.daoConfigService.RawConfig(gqlmodels.GetDaoConfigInput{
@@ -109,6 +100,16 @@ func (r *queryResolver) DaoConfig(ctx context.Context, input *gqlmodels.GetDaoCo
 func (r *queryResolver) EvmAbi(ctx context.Context, input gqlmodels.EvmAbiInput) ([]*gqlmodels.EvmAbiOutput, error) {
 	// panic(fmt.Errorf("not implemented: EvmAbi - evmAbi"))
 	return r.evmChainService.GetAbi(input)
+}
+
+// SubscribedDaos is the resolver for the subscribedDaos field.
+func (r *queryResolver) SubscribedDaos(ctx context.Context) ([]*gqlmodels.SubscribedDao, error) {
+	panic(fmt.Errorf("not implemented: SubscribedDaos - subscribedDaos"))
+}
+
+// SubscribedProposals is the resolver for the subscribedProposals field.
+func (r *queryResolver) SubscribedProposals(ctx context.Context) ([]*gqlmodels.SubscribedProposal, error) {
+	panic(fmt.Errorf("not implemented: SubscribedProposals - subscribedProposals"))
 }
 
 // Mutation returns MutationResolver implementation.

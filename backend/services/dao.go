@@ -509,37 +509,37 @@ func NewUserSubscribedDaoService() *UserSubscribedDaoService {
 	}
 }
 
-func (s *UserSubscribedDaoService) SubscribedDaos(baseInput types.BasicInput[*string]) ([]*gqlmodels.Dao, error) {
-	if baseInput.User == nil {
-		return []*gqlmodels.Dao{}, nil
-	}
+// func (s *UserSubscribedDaoService) SubscribedDaos(baseInput types.BasicInput[*string]) ([]*gqlmodels.Dao, error) {
+// 	if baseInput.User == nil {
+// 		return []*gqlmodels.Dao{}, nil
+// 	}
 
-	// First get subscribed dao codes by joining with dgv_dao to ensure only ACTIVE DAOs
-	var daoCodes []string
-	err := s.db.Table("dgv_user_subscribed_dao").
-		Select("dgv_user_subscribed_dao.dao_code").
-		Joins("INNER JOIN dgv_dao ON dgv_user_subscribed_dao.dao_code = dgv_dao.code").
-		Where("dgv_user_subscribed_dao.user_id = ? AND dgv_user_subscribed_dao.state = ? AND dgv_dao.state = ?",
-			baseInput.User.Id, "SUBSCRIBED", "ACTIVE").
-		Pluck("dao_code", &daoCodes).Error
+// 	// First get subscribed dao codes by joining with dgv_dao to ensure only ACTIVE DAOs
+// 	var daoCodes []string
+// 	err := s.db.Table("dgv_user_subscribed_dao").
+// 		Select("dgv_user_subscribed_dao.dao_code").
+// 		Joins("INNER JOIN dgv_dao ON dgv_user_subscribed_dao.dao_code = dgv_dao.code").
+// 		Where("dgv_user_subscribed_dao.user_id = ? AND dgv_user_subscribed_dao.state = ? AND dgv_dao.state = ?",
+// 			baseInput.User.Id, "SUBSCRIBED", "ACTIVE").
+// 		Pluck("dao_code", &daoCodes).Error
 
-	if err != nil {
-		return nil, err
-	}
+// 	if err != nil {
+// 		return nil, err
+// 	}
 
-	// If no subscribed DAOs found, return empty array
-	if len(daoCodes) == 0 {
-		return []*gqlmodels.Dao{}, nil
-	}
+// 	// If no subscribed DAOs found, return empty array
+// 	if len(daoCodes) == 0 {
+// 		return []*gqlmodels.Dao{}, nil
+// 	}
 
-	// Use existing ListDaos method to get the DAOs with all their data
-	return s.daoService.ListDaos(types.BasicInput[*types.ListDaosInput]{
-		Input: &types.ListDaosInput{
-			Codes: &daoCodes,
-		},
-		User: baseInput.User,
-	})
-}
+// 	// Use existing ListDaos method to get the DAOs with all their data
+// 	return s.daoService.ListDaos(types.BasicInput[*types.ListDaosInput]{
+// 		Input: &types.ListDaosInput{
+// 			Codes: &daoCodes,
+// 		},
+// 		User: baseInput.User,
+// 	})
+// }
 
 type DaoChipService struct {
 	db *gorm.DB

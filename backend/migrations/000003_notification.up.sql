@@ -54,7 +54,8 @@ COMMENT ON COLUMN dgv_subscribed_feature.proposal_id IS 'proposal id';
 
 ----# dgv_proposal_tracking
 alter table dgv_proposal_tracking
-add column offset_tracking_vote int default 0;
+add column offset_tracking_vote int default 0,
+add title varchar(500) not null;
 
 ----# dgv_dao
 alter table dgv_dao
