@@ -24,12 +24,13 @@ func NewSubscribeService() *SubscribeService {
 	}
 }
 
-type buildDaoFeatureInput struct {
-	ChainID      int
-	DaoCode      string
-	UserID       string
-	UserAddress  string
-	FeatureInput *gqlmodels.FeatureSettingsDaoInput
+type buildFeatureInput struct {
+	ChainID         int
+	DaoCode         string
+	ProposalID      *string
+	UserID          string
+	UserAddress     string
+	FeatureSettings []*gqlmodels.FeatureSettingsInput
 }
 
 type resetDaoFeaturesInput struct {
@@ -38,14 +39,14 @@ type resetDaoFeaturesInput struct {
 	Features []dbmodels.SubscribeFeature
 }
 
-type buildProposalFeatureInput struct {
-	ChainID      int
-	DaoCode      string
-	ProposalID   string
-	UserID       string
-	UserAddress  string
-	FeatureInput *gqlmodels.FeatureSettingsProposalInput
-}
+// type buildProposalFeatureInput struct {
+// 	ChainID         int
+// 	DaoCode         string
+// 	ProposalID      string
+// 	UserID          string
+// 	UserAddress     string
+// 	FeatureSettings []*gqlmodels.FeatureSettingsInput
+// }
 
 type resetProposalFeaturesInput struct {
 	DaoCode    string
@@ -59,89 +60,54 @@ type InspectSubscribeProposalInput struct {
 	ProposalID string
 }
 
-func (s *SubscribeService) buildDaoFeatures(
-	input *buildDaoFeatureInput,
+func (s *SubscribeService) buildFeatures(
+	input *buildFeatureInput,
 ) []dbmodels.SubscribeFeature {
-	featureInput := input.FeatureInput
+	featureSettings := input.FeatureSettings
 	var features []dbmodels.SubscribeFeature
 
-	if featureInput == nil {
+	if featureSettings == nil {
 		return features
 	}
 
-	if featureInput.EnableProposal != nil {
-		features = append(features, dbmodels.SubscribeFeature{
-			ID:       utils.NextIDString(),
-			ChainID:  input.ChainID,
-			DaoCode:  input.DaoCode,
-			UserID:   input.UserID,
-			Feature:  dbmodels.SubscribeFeatureProposalNew,
-			Strategy: utils.SafeBoolString(featureInput.EnableProposal),
-		})
-	}
+	for _, featureSetting := range featureSettings {
+		if featureSetting == nil {
+			continue
+		}
 
-	if featureInput.EnableVotingEndReminder != nil {
-		features = append(features, dbmodels.SubscribeFeature{
-			ID:       utils.NextIDString(),
-			ChainID:  input.ChainID,
-			DaoCode:  input.DaoCode,
-			UserID:   input.UserID,
-			Feature:  dbmodels.SubscribeFeatureVoteEnd,
-			Strategy: utils.SafeBoolString(featureInput.EnableVotingEndReminder),
-		})
-	}
+		var dbFeatureName dbmodels.SubscribeFeatureName
+		var strategy string
 
-	return features
-}
+		switch featureSetting.Name {
+		case gqlmodels.FeatureNameVoteEnd:
+			dbFeatureName = dbmodels.SubscribeFeatureVoteEnd
+		case gqlmodels.FeatureNameVoteEmitted:
+			dbFeatureName = dbmodels.SubscribeFeatureVoteEmitted
+		case gqlmodels.FeatureNameProposalStateChanged:
+			dbFeatureName = dbmodels.SubscribeFeatureProposalStateChanged
+		case gqlmodels.FeatureNameProposalNew:
+			dbFeatureName = dbmodels.SubscribeFeatureProposalNew
+			continue
+		default:
+			// skip unsupported feature
+			continue
+		}
 
-// buildProposalFeatures builds SubscribeFeature records for a proposal based on the
-// provided FeatureSettingsProposalInput. It defaults missing booleans to false and
-// only creates feature rows for fields that were explicitly provided (non-nil).
-func (s *SubscribeService) buildProposalFeatures(input *buildProposalFeatureInput) []dbmodels.SubscribeFeature {
-	featureInput := input.FeatureInput
-	var features []dbmodels.SubscribeFeature
+		if featureSetting.Strategy != nil || *featureSetting.Strategy == "" {
+			strategy = *featureSetting.Strategy
+		} else {
+			strategy = "true"
+		}
 
-	if featureInput == nil {
-		return features
-	}
-
-	pid := input.ProposalID
-	if featureInput.EnableVotingEndReminder != nil {
 		features = append(features, dbmodels.SubscribeFeature{
 			ID:          utils.NextIDString(),
 			ChainID:     input.ChainID,
 			DaoCode:     input.DaoCode,
+			ProposalID:  input.ProposalID,
 			UserID:      input.UserID,
 			UserAddress: input.UserAddress,
-			Feature:     dbmodels.SubscribeFeatureVoteEnd,
-			Strategy:    utils.SafeBoolString(featureInput.EnableVotingEndReminder),
-			ProposalID:  &pid,
-		})
-	}
-
-	if featureInput.EnableVoted != nil {
-		features = append(features, dbmodels.SubscribeFeature{
-			ID:          utils.NextIDString(),
-			ChainID:     input.ChainID,
-			DaoCode:     input.DaoCode,
-			UserID:      input.UserID,
-			UserAddress: input.UserAddress,
-			Feature:     dbmodels.SubscribeFeatureVoteEmitted,
-			Strategy:    utils.SafeBoolString(featureInput.EnableVoted),
-			ProposalID:  &pid,
-		})
-	}
-
-	if featureInput.EnableStateChanged != nil {
-		features = append(features, dbmodels.SubscribeFeature{
-			ID:          utils.NextIDString(),
-			ChainID:     input.ChainID,
-			DaoCode:     input.DaoCode,
-			UserID:      input.UserID,
-			UserAddress: input.UserAddress,
-			Feature:     dbmodels.SubscribeFeatureProposalStateChanged,
-			Strategy:    utils.SafeBoolString(featureInput.EnableStateChanged),
-			ProposalID:  &pid,
+			Feature:     dbFeatureName,
+			Strategy:    strategy,
 		})
 	}
 
@@ -151,7 +117,7 @@ func (s *SubscribeService) buildProposalFeatures(input *buildProposalFeatureInpu
 func (s *SubscribeService) SubscribeDao(baseInput types.BasicInput[gqlmodels.SubscribeDaoInput]) (*gqlmodels.SubscribedDaoOutput, error) {
 	user := baseInput.User
 	sdInput := baseInput.Input
-	featuresInput := sdInput.Features
+	featureSettings := sdInput.Features
 
 	existingDao, err := s.daoService.Inspect(types.BasicInput[string]{
 		User:  user,
@@ -186,12 +152,12 @@ func (s *SubscribeService) SubscribeDao(baseInput types.BasicInput[gqlmodels.Sub
 		}
 	}
 
-	features := s.buildDaoFeatures(&buildDaoFeatureInput{
-		ChainID:      chainId,
-		DaoCode:      sdInput.DaoCode,
-		UserID:       user.Id,
-		UserAddress:  user.Address,
-		FeatureInput: featureInput,
+	features := s.buildFeatures(&buildFeatureInput{
+		ChainID:         chainId,
+		DaoCode:         sdInput.DaoCode,
+		UserID:          user.Id,
+		UserAddress:     user.Address,
+		FeatureSettings: featureSettings,
 	})
 
 	if err := s.resetDaoFeatures(resetDaoFeaturesInput{
@@ -274,7 +240,7 @@ func (s *SubscribeService) InspectSubscribeProposal(baseInput types.BasicInput[I
 func (s *SubscribeService) SubscribeProposal(baseInput types.BasicInput[gqlmodels.SubscribeProposalInput]) (*gqlmodels.SubscribedProposalOutput, error) {
 	user := baseInput.User
 	spInput := baseInput.Input
-	featureInput := spInput.Feature
+	featureSettings := spInput.Features
 
 	existingDao, err := s.daoService.Inspect(types.BasicInput[string]{
 		User:  user,
@@ -313,13 +279,13 @@ func (s *SubscribeService) SubscribeProposal(baseInput types.BasicInput[gqlmodel
 		}
 	}
 
-	features := s.buildProposalFeatures(&buildProposalFeatureInput{
-		ChainID:      chainId,
-		DaoCode:      spInput.DaoCode,
-		ProposalID:   spInput.ProposalID,
-		UserID:       user.Id,
-		UserAddress:  user.Address,
-		FeatureInput: featureInput,
+	features := s.buildFeatures(&buildFeatureInput{
+		ChainID:         chainId,
+		DaoCode:         spInput.DaoCode,
+		ProposalID:      &spInput.ProposalID,
+		UserID:          user.Id,
+		UserAddress:     user.Address,
+		FeatureSettings: featureSettings,
 	})
 
 	if err := s.resetProposalFeatures(resetProposalFeaturesInput{
