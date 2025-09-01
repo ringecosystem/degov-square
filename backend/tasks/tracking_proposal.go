@@ -289,7 +289,7 @@ func (t *TrackingProposalTask) updateProposalsStates(dao *gqlmodels.Dao, daoConf
 			if err := t.notificationService.SaveEvent(dbmodels.NotificationEvent{
 				ChainID:    proposal.ChainId,
 				DaoCode:    proposal.DaoCode,
-				Type:       dbmodels.NotificationTypeStateChanged,
+				Type:       dbmodels.SubscribeFeatureProposalStateChanged,
 				ProposalID: proposal.ProposalId,
 				TimeEvent:  proposal.CTime,
 				Payload:    payload,

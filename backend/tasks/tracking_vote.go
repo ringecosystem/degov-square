@@ -104,7 +104,7 @@ func (t *TrackingVoteTask) trackingVoteByProposal(input trackingVoteInput) error
 	}
 
 	// 2. Page through subscribed users using the earliest time and generate notifications
-	return t.generateAndStoreNotifications(input.proposal, processedVotes)
+	return t.generateAndStoreNotificationEvents(input.proposal, processedVotes)
 }
 
 func (t *TrackingVoteTask) fetchAllAndProcessVotes(input trackingVoteInput) ([]processedVote, error) {
@@ -144,13 +144,13 @@ func (t *TrackingVoteTask) fetchAllAndProcessVotes(input trackingVoteInput) ([]p
 	return processedVotes, nil
 }
 
-func (t *TrackingVoteTask) generateAndStoreNotifications(proposal *dbmodels.ProposalTracking, processedVotes []processedVote) error {
+func (t *TrackingVoteTask) generateAndStoreNotificationEvents(proposal *dbmodels.ProposalTracking, processedVotes []processedVote) error {
 	notificationEvents := []dbmodels.NotificationEvent{}
 	for _, vote := range processedVotes {
 		ne := dbmodels.NotificationEvent{
 			ChainID:    proposal.ChainId,
 			DaoCode:    proposal.DaoCode,
-			Type:       dbmodels.NotificationTypeVote,
+			Type:       dbmodels.SubscribeFeatureVoteEmitted,
 			ProposalID: proposal.ProposalId,
 			VoteID:     &vote.Vote.ID,
 			TimeEvent:  vote.Timestamp,

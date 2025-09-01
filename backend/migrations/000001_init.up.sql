@@ -1,5 +1,3 @@
--- Consolidated initialization migration
--- Combines original genesis, abi, and notification migrations into one
 
 -- User table
 create table
@@ -146,9 +144,10 @@ comment on column dgv_user_subscribed_proposal.user_address is 'user address';
 create table
   if not exists dgv_notification_record (
     id varchar(50) not null,
+    code varchar(100) not null,
     chain_id int not null,
     dao_code varchar(255) not null,
-    type varchar(50) not null, -- { NEW_PROPOSAL, VOTE, STATUS, VOTE_END_REMINDER }
+    type varchar(50) not null, -- { PROPOSAL_NEW, PROPOSAL_STATE_CHANGED, VOTE_END, VOTE_EMITTED }
     user_id varchar(50) not null,
     user_address varchar(255) not null,
     message text,
@@ -162,9 +161,11 @@ create table
     primary key (id)
   );
 
+create unique index uq_notification_record_code on dgv_notification_record(code);
 create unique index uq_notification_record_event_id_user_id on dgv_notification_record (event_id, user_id);
 
 comment on table dgv_notification_record is 'Notification record table';
+comment on column dgv_notification_record.code is 'code';
 comment on column dgv_notification_record.chain_id is 'chain id';
 comment on column dgv_notification_record.dao_code is 'DAO code';
 comment on column dgv_notification_record.type is 'notification type';
@@ -261,6 +262,7 @@ create table
     state varchar(50) not null,
     time_event timestamp,
     payload text,
+    message text,
     ctime timestamp default now (),
     primary key (id)
   );

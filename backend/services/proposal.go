@@ -68,7 +68,7 @@ func (s *ProposalService) StoreProposalTracking(input types.ProposalTrackingInpu
 	if err := s.notificationService.SaveEvent(dbmodels.NotificationEvent{
 		ChainID:    newProposal.ChainId,
 		DaoCode:    newProposal.DaoCode,
-		Type:       dbmodels.NotificationTypeNewProposal,
+		Type:       dbmodels.SubscribeFeatureProposalNew,
 		ProposalID: newProposal.ProposalId,
 		TimeEvent:  newProposal.CTime,
 	}); err != nil {

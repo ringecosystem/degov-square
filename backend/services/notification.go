@@ -76,3 +76,21 @@ func (s *NotificationService) StoreRecords(records []dbmodels.NotificationRecord
 
 	return nil
 }
+
+func (s *NotificationService) ListLimitEvents(input types.ListLimitEventsInput) ([]dbmodels.NotificationEvent, error) {
+	var events []dbmodels.NotificationEvent
+	query := s.db.Model(&dbmodels.NotificationEvent{})
+
+	if input.States != nil && len(*input.States) > 0 {
+		query = query.Where("state IN ?", *input.States)
+	}
+
+	if err := query.Order("ctime asc").Limit(input.Limit).Find(&events).Error; err != nil {
+		return nil, err
+	}
+	return events, nil
+}
+
+func (s *NotificationService) UpdateEventState(input types.UpdateEventStateInput) error {
+	return s.db.Model(&dbmodels.NotificationEvent{}).Where("id = ?", input.ID).Update("state", input.State).Error
+}

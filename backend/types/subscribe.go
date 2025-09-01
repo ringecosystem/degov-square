@@ -10,10 +10,10 @@ type ListSubscribeUserInput struct {
 	Feature    dbmodels.SubscribeFeatureName
 	Strategies []string
 	DaoCode    string
-	ProposalId *string
-	// EventTime is the timestamp of the event; only users who subscribed
+	ProposalID *string
+	// TimeEvent is the timestamp of the event; only users who subscribed
 	// before or at this time should be returned.
-	EventTime *time.Time
+	TimeEvent *time.Time
 	Limit     int
 	Offset    int
 }

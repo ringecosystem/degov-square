@@ -73,7 +73,7 @@ func (t *TrackingVoteEndTask) trackingVoteEnd() error {
 			existingEvent, _ := t.notificationService.InspectEvent(types.InspectNotificationEventInput{
 				DaoCode:    dao.Code,
 				ProposalID: proposal.ProposalID,
-				Type:       dbmodels.NotificationTypeVoteEndReminder,
+				Type:       dbmodels.SubscribeFeatureVoteEnd,
 			})
 			if existingEvent != nil {
 				slog.Info("Existing notification event found", "event", existingEvent)
@@ -88,7 +88,7 @@ func (t *TrackingVoteEndTask) trackingVoteEnd() error {
 			ne := dbmodels.NotificationEvent{
 				ChainID:    int(dao.ChainID),
 				DaoCode:    dao.Code,
-				Type:       dbmodels.NotificationTypeVoteEndReminder,
+				Type:       dbmodels.SubscribeFeatureVoteEnd,
 				ProposalID: proposal.ProposalID,
 				TimeEvent:  voteEndTime,
 			}

@@ -5,10 +5,10 @@ import "time"
 type SubscribeFeatureName string
 
 const (
-	SubscribeFeatureEnableProposal          SubscribeFeatureName = "ENABLE_PROPOSAL"
-	SubscribeFeatureEnableVotingEndReminder SubscribeFeatureName = "ENABLE_VOTING_END_REMINDER"
-	SubscribeFeatureEnableVoted             SubscribeFeatureName = "ENABLE_VOTED"
-	SubscribeFeatureEnableStateChanged      SubscribeFeatureName = "ENABLE_STATE_CHANGED"
+	SubscribeFeatureProposalNew          SubscribeFeatureName = "PROPOSAL_NEW"
+	SubscribeFeatureProposalStateChanged SubscribeFeatureName = "PROPOSAL_STATE_CHANGED"
+	SubscribeFeatureVoteEnd              SubscribeFeatureName = "VOTE_END"
+	SubscribeFeatureVoteEmitted          SubscribeFeatureName = "VOTE_EMITTED"
 )
 
 type SubscribeState string

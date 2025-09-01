@@ -75,7 +75,7 @@ func (s *SubscribeService) buildDaoFeatures(
 			ChainID:  input.ChainID,
 			DaoCode:  input.DaoCode,
 			UserID:   input.UserID,
-			Feature:  dbmodels.SubscribeFeatureEnableProposal,
+			Feature:  dbmodels.SubscribeFeatureProposalNew,
 			Strategy: utils.SafeBoolString(featureInput.EnableProposal),
 		})
 	}
@@ -86,7 +86,7 @@ func (s *SubscribeService) buildDaoFeatures(
 			ChainID:  input.ChainID,
 			DaoCode:  input.DaoCode,
 			UserID:   input.UserID,
-			Feature:  dbmodels.SubscribeFeatureEnableVotingEndReminder,
+			Feature:  dbmodels.SubscribeFeatureVoteEnd,
 			Strategy: utils.SafeBoolString(featureInput.EnableVotingEndReminder),
 		})
 	}
@@ -113,7 +113,7 @@ func (s *SubscribeService) buildProposalFeatures(input *buildProposalFeatureInpu
 			DaoCode:     input.DaoCode,
 			UserID:      input.UserID,
 			UserAddress: input.UserAddress,
-			Feature:     dbmodels.SubscribeFeatureEnableVotingEndReminder,
+			Feature:     dbmodels.SubscribeFeatureVoteEnd,
 			Strategy:    utils.SafeBoolString(featureInput.EnableVotingEndReminder),
 			ProposalID:  &pid,
 		})
@@ -126,7 +126,7 @@ func (s *SubscribeService) buildProposalFeatures(input *buildProposalFeatureInpu
 			DaoCode:     input.DaoCode,
 			UserID:      input.UserID,
 			UserAddress: input.UserAddress,
-			Feature:     dbmodels.SubscribeFeatureEnableVoted,
+			Feature:     dbmodels.SubscribeFeatureVoteEmitted,
 			Strategy:    utils.SafeBoolString(featureInput.EnableVoted),
 			ProposalID:  &pid,
 		})
@@ -139,7 +139,7 @@ func (s *SubscribeService) buildProposalFeatures(input *buildProposalFeatureInpu
 			DaoCode:     input.DaoCode,
 			UserID:      input.UserID,
 			UserAddress: input.UserAddress,
-			Feature:     dbmodels.SubscribeFeatureEnableStateChanged,
+			Feature:     dbmodels.SubscribeFeatureProposalStateChanged,
 			Strategy:    utils.SafeBoolString(featureInput.EnableStateChanged),
 			ProposalID:  &pid,
 		})
@@ -151,7 +151,7 @@ func (s *SubscribeService) buildProposalFeatures(input *buildProposalFeatureInpu
 func (s *SubscribeService) SubscribeDao(baseInput types.BasicInput[gqlmodels.SubscribeDaoInput]) (*gqlmodels.SubscribedDaoOutput, error) {
 	user := baseInput.User
 	sdInput := baseInput.Input
-	featureInput := sdInput.Feature
+	featuresInput := sdInput.Features
 
 	existingDao, err := s.daoService.Inspect(types.BasicInput[string]{
 		User:  user,
@@ -381,16 +381,16 @@ func (s *SubscribeService) ListSubscribedUser(input types.ListSubscribeUserInput
 	queryParams = append(queryParams, input.Feature, strategies, input.DaoCode)
 
 	// proposal id handling
-	if input.ProposalId != nil {
+	if input.ProposalID != nil {
 		sql += "AND (f.proposal_id = ? OR f.proposal_id IS NULL) "
-		queryParams = append(queryParams, *input.ProposalId)
+		queryParams = append(queryParams, *input.ProposalID)
 	} else {
 		sql += "AND f.proposal_id IS NULL "
 	}
 
-	if input.EventTime != nil {
+	if input.TimeEvent != nil {
 		sql += "AND ((d.state = 'ACTIVE' AND d.ctime <= ?) OR (p.state = 'ACTIVE' AND p.ctime <= ?)) "
-		queryParams = append(queryParams, *input.EventTime, *input.EventTime)
+		queryParams = append(queryParams, *input.TimeEvent, *input.TimeEvent)
 	} else {
 		sql += "AND (d.state = 'ACTIVE' OR p.state = 'ACTIVE') "
 	}

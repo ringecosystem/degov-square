@@ -44,6 +44,13 @@ enum AbiType {
   IMPLEMENTATION
 }
 
+enum FeatureName {
+  PROPOSAL_NEW
+  PROPOSAL_STATE_CHANGED
+  VOTE_END
+  VOTE_EMITTED
+}
+
 ### ==== entities
 
 type User {
@@ -171,39 +178,41 @@ input GetDaoConfigInput {
   format: ConfigFormat
 }
 
-
 input ModifyLikeDaoInput {
   daoCode: String!
   action: LikeAction!
 }
-
 
 input EvmAbiInput {
   chain: Int!
   contract: String!
 }
 
-input FeatureSettingsDaoInput {
-  enableProposal: Boolean
-  enableVotingEndReminder: Boolean
-}
+# input FeatureSettingsDaoInput {
+#   proposalNew: Boolean
+#   voteEnd: Boolean
+# }
 
-input FeatureSettingsProposalInput {
-  enableVotingEndReminder: Boolean
-  enableVoted: Boolean
-  enableStateChanged: Boolean
-}
+# input FeatureSettingsProposalInput {
+#   voteEnd: Boolean
+#   voteEmitted: Boolean
+#   proposalStateChanged: Boolean
+# }
 
+input FeatureSettingsInput {
+  name: FeatureName!
+  strategy: String
+}
 
 input SubscribeDaoInput {
   daoCode: String!
-  feature: FeatureSettingsDaoInput
+  features: [FeatureSettingsInput!]
 }
 
 input SubscribeProposalInput {
   daoCode: String!
   proposalId: String!
-  feature: FeatureSettingsProposalInput
+  features: [FeatureSettingsInput!]
 }
 
 input UnsubscribeDaoInput {
@@ -232,7 +241,6 @@ type Query {
   # subscribe
   subscribedDaos: [SubscribedDao!]! @auth
   subscribedProposals: [SubscribedProposal!]! @auth
-
 }
 
 type Mutation {
@@ -243,9 +251,12 @@ type Mutation {
   modifyLikeDao(input: ModifyLikeDaoInput!): Boolean! @auth
 
   subscribeDao(input: SubscribeDaoInput!): SubscribedDaoOutput! @auth
-  subscribeProposal(input: SubscribeProposalInput!): SubscribedProposalOutput! @auth
+  subscribeProposal(input: SubscribeProposalInput!): SubscribedProposalOutput!
+    @auth
   unsubscribeDao(input: UnsubscribeDaoInput!): SubscribedDaoOutput! @auth
-  unsubscribeProposal(input: UnsubscribeProposalInput!): SubscribedProposalOutput! @auth
+  unsubscribeProposal(
+    input: UnsubscribeProposalInput!
+  ): SubscribedProposalOutput! @auth
 }
 
 # type Subscription {
