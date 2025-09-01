@@ -110,6 +110,10 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("TASK_VOTE_END_TRACKING_INTERVAL", "10m")
 	v.SetDefault("TASK_PROPOSAL_TRACKING_ENABLED", true)
 	v.SetDefault("TASK_PROPOSAL_TRACKING_INTERVAL", "3m")
+	v.SetDefault("TASK_NOTIFICATION_EVENT_ENABLED", true)
+	v.SetDefault("TASK_NOTIFICATION_EVENT_INTERVAL", "2m")
+	v.SetDefault("TASK_NOTIFICATION_DISPATCHER_ENABLED", true)
+	v.SetDefault("TASK_NOTIFICATION_DISPATCHER_INTERVAL", "30s")
 }
 
 // Server configuration methods
@@ -219,6 +223,22 @@ func (c *Config) GetTaskProposalTrackingEnabled() bool {
 
 func (c *Config) GetTaskProposalTrackingInterval() time.Duration {
 	return c.viper.GetDuration("TASK_PROPOSAL_TRACKING_INTERVAL")
+}
+
+func (c *Config) GetTaskNotificationEventEnabled() bool {
+	return c.viper.GetBool("TASK_NOTIFICATION_EVENT_ENABLED")
+}
+
+func (c *Config) GetTaskNotificationEventInterval() time.Duration {
+	return c.viper.GetDuration("TASK_NOTIFICATION_EVENT_INTERVAL")
+}
+
+func (c *Config) GetTaskNotificationDispatcherEnabled() bool {
+	return c.viper.GetBool("TASK_NOTIFICATION_DISPATCHER_ENABLED")
+}
+
+func (c *Config) GetTaskNotificationDispatcherInterval() time.Duration {
+	return c.viper.GetDuration("TASK_NOTIFICATION_DISPATCHER_INTERVAL")
 }
 
 // Generic configuration methods

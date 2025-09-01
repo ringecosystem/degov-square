@@ -56,7 +56,22 @@ func GetTaskDefinitions() []TaskDefinition {
 			},
 			Constructor: func() Task { return NewTrackingProposalTask() },
 		},
-		// Add more task definitions here
+		{
+			Config: TaskConfig{
+				Name:     "notification-event",
+				Interval: cfg.GetTaskNotificationEventInterval(),
+				Enabled:  cfg.GetTaskNotificationEventEnabled(),
+			},
+			Constructor: func() Task { return NewNotificationEventTask() },
+		},
+		{
+			Config: TaskConfig{
+				Name:     "notification-dispatcher",
+				Interval: cfg.GetTaskNotificationDispatcherInterval(),
+				Enabled:  cfg.GetTaskNotificationDispatcherEnabled(),
+			},
+			Constructor: func() Task { return NewNotificationDispatcherTask() },
+		},
 	}
 }
 
