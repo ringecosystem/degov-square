@@ -120,6 +120,7 @@ func (s *DaoService) ListDaos(baseInput types.BasicInput[*types.ListDaosInput]) 
 		lp.id as lp_id,
 		lp.dao_code as lp_dao_code,
 		lp.chain_id as lp_chain_id,
+		lp.title as lp_title,
 		lp.proposal_link as lp_proposal_link,
 		lp.proposal_id as lp_proposal_id,
 		lp.state as lp_state,
@@ -162,6 +163,7 @@ func (s *DaoService) ListDaos(baseInput types.BasicInput[*types.ListDaosInput]) 
 		dbmodels.Dao
 		Liked               *int    // Pointer to int
 		LpID                *string // Pointer to string
+		LpTitle             *string
 		LpDaoCode           *string
 		LpChainID           *int64
 		LpProposalLink      *string
@@ -229,6 +231,9 @@ func (s *DaoService) ListDaos(baseInput types.BasicInput[*types.ListDaosInput]) 
 			}
 			if row.LpProposalLink != nil {
 				proposal.ProposalLink = *row.LpProposalLink
+			}
+			if row.LpTitle != nil {
+				proposal.Title = *row.LpTitle
 			}
 			if row.LpProposalID != nil {
 				proposal.ProposalID = *row.LpProposalID

@@ -28,3 +28,8 @@ type ProposalStateCountResult struct {
 	State   dbmodels.ProposalState `json:"state"`
 	Total   int64                  `json:"total"`
 }
+
+type InpspectProposalInput struct {
+	DaoCode    string
+	ProposalID string
+}

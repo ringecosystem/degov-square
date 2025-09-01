@@ -113,7 +113,11 @@ func (r *queryResolver) SubscribedDaos(ctx context.Context) ([]*gqlmodels.Subscr
 
 // SubscribedProposals is the resolver for the subscribedProposals field.
 func (r *queryResolver) SubscribedProposals(ctx context.Context) ([]*gqlmodels.SubscribedProposal, error) {
-	panic(fmt.Errorf("not implemented: SubscribedProposals - subscribedProposals"))
+	user, _ := r.authUtils.GetUser(ctx)
+	return r.userSubscribedService.SubscribedProposals(types.BasicInput[*string]{
+		User:  user,
+		Input: nil,
+	})
 }
 
 // Mutation returns MutationResolver implementation.

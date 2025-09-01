@@ -7,8 +7,10 @@ import (
 
 	"gorm.io/gorm"
 
+	"github.com/jinzhu/copier"
 	"github.com/ringecosystem/degov-apps/database"
 	dbmodels "github.com/ringecosystem/degov-apps/database/models"
+	gqlmodels "github.com/ringecosystem/degov-apps/graph/models"
 	"github.com/ringecosystem/degov-apps/internal/utils"
 	"github.com/ringecosystem/degov-apps/types"
 )
@@ -175,4 +177,21 @@ func (s *ProposalService) ProposalStateCount() ([]types.ProposalStateCountResult
 	}
 
 	return results, nil
+}
+
+func (s *ProposalService) InspectProposal(input types.InpspectProposalInput) (*dbmodels.ProposalTracking, error) {
+	var proposal dbmodels.ProposalTracking
+	err := s.db.Table("dgv_proposal_tracking").
+		Where("dao_code = ? AND proposal_id = ?", input.DaoCode, input.ProposalID).
+		First(&proposal).Error
+	if err != nil {
+		return nil, err
+	}
+	return &proposal, nil
+}
+
+func (s *ProposalService) ConvertToGqlProposal(input *dbmodels.ProposalTracking) *gqlmodels.Proposal {
+	gqlProposal := gqlmodels.Proposal{}
+	copier.Copy(&gqlProposal, input)
+	return &gqlProposal
 }
