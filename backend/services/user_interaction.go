@@ -203,12 +203,25 @@ func (s *UserInteractionService) resendOTPForChannel(baseInput types.BasicInput[
 	if !config.GetAppEnv().IsDevelopment() {
 		rateLimitKey := fmt.Sprintf("otp_rate_limit_%s_%s_%s", user.Id, input.ChannelType, input.ChannelValue)
 
-		if _, found := s.rateLimitCache.Get(rateLimitKey); found {
-			return &gqlmodels.ResendOTPOutput{
-				Code:      1,
-				RateLimit: utils.Int32Ptr(60), // 60 seconds
-				Message:   utils.StringPtr("OTP can only be sent once per minute. Please try again later"),
-			}, nil
+		if cachedTime, found := s.rateLimitCache.Get(rateLimitKey); found {
+			if lastSentTime, ok := cachedTime.(time.Time); ok {
+				elapsed := time.Since(lastSentTime)
+				remaining := 60*time.Second - elapsed
+				if remaining > 0 {
+					remainingSeconds := int32(remaining.Seconds())
+					return &gqlmodels.ResendOTPOutput{
+						Code:      1,
+						RateLimit: utils.Int32Ptr(remainingSeconds),
+						Message:   utils.StringPtr(fmt.Sprintf("OTP can only be sent once per minute. Please try again in %d seconds", remainingSeconds)),
+					}, nil
+				}
+			} else {
+				return &gqlmodels.ResendOTPOutput{
+					Code:      1,
+					RateLimit: utils.Int32Ptr(60),
+					Message:   utils.StringPtr("OTP can only be sent once per minute. Please try again later"),
+				}, nil
+			}
 		}
 
 		s.rateLimitCache.Set(rateLimitKey, time.Now(), 1*time.Minute)
