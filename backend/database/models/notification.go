@@ -73,6 +73,7 @@ const (
 type NotificationChannel struct {
 	ID           string                  `gorm:"column:id;type:varchar(50);primaryKey" json:"id"`
 	UserID       string                  `gorm:"column:user_id;type:varchar(50);not null" json:"user_id"`
+	UserAddress  string                  `gorm:"column:user_address;type:varchar(255);not null" json:"user_address"`
 	Verified     int                     `gorm:"column:verified;not null;default:0" json:"verified"`
 	ChannelType  NotificationChannelType `gorm:"column:channel_type;type:varchar(50);not null" json:"channel_type"`
 	ChannelValue string                  `gorm:"column:channel_value;type:varchar(500);not null" json:"channel_value"`

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/patrickmn/go-cache"
 	"gorm.io/gorm"
 
 	"github.com/ringecosystem/degov-apps/database"
@@ -17,12 +18,16 @@ import (
 type UserInteractionService struct {
 	db         *gorm.DB
 	daoService *DaoService
+	otpCache   *cache.Cache
 }
 
 func NewUserInteractionService() *UserInteractionService {
+	otpCache := cache.New(3*time.Minute, 5*time.Minute)
+
 	return &UserInteractionService{
 		db:         database.GetDB(),
 		daoService: NewDaoService(),
+		otpCache:   otpCache,
 	}
 }
 
@@ -82,16 +87,93 @@ func (s *UserInteractionService) ModifyLikeDao(baseInput types.BasicInput[gqlmod
 	return true, nil
 }
 
-func (s *UserInteractionService) BindNotifyChannel(baseInput types.BasicInput[gqlmodels.BindNotifyChannelInput]) (*gqlmodels.VerifyNotififyChannelOutput, error) {
+func (s *UserInteractionService) BindNotifyChannel(baseInput types.BasicInput[gqlmodels.BindNotifyChannelInput]) (*gqlmodels.BindNotifyChannelOutput, error) {
 	user := baseInput.User
 	input := baseInput.Input
 
-	return nil, nil
+	var existingChannel dbmodels.NotificationChannel
+	err := s.db.Where("user_id = ? AND channel_type = ?", user.Id, input.Type).First(&existingChannel).Error
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, fmt.Errorf("error checking existing channel: %w", err)
+	}
+
+	if err == nil {
+		return nil, errors.New("channel type already exists for this user")
+	}
+
+	channelID := utils.NextIDString()
+
+	channel := &dbmodels.NotificationChannel{
+		ID:           channelID,
+		UserID:       user.Id,
+		UserAddress:  user.Address,
+		Verified:     0,
+		ChannelType:  dbmodels.NotificationChannelType(input.Type),
+		ChannelValue: input.Value,
+		CTime:        time.Now(),
+	}
+
+	if err := s.db.Create(channel).Error; err != nil {
+		return nil, fmt.Errorf("error creating notification channel: %w", err)
+	}
+
+	otpCode, err := utils.NextOTPCode()
+	if err != nil {
+		return nil, fmt.Errorf("error generating OTP code: %w", err)
+	}
+	s.otpCache.Set(channelID, otpCode, 3*time.Minute)
+
+	return &gqlmodels.BindNotifyChannelOutput{
+		Expiration: 3 * 60, // 180 seconds
+	}, nil
 }
 
 func (s *UserInteractionService) VerifyNotififyChannel(baseInput types.BasicInput[gqlmodels.VerifyNotififyChannelInput]) (*gqlmodels.VerifyNotififyChannelOutput, error) {
 	user := baseInput.User
 	input := baseInput.Input
 
-	return nil, nil
+	cachedOTP, found := s.otpCache.Get(input.ID)
+	if !found {
+		return &gqlmodels.VerifyNotififyChannelOutput{
+			Code:    1,
+			Message: utils.StringPtr("OTP code has expired or does not exist"),
+		}, nil
+	}
+
+	cachedOTPStr, ok := cachedOTP.(string)
+	if !ok {
+		return &gqlmodels.VerifyNotififyChannelOutput{
+			Code:    1,
+			Message: utils.StringPtr("Invalid OTP code format"),
+		}, nil
+	}
+
+	if cachedOTPStr != input.OtpCode {
+		return &gqlmodels.VerifyNotififyChannelOutput{
+			Code:    1,
+			Message: utils.StringPtr("Invalid OTP code"),
+		}, nil
+	}
+
+	s.otpCache.Delete(input.ID)
+
+	var channel dbmodels.NotificationChannel
+	err := s.db.Where("id = ? AND user_id = ?", input.ID, user.Id).First(&channel).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return &gqlmodels.VerifyNotififyChannelOutput{
+				Code:    1,
+				Message: utils.StringPtr("Notification channel not found"),
+			}, nil
+		}
+		return nil, fmt.Errorf("error finding notification channel: %w", err)
+	}
+
+	if err := s.db.Model(&channel).Update("verified", 1).Error; err != nil {
+		return nil, fmt.Errorf("error updating channel verification status: %w", err)
+	}
+
+	return &gqlmodels.VerifyNotififyChannelOutput{
+		Code: 0,
+	}, nil
 }

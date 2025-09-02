@@ -1,6 +1,9 @@
 package utils
 
 import (
+	"crypto/rand"
+	"encoding/hex"
+	"fmt"
 	"sync"
 
 	"github.com/bwmarrin/snowflake"
@@ -35,4 +38,14 @@ func NextIDString() string {
 		_ = InitIDGenerator(1)
 	}
 	return node.Generate().String()
+}
+
+func NextOTPCode() (string, error) {
+	bytes := make([]byte, 3)
+	_, err := rand.Read(bytes)
+	if err != nil {
+		return "", fmt.Errorf("error generating OTP code: %w", err)
+	}
+	otpCode := hex.EncodeToString(bytes)
+	return otpCode, nil
 }
