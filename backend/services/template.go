@@ -7,6 +7,7 @@ import (
 	"fmt"
 	tplHtml "html/template"
 	"log/slog"
+	"reflect"
 	"strings"
 	tplText "text/template"
 	"time"
@@ -184,13 +185,26 @@ func (s *TemplateService) GenerateTemplateByNotificationRecord(record *dbmodels.
 }
 
 func (s *TemplateService) renderTemplate(templateName string, data interface{}) (string, error) {
+
+	var finData interface{}
+	templateData, serr := structToMap(data)
+	if serr != nil {
+		if m, ok := data.(map[string]interface{}); ok {
+			finData = m
+		} else {
+			finData = data
+		}
+	} else {
+		finData = templateData
+	}
+
 	var buf bytes.Buffer
 	var err error
 
 	if strings.HasSuffix(templateName, ".html") {
-		err = s.htmlTemplates.ExecuteTemplate(&buf, templateName, data)
+		err = s.htmlTemplates.ExecuteTemplate(&buf, templateName, finData)
 	} else if strings.HasSuffix(templateName, ".md") {
-		err = s.textTemplates.ExecuteTemplate(&buf, templateName, data)
+		err = s.textTemplates.ExecuteTemplate(&buf, templateName, finData)
 	} else {
 		return "", fmt.Errorf("unsupported template type: %s", templateName)
 	}
@@ -220,4 +234,29 @@ func (s *TemplateService) GenerateTemplateOTP(input types.GenerateTemplateOTPInp
 		PlainTextContent: plainText,
 	}, nil
 
+}
+
+func structToMap(data interface{}) (map[string]interface{}, error) {
+	result := make(map[string]interface{})
+
+	val := reflect.ValueOf(data)
+
+	if val.Kind() == reflect.Ptr {
+		val = val.Elem()
+	}
+
+	if val.Kind() != reflect.Struct {
+		return nil, fmt.Errorf("data is not a struct, but a %s", val.Kind())
+	}
+
+	typ := val.Type()
+
+	for i := 0; i < val.NumField(); i++ {
+		field := typ.Field(i)
+		if field.IsExported() {
+			result[field.Name] = val.Field(i).Interface()
+		}
+	}
+
+	return result, nil
 }
