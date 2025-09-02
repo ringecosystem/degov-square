@@ -1,23 +1,17 @@
-{{define "layout.html"}}
-{{/* Helper template to determine the correct image source based on the theme.
-  It expects a dictionary with keys: "Theme", "Dark", "Light", "Default".
-  The {{- ... -}} syntax is used to trim whitespace, ensuring the output is a clean URL.
-*/}}
-{{define "image_src_by_theme"}}
-  {{- if eq .Theme "dark" -}}
-    {{- or .Dark .Default -}}
-  {{- else -}}
-    {{- or .Light .Default -}}
-  {{- end -}}
-{{end}}
 
+{{/* Main layout template definition. */}}
+{{define "layout.html"}}
 <!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>{{block "title" .}} - DeGov.AI</title>
+    <title>{{block "title" .}}{{end}} - DeGov.AI</title>
 
+    {{/*
+      The theme variable is now defined only once in the body,
+      so we can determine which single style block to render.
+    */}}
     {{$theme := "dark"}}
     {{if eq .DegovSiteConfig.EmailTheme "light"}}
       {{$theme = "light"}}
@@ -116,13 +110,19 @@
           <div class="email-container">
             <div class="header-logo">
               <a href="{{$config.Home}}" target="_blank">
+                {{if eq $theme "dark"}}
                 <img
-                  src='{{/* Call the helper template. Note the single quotes for the attribute. */}}
-                       {{- template "image_src_by_theme" (dict "Theme" $theme "Dark" $config.LogoDark "Light" $config.LogoLight "Default" $config.Logo) -}}
-                       '
+                  src="{{$config.LogoLight}}"
                   alt="{{$config.Name}}"
                   style="width: auto; height: auto; vertical-align: middle"
                 />
+                {{else}}
+                <img
+                  src="{{$config.LogoDark}}"
+                  alt="{{$config.Name}}"
+                  style="width: auto; height: auto; vertical-align: middle"
+                />
+                {{end}}
               </a>
             </div>
 
@@ -142,7 +142,6 @@
                   <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
                     <tr>
                       <td style="width: 50%; vertical-align: middle">
-                        <p class="footer-project-name">{{$config.Name}}</p>
                         <p class="footer-project-name">
                           {{if and .DaoConfig .DaoConfig.Name}}{{.DaoConfig.Name}} - {{end}}DeGov.AI
                         </p>
@@ -151,12 +150,11 @@
                         <div class="social-icons">
                           {{range $config.Socials}}
                            <a href="{{.Link}}" class="social-icon" target="_blank">
-                              <img
-                                src='{{/* Reuse the same helper template for social icons */}}
-                                     {{- template "image_src_by_theme" (dict "Theme" $theme "Dark" .IconDark "Light" .IconLight "Default" .Icon) -}}
-                                     '
-                                alt="{{.Name}}"
-                              />
+                              {{if eq $theme "dark"}}
+                              <img src='{{.IconLight}}' alt="{{.Name}}"/>
+                              {{else}}
+                              <img src='{{.IconDark}}' alt="{{.Name}}"/>
+                              {{end}}
                            </a>
                           {{end}}
                         </div>
