@@ -59,11 +59,6 @@ type TemplateNotificationRecordData struct {
 	UserAddress     string                     `json:"user_address"`
 }
 
-type TemplateOTPData struct {
-	DegovSiteConfig types.DegovSiteConfig `json:"degov_site_config"`
-	OTP             string                `json:"otp"`
-}
-
 // parsePayload attempts to parse the payload as JSON, falls back to string if failed
 func (s *TemplateService) parsePayload(payload *string) map[string]interface{} {
 	result := make(map[string]interface{})
@@ -208,16 +203,12 @@ func (s *TemplateService) renderTemplate(templateName string, data interface{}) 
 }
 
 func (s *TemplateService) GenerateTemplateOTP(input types.GenerateTemplateOTPInput) (*types.TemplateOutput, error) {
-	templateData := TemplateOTPData{
-		DegovSiteConfig: config.GetDegovSiteConfig(),
-		OTP:             input.OTP,
-	}
-	richText, err := s.renderTemplate("otp.html", templateData)
+	richText, err := s.renderTemplate("otp.html", input)
 	if err != nil {
 		slog.Error("failed to render OTP html template", "err", err)
 		return nil, err
 	}
-	plainText, err := s.renderTemplate("otp.md", templateData)
+	plainText, err := s.renderTemplate("otp.md", input)
 	if err != nil {
 		slog.Error("failed to render OTP md template", "err", err)
 		return nil, err
