@@ -51,6 +51,15 @@ func (r *mutationResolver) VerifyNotififyChannel(ctx context.Context, input gqlm
 	})
 }
 
+// ResendOtp is the resolver for the resendOTP field.
+func (r *mutationResolver) ResendOtp(ctx context.Context, input gqlmodels.ResendOTPInput) (*gqlmodels.ResendOTPOutput, error) {
+	user, _ := r.authUtils.GetUser(ctx)
+	return r.userInteractionService.ResendOTP(types.BasicInput[gqlmodels.ResendOTPInput]{
+		User:  user,
+		Input: input,
+	})
+}
+
 // SubscribeDao is the resolver for the subscribeDao field.
 func (r *mutationResolver) SubscribeDao(ctx context.Context, input gqlmodels.SubscribeDaoInput) (*gqlmodels.SubscribedDaoOutput, error) {
 	user, _ := r.authUtils.GetUser(ctx)

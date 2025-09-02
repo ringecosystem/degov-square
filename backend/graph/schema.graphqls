@@ -176,6 +176,10 @@ type VerifyNotififyChannelOutput {
   message: String
 }
 
+type ResendOTPOutput {
+  expiration: Int!
+}
+
 ### === inputs
 
 input GetNonceInput {
@@ -210,6 +214,11 @@ input BindNotifyChannelInput {
 input VerifyNotififyChannelInput {
   id: String!
   otpCode: String!
+}
+
+input resendOTPInput {
+  type: NotificationChannelType!
+  value: String!
 }
 
 input FeatureSettingsInput {
@@ -262,12 +271,12 @@ type Mutation {
 
   # User interactions
   modifyLikeDao(input: ModifyLikeDaoInput!): Boolean! @auth
-  bindNotifyChannel(
-    input: BindNotifyChannelInput!
-  ): BindNotifyChannelOutput! @auth
+  bindNotifyChannel(input: BindNotifyChannelInput!): BindNotifyChannelOutput!
+    @auth
   verifyNotififyChannel(
     input: VerifyNotififyChannelInput!
   ): VerifyNotififyChannelOutput! @auth
+  resendOTP(input: resendOTPInput!): ResendOTPOutput! @auth
 
   # subscribe
   subscribeDao(input: SubscribeDaoInput!): SubscribedDaoOutput! @auth

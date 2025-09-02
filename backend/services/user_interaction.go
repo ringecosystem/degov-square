@@ -117,14 +117,16 @@ func (s *UserInteractionService) BindNotifyChannel(baseInput types.BasicInput[gq
 		return nil, fmt.Errorf("error creating notification channel: %w", err)
 	}
 
-	otpCode, err := utils.NextOTPCode()
+	sendOutput, err := s.resendOTPForChannel(types.BasicInput[*dbmodels.NotificationChannel]{
+		User:  user,
+		Input: channel,
+	})
 	if err != nil {
-		return nil, fmt.Errorf("error generating OTP code: %w", err)
+		return nil, fmt.Errorf("failed to send otp: %w", err)
 	}
-	s.otpCache.Set(channelID, otpCode, 3*time.Minute)
 
 	return &gqlmodels.BindNotifyChannelOutput{
-		Expiration: 3 * 60, // 180 seconds
+		Expiration: sendOutput.Expiration,
 	}, nil
 }
 
@@ -175,5 +177,35 @@ func (s *UserInteractionService) VerifyNotififyChannel(baseInput types.BasicInpu
 
 	return &gqlmodels.VerifyNotififyChannelOutput{
 		Code: 0,
+	}, nil
+}
+
+func (s *UserInteractionService) ResendOTP(baseInput types.BasicInput[gqlmodels.ResendOTPInput]) (*gqlmodels.ResendOTPOutput, error) {
+	user := baseInput.User
+	input := baseInput.Input
+
+	var existingChannel dbmodels.NotificationChannel
+	err := s.db.Where("user_id = ? AND channel_type = ? and channel_value = ?", user.Id, input.Type, input.Value).First(&existingChannel).Error
+	if err != nil {
+		return nil, fmt.Errorf("error checking existing channel: %w", err)
+	}
+	return s.resendOTPForChannel(types.BasicInput[*dbmodels.NotificationChannel]{
+		User:  user,
+		Input: &existingChannel,
+	})
+}
+
+func (s *UserInteractionService) resendOTPForChannel(baseInput types.BasicInput[*dbmodels.NotificationChannel]) (*gqlmodels.ResendOTPOutput, error) {
+	user := baseInput.User
+	input := baseInput.Input
+
+	otpCode, err := utils.NextOTPCode()
+	if err != nil {
+		return nil, fmt.Errorf("error generating OTP code: %w", err)
+	}
+	s.otpCache.Set(input.ID, otpCode, 3*time.Minute)
+
+	return &gqlmodels.ResendOTPOutput{
+		Expiration: 3 * 60, // 180 seconds
 	}, nil
 }
