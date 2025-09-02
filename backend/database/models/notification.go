@@ -39,6 +39,7 @@ type NotificationRecord struct {
 	TimesRetry      int                     `gorm:"column:times_retry;not null;default:0" json:"times_retry"`
 	TimeNextExecute time.Time               `gorm:"column:time_next_execute;" json:"time_next_execute"`
 	CTime           time.Time               `gorm:"column:ctime;default:now()" json:"ctime"`
+	UTime           time.Time               `gorm:"column:utime;default:now()" json:"utime"`
 }
 
 func (NotificationRecord) TableName() string {
@@ -59,6 +60,7 @@ type NotificationEvent struct {
 	TimeEvent  time.Time              `gorm:"column:time_event" json:"time_event"`
 	TimesRetry int                    `gorm:"column:times_retry;not null;default:0" json:"times_retry"`
 	CTime      time.Time              `gorm:"column:ctime;default:now()" json:"ctime"`
+	UTime      time.Time              `gorm:"column:utime;default:now()" json:"utime"`
 }
 
 func (NotificationEvent) TableName() string {

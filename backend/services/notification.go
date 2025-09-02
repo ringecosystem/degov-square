@@ -132,13 +132,20 @@ func (s *NotificationService) ListLimitEvents(input types.ListLimitEventsInput) 
 }
 
 func (s *NotificationService) UpdateEventState(input types.UpdateEventStateInput) error {
-	return s.db.Model(&dbmodels.NotificationEvent{}).Where("id = ?", input.ID).Update("state", input.State).Error
+	return s.db.
+		Model(&dbmodels.NotificationEvent{}).Where("id = ?", input.ID).
+		Updates(map[string]interface{}{
+			"state": input.State,
+			"utime": time.Now(),
+		}).
+		Error
 }
 
 func (s *NotificationService) UpdateEventRetryTimes(input types.UpdateEventRetryTimes) error {
 	updates := map[string]interface{}{
 		"times_retry": input.TimesRetry,
 		"message":     input.Message,
+		"utime":       time.Now(),
 	}
 
 	if input.TimesRetry > 3 {
@@ -165,7 +172,13 @@ func (s *NotificationService) ListLimitRecords(input types.ListLimitRecordsInput
 }
 
 func (s *NotificationService) UpdateRecordState(input types.UpdateRecordStateInput) error {
-	return s.db.Model(&dbmodels.NotificationRecord{}).Where("id = ?", input.ID).Update("state", input.State).Error
+	return s.db.
+		Model(&dbmodels.NotificationRecord{}).
+		Where("id = ?", input.ID).
+		Updates(map[string]interface{}{
+			"state": input.State,
+			"utime": time.Now(),
+		}).Error
 }
 
 func (s *NotificationService) UpdateRecordRetryTimes(input types.UpdateRecordRetryTimes) error {
@@ -180,6 +193,7 @@ func (s *NotificationService) UpdateRecordRetryTimes(input types.UpdateRecordRet
 		"times_retry":       input.TimesRetry,
 		"message":           input.Message,
 		"time_next_execute": NextExecutableTime,
+		"utime":             time.Now(),
 	}
 
 	if input.TimesRetry > 3 {

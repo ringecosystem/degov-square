@@ -159,6 +159,7 @@ create table
     event_id varchar(255) not null,
     time_next_execute timestamp not null,
     ctime timestamp default now (),
+    utime timestamp,
     primary key (id)
   );
 
@@ -266,6 +267,7 @@ create table
     payload text,
     message text,
     ctime timestamp default now (),
+    utime timestamp,
     primary key (id)
   );
 
