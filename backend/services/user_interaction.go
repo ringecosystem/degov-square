@@ -18,10 +18,11 @@ import (
 )
 
 type UserInteractionService struct {
-	db             *gorm.DB
-	daoService     *DaoService
-	otpCache       *cache.Cache
-	rateLimitCache *cache.Cache
+	db              *gorm.DB
+	daoService      *DaoService
+	templateService *TemplateService
+	otpCache        *cache.Cache
+	rateLimitCache  *cache.Cache
 }
 
 func NewUserInteractionService() *UserInteractionService {
@@ -29,10 +30,11 @@ func NewUserInteractionService() *UserInteractionService {
 	rateLimitCache := cache.New(1*time.Minute, 2*time.Minute)
 
 	return &UserInteractionService{
-		db:             database.GetDB(),
-		daoService:     NewDaoService(),
-		otpCache:       otpCache,
-		rateLimitCache: rateLimitCache,
+		db:              database.GetDB(),
+		daoService:      NewDaoService(),
+		templateService: NewTemplateService(),
+		otpCache:        otpCache,
+		rateLimitCache:  rateLimitCache,
 	}
 }
 
@@ -233,6 +235,13 @@ func (s *UserInteractionService) resendOTPForChannel(baseInput types.BasicInput[
 			return nil, fmt.Errorf("error generating OTP code: %w", err)
 		}
 		s.otpCache.Set(input.ID, otpCode, 3*time.Minute)
+
+		emailContent, err := s.templateService.GenerateTemplateOTP(types.GenerateTemplateOTPInput{
+			OTP: otpCode,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("error generating email content: %w", err)
+		}
 
 		return &gqlmodels.ResendOTPOutput{
 			Code:       0,

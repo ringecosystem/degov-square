@@ -11,6 +11,7 @@ import (
 	dbmodels "github.com/ringecosystem/degov-apps/database/models"
 	gqlmodels "github.com/ringecosystem/degov-apps/graph/models"
 	"github.com/ringecosystem/degov-apps/internal"
+	"github.com/ringecosystem/degov-apps/internal/config"
 	"github.com/ringecosystem/degov-apps/internal/templates"
 	"github.com/ringecosystem/degov-apps/types"
 )
@@ -29,16 +30,21 @@ func NewTemplateService() *TemplateService {
 	}
 }
 
-// TemplateData represents the data structure passed to email templates
-type TemplateData struct {
-	DaoConfig   *types.DaoConfig           `json:"dao_config"`
-	Dao         *gqlmodels.Dao             `json:"dao"`
-	Proposal    *dbmodels.ProposalTracking `json:"proposal"`
-	Vote        *internal.VoteCast         `json:"vote,omitempty"`
-	PayloadData map[string]interface{}     `json:"payload_data"`
-	EventID     string                     `json:"event_id"`
-	UserID      string                     `json:"user_id"`
-	UserAddress string                     `json:"user_address"`
+type TemplateNotificationRecordData struct {
+	DegovSiteConfig types.DegovSiteConfig      `json:"degov_site_config"`
+	DaoConfig       *types.DaoConfig           `json:"dao_config"`
+	Dao             *gqlmodels.Dao             `json:"dao"`
+	Proposal        *dbmodels.ProposalTracking `json:"proposal"`
+	Vote            *internal.VoteCast         `json:"vote,omitempty"`
+	PayloadData     map[string]interface{}     `json:"payload_data"`
+	EventID         string                     `json:"event_id"`
+	UserID          string                     `json:"user_id"`
+	UserAddress     string                     `json:"user_address"`
+}
+
+type TemplateOTPData struct {
+	DegovSiteConfig types.DegovSiteConfig `json:"degov_site_config"`
+	OTP             string                `json:"otp"`
 }
 
 // parsePayload attempts to parse the payload as JSON, falls back to string if failed
@@ -118,16 +124,16 @@ func (s *TemplateService) GenerateTemplateByNotificationRecord(record *dbmodels.
 	// Parse payload data
 	payloadData := s.parsePayload(record.Payload)
 
-	// Prepare template data
-	templateData := TemplateData{
-		DaoConfig:   daoConfig,
-		Dao:         dao,
-		Proposal:    proposal,
-		Vote:        vote,
-		PayloadData: payloadData,
-		EventID:     record.EventID,
-		UserID:      record.UserID,
-		UserAddress: record.UserAddress,
+	templateData := TemplateNotificationRecordData{
+		DegovSiteConfig: config.GetDegovSiteConfig(),
+		DaoConfig:       daoConfig,
+		Dao:             dao,
+		Proposal:        proposal,
+		Vote:            vote,
+		PayloadData:     payloadData,
+		EventID:         record.EventID,
+		UserID:          record.UserID,
+		UserAddress:     record.UserAddress,
 	}
 
 	// Get template file name based on notification type
@@ -146,6 +152,31 @@ func (s *TemplateService) GenerateTemplateByNotificationRecord(record *dbmodels.
 	tmpl, err := template.New(templateFileName).Parse(string(templateContent))
 	if err != nil {
 		return "", fmt.Errorf("failed to parse template: %w", err)
+	}
+
+	var buf bytes.Buffer
+	if err := tmpl.Execute(&buf, templateData); err != nil {
+		return "", fmt.Errorf("failed to execute template: %w", err)
+	}
+
+	return buf.String(), nil
+}
+
+func (s *TemplateService) GenerateTemplateOTP(input types.GenerateTemplateOTPInput) (string, error) {
+	templateContent, err := templates.TemplateFS.ReadFile("template/otp.html")
+	if err != nil {
+		return "", fmt.Errorf("failed to read embedded template file: %w", err)
+	}
+
+	// Parse and execute template
+	tmpl, err := template.New("otp").Parse(string(templateContent))
+	if err != nil {
+		return "", fmt.Errorf("failed to parse template: %w", err)
+	}
+
+	templateData := TemplateOTPData{
+		DegovSiteConfig: config.GetDegovSiteConfig(),
+		OTP:             input.OTP,
 	}
 
 	var buf bytes.Buffer

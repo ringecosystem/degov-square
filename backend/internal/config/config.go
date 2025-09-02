@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/ringecosystem/degov-apps/types"
 	"github.com/spf13/viper"
 	"go.uber.org/zap/zapcore"
 	"gorm.io/gorm/logger"
@@ -327,4 +328,40 @@ func GetInt(key string) int {
 
 func GetDuration(key string) time.Duration {
 	return GetConfig().GetDuration(key)
+}
+
+func GetDegovSiteConfig() types.DegovSiteConfig {
+	return types.DegovSiteConfig{
+		EmailTheme: GetStringWithDefault("DEGOV_SITE_EMAIL_THEME", "dark"),
+		Logo:       GetStringWithDefault("DEGOV_SITE_LOGO", "https://cdn.jsdelivr.net/gh/ringecosystem/degov-registry/assets/common/light-degov-4x.png"),
+		LogoLight:  GetStringWithDefault("DEGOV_SITE_LOGO_LIGHT", "https://cdn.jsdelivr.net/gh/ringecosystem/degov-registry/assets/common/light-degov-4x.png"),
+		LogoDark:   GetStringWithDefault("DEGOV_SITE_LOGO_DARK", "https://cdn.jsdelivr.net/gh/ringecosystem/degov-registry/assets/common/light-degov-4x.png"),
+		Name:       GetStringWithDefault("DEGOV_SITE_NAME", "DeGov.AI"),
+		Home:       GetStringWithDefault("DEGOV_SITE_HOME", "https://degov.ai"),
+		Apps:       GetStringWithDefault("DEGOV_SITE_APPS", "https://apps.degov.ai"),
+		Docs:       GetStringWithDefault("DEGOV_SITE_DOCS", "https://docs.degov.ai"),
+		Socials: []types.DegovSiteConfigSocial{
+			{
+				Name:      "Twitter",
+				Icon:      "https://cdn.jsdelivr.net/gh/ringecosystem/degov-registry/assets/common/light-x-4x.png",
+				IconLight: "https://cdn.jsdelivr.net/gh/ringecosystem/degov-registry/assets/common/light-x-4x.png",
+				IconDark:  "https://cdn.jsdelivr.net/gh/ringecosystem/degov-registry/assets/common/dark-x-4x.png",
+				Link:      "https://x.com/ai_degov",
+			},
+			{
+				Name:      "Telegram",
+				Icon:      "https://cdn.jsdelivr.net/gh/ringecosystem/degov-registry/assets/common/light-telegram-4x.png",
+				IconLight: "https://cdn.jsdelivr.net/gh/ringecosystem/degov-registry/assets/common/light-telegram-4x.png",
+				IconDark:  "https://cdn.jsdelivr.net/gh/ringecosystem/degov-registry/assets/common/dark-telegram-4x.png",
+				Link:      "https://t.me/RingDAO_Hub",
+			},
+			{
+				Name:      "GitHub",
+				Icon:      "https://cdn.jsdelivr.net/gh/ringecosystem/degov-registry/assets/common/light-github-4x.png",
+				IconLight: "https://cdn.jsdelivr.net/gh/ringecosystem/degov-registry/assets/common/light-github-4x.png",
+				IconDark:  "https://cdn.jsdelivr.net/gh/ringecosystem/degov-registry/assets/common/dark-github-4x.png",
+				Link:      "https://github.com/ringecosystem/degov",
+			},
+		},
+	}
 }
