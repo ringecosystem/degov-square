@@ -264,6 +264,7 @@ create table
     state varchar(50) not null,
     times_retry int not null default 0,
     time_event timestamp,
+    time_next_execute timestamp not null,
     payload text,
     message text,
     ctime timestamp default now (),

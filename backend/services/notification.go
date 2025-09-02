@@ -125,7 +125,9 @@ func (s *NotificationService) ListLimitEvents(input types.ListLimitEventsInput) 
 		query = query.Where("state IN ?", *input.States)
 	}
 
-	if err := query.Order("ctime asc").Limit(input.Limit).Find(&events).Error; err != nil {
+	query = query.Where("time_next_execute <= ?", time.Now())
+
+	if err := query.Order("time_next_execute asc, ctime asc").Limit(input.Limit).Find(&events).Error; err != nil {
 		return nil, err
 	}
 	return events, nil
@@ -142,10 +144,18 @@ func (s *NotificationService) UpdateEventState(input types.UpdateEventStateInput
 }
 
 func (s *NotificationService) UpdateEventRetryTimes(input types.UpdateEventRetryTimes) error {
+	backoffMinutes := math.Pow(2, float64(input.TimesRetry))
+	if backoffMinutes > 1440 {
+		backoffMinutes = 1440
+	}
+	delay := time.Duration(backoffMinutes) * time.Minute
+	NextExecutableTime := time.Now().Add(delay)
+
 	updates := map[string]interface{}{
-		"times_retry": input.TimesRetry,
-		"message":     input.Message,
-		"utime":       time.Now(),
+		"times_retry":       input.TimesRetry,
+		"message":           input.Message,
+		"utime":             time.Now(),
+		"time_next_execute": NextExecutableTime,
 	}
 
 	if input.TimesRetry > 3 {
@@ -163,9 +173,9 @@ func (s *NotificationService) ListLimitRecords(input types.ListLimitRecordsInput
 		query = query.Where("state IN ?", *input.States)
 	}
 
-	query = query.Where("next_executable_time <= ?", time.Now())
+	query = query.Where("time_next_execute <= ?", time.Now())
 
-	if err := query.Order("next_executable_time asc, ctime asc").Limit(input.Limit).Find(&records).Error; err != nil {
+	if err := query.Order("time_next_execute asc, ctime asc").Limit(input.Limit).Find(&records).Error; err != nil {
 		return nil, err
 	}
 	return records, nil

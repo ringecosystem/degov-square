@@ -292,7 +292,7 @@ func (t *TrackingProposalTask) updateProposalsStates(dao *gqlmodels.Dao, daoConf
 				Type:       dbmodels.SubscribeFeatureProposalStateChanged,
 				ProposalID: proposal.ProposalId,
 				TimeEvent:  proposal.CTime,
-				Payload:    payload,
+				Payload:    &payload,
 			}); err != nil {
 				slog.Error("Failed to save state change notification event",
 					"dao_code", dao.Code,
