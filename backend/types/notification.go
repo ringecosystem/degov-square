@@ -43,8 +43,3 @@ type UpdateRecordRetryTimes struct {
 	TimesRetry int
 	Message    string
 }
-
-// type NotifyProposalTemplateInput struct {
-// 	Dao      gqlmodels.Dao
-// 	Proposal dbmodels.ProposalTracking
-// }
