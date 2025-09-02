@@ -2,41 +2,157 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Vote Submitted</title>
+    <title>Vote Submitted - {{.Dao.Name}}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
 <body>
-    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h2>✅ Vote Submitted in {{.Dao.Name}}</h2>
-        
-        <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <h3>{{.Proposal.Title}}</h3>
-            <p><strong>Proposal ID:</strong> {{.Proposal.ProposalId}}</p>
-            <p><strong>DAO:</strong> {{.Dao.Name}}</p>
-            {{if .VoteID}}<p><strong>Vote ID:</strong> {{.VoteID}}</p>{{end}}
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; padding: 20px;">
+        <!-- Header -->
+        <div style="text-align: center; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid #f0f0f0;">
+            {{if .Dao.Logo}}<img src="{{.Dao.Logo}}" alt="{{.Dao.Name}}" style="width: 50px; height: 50px; border-radius: 50%; margin-bottom: 10px;">{{end}}
+            <h1 style="color: #333; margin: 0; font-size: 24px;">✅ Vote Submitted</h1>
+            <p style="color: #666; margin: 5px 0 0 0; font-size: 16px;">{{.Dao.Name}}</p>
         </div>
-        
-        <div style="margin: 20px 0; padding: 15px; background-color: #d1ecf1; border-left: 4px solid #17a2b8; border-radius: 4px;">
-            <p><strong>🗳️ A vote has been submitted!</strong></p>
-            <p>A new vote was cast on this proposal. The vote has been recorded on the blockchain.</p>
+
+        <!-- Main Content -->
+        <div style="background-color: #f8f9fa; padding: 25px; border-radius: 12px; margin: 20px 0; border-left: 4px solid #17a2b8;">
+            <h2 style="color: #333; margin: 0 0 15px 0; font-size: 20px; line-height: 1.3;">{{.Proposal.Title}}</h2>
+
+            <div style="margin: 15px 0;">
+                <div style="display: inline-block; margin: 5px 10px 5px 0;">
+                    <span style="background-color: #007bff; color: white; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 500;">
+                        ID: {{.Proposal.ProposalId}}
+                    </span>
+                </div>
+                {{if .Vote}}
+                <div style="display: inline-block; margin: 5px 10px 5px 0;">
+                    <span style="background-color: #17a2b8; color: white; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 500;">
+                        Vote ID: {{.Vote.ID}}
+                    </span>
+                </div>
+                {{end}}
+                {{if .Proposal.ProposalCreatedAt}}
+                <div style="display: inline-block; margin: 5px 0;">
+                    <span style="background-color: #6c757d; color: white; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 500;">
+                        {{.Proposal.ProposalCreatedAt.Format "Jan 2, 2006 15:04 UTC"}}
+                    </span>
+                </div>
+                {{end}}
+            </div>
+
+            <div style="margin-top: 15px;">
+                <p style="margin: 0; color: #666; font-size: 14px;"><strong>Chain:</strong> {{.DaoConfig.Chain.Name}} (ID: {{.DaoConfig.Chain.ID}})</p>
+                <p style="margin: 5px 0 0 0; color: #666; font-size: 14px;"><strong>Block:</strong> {{.Proposal.ProposalAtBlock}}</p>
+            </div>
         </div>
-        
-        {{if .Proposal.Message}}
-        <div style="margin: 20px 0;">
-            <h4>Proposal Description:</h4>
-            <p>{{.Proposal.Message}}</p>
+
+        <!-- Vote Information -->
+        <div style="margin: 20px 0; padding: 25px; background-color: #d1ecf1; border-left: 4px solid #17a2b8; border-radius: 8px; text-align: center;">
+            <div style="font-size: 48px; margin-bottom: 10px;">🗳️</div>
+            <h3 style="color: #0c5460; margin: 0 0 10px 0; font-size: 18px;">New Vote Recorded</h3>
+            <p style="color: #0c5460; margin: 0 0 15px 0; font-size: 16px; line-height: 1.5;">
+                A vote has been successfully submitted and recorded on the blockchain for this proposal.
+            </p>
+
+            {{if .Vote}}
+            <div style="background-color: #ffffff; padding: 20px; border-radius: 8px; margin: 15px 0; text-align: left;">
+                <h4 style="color: #333; margin: 0 0 15px 0; font-size: 16px;">📊 Vote Details</h4>
+                <div style="margin: 10px 0;">
+                    <span style="display: inline-block; width: 80px; font-weight: bold; color: #666;">Voter:</span>
+                    <span style="font-family: monospace; background-color: #f8f9fa; padding: 2px 6px; border-radius: 4px; font-size: 12px;">{{.Vote.Voter}}</span>
+                </div>
+                {{if .Vote.Support}}
+                <div style="margin: 10px 0;">
+                    <span style="display: inline-block; width: 80px; font-weight: bold; color: #666;">Choice:</span>
+                    {{if eq .Vote.Support 1}}
+                    <span style="background-color: #d4edda; color: #155724; padding: 4px 12px; border-radius: 20px; font-size: 13px; font-weight: 500;">✅ For</span>
+                    {{else if eq .Vote.Support 0}}
+                    <span style="background-color: #f8d7da; color: #721c24; padding: 4px 12px; border-radius: 20px; font-size: 13px; font-weight: 500;">❌ Against</span>
+                    {{else if eq .Vote.Support 2}}
+                    <span style="background-color: #fff3cd; color: #856404; padding: 4px 12px; border-radius: 20px; font-size: 13px; font-weight: 500;">⚪ Abstain</span>
+                    {{else}}
+                    <span style="background-color: #e2e3e5; color: #383d41; padding: 4px 12px; border-radius: 20px; font-size: 13px; font-weight: 500;">Choice: {{.Vote.Support}}</span>
+                    {{end}}
+                </div>
+                {{end}}
+                {{if .Vote.Weight}}
+                <div style="margin: 10px 0;">
+                    <span style="display: inline-block; width: 80px; font-weight: bold; color: #666;">Weight:</span>
+                    <span style="color: #495057; font-weight: 500;">{{.Vote.Weight}}</span>
+                </div>
+                {{end}}
+                {{if .Vote.Reason}}
+                <div style="margin: 15px 0;">
+                    <span style="display: block; font-weight: bold; color: #666; margin-bottom: 5px;">Reason:</span>
+                    <p style="color: #495057; margin: 0; padding: 10px; background-color: #f8f9fa; border-radius: 4px; font-size: 14px; line-height: 1.5;">{{.Vote.Reason}}</p>
+                </div>
+                {{end}}
+                {{if .Vote.BlockTimestamp}}
+                <div style="margin: 10px 0;">
+                    <span style="display: inline-block; width: 80px; font-weight: bold; color: #666;">Time:</span>
+                    <span style="color: #6c757d; font-size: 13px;">Block {{.Vote.BlockNumber}} • {{.Vote.BlockTimestamp}}</span>
+                </div>
+                {{end}}
+            </div>
+            {{end}}
+        </div>
+
+        {{if .PayloadData}}
+        {{if .PayloadData.__raw}}
+        <div style="margin: 20px 0; padding: 15px; background-color: #f8f9fa; border-radius: 8px; border-left: 3px solid #17a2b8;">
+            <h4 style="color: #333; margin: 0 0 10px 0; font-size: 14px;">📄 Vote Event Data:</h4>
+            <pre style="background-color: #ffffff; padding: 10px; border-radius: 4px; font-size: 12px; overflow-x: auto; margin: 0; color: #666;">{{.PayloadData.__raw}}</pre>
+        </div>
+        {{else if gt (len .PayloadData) 0}}
+        <div style="margin: 20px 0; padding: 15px; background-color: #f8f9fa; border-radius: 8px; border-left: 3px solid #17a2b8;">
+            <h4 style="color: #333; margin: 0 0 10px 0; font-size: 14px;">📊 Additional Vote Information:</h4>
+            {{range $key, $value := .PayloadData}}
+            <p style="margin: 5px 0; font-size: 13px; color: #555;"><strong>{{$key}}:</strong> {{$value}}</p>
+            {{end}}
         </div>
         {{end}}
-        
-        <div style="margin: 20px 0; text-align: center;">
-            <a href="{{.ProposalUrl}}" style="background-color: #007bff; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block;">
-                View Proposal
-            </a>
+        {{end}}
+
+        {{if .Proposal.Message}}
+        <div style="margin: 20px 0; padding: 20px; background-color: #ffffff; border: 1px solid #e9ecef; border-radius: 8px;">
+            <h3 style="color: #333; margin: 0 0 10px 0; font-size: 16px;">📝 Proposal Description:</h3>
+            <p style="color: #555; line-height: 1.6; margin: 0; white-space: pre-wrap;">{{.Proposal.Message}}</p>
         </div>
-        
-        <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
-        <p style="color: #666; font-size: 12px; text-align: center;">
-            You are receiving this email because you subscribed to notifications from {{.Dao.Name}}.
-        </p>
+        {{end}}
+
+        <!-- Action Buttons -->
+        <div style="margin: 30px 0; text-align: center;">
+            {{if and .DaoConfig.SiteURL .Proposal.ProposalLink}}
+            <a href="{{.Proposal.ProposalLink}}" style="background-color: #007bff; color: white; padding: 14px 30px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 500; margin: 5px;">
+                🔍 View Proposal
+            </a>
+            {{end}}
+            {{if .Vote.TransactionHash}}
+            {{if gt (len .DaoConfig.Chain.Explorers) 0}}
+            <a href="{{index .DaoConfig.Chain.Explorers 0}}/tx/{{.Vote.TransactionHash}}" style="background-color: #6f42c1; color: white; padding: 14px 30px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 500; margin: 5px;">
+                🔗 View Transaction
+            </a>
+            {{end}}
+            {{end}}
+            {{if .DaoConfig.SiteURL}}
+            <a href="{{.DaoConfig.SiteURL}}" style="background-color: #28a745; color: white; padding: 14px 30px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 500; margin: 5px;">
+                🏠 Visit DAO
+            </a>
+            {{end}}
+        </div>
+
+        <!-- Footer -->
+        <hr style="border: none; border-top: 1px solid #e9ecef; margin: 40px 0 20px 0;">
+        <div style="text-align: center;">
+            <p style="color: #888; font-size: 12px; margin: 0 0 10px 0;">
+                You're receiving this because you subscribed to {{.Dao.Name}} vote notifications
+            </p>
+            {{if .DaoConfig.Links.Website}}
+            <p style="color: #888; font-size: 12px; margin: 0;">
+                Learn more: <a href="{{.DaoConfig.Links.Website}}" style="color: #007bff; text-decoration: none;">{{.DaoConfig.Links.Website}}</a>
+            </p>
+            {{end}}
+        </div>
     </div>
 </body>
 </html>
