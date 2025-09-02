@@ -17,13 +17,13 @@ func NewTemplateService() *TemplateService {
 	}
 }
 
-func (s *TemplateService) GenerateTemplateByNotificationRecord(record *dbmodels.NotificationRecord) (*string, error) {
+func (s *TemplateService) GenerateTemplateByNotificationRecord(record *dbmodels.NotificationRecord) (string, error) {
 	dao, err := s.daoService.Inspect(types.BasicInput[string]{
 		User:  nil,
 		Input: record.DaoCode,
 	})
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
 	proposal, err := s.proposalService.InspectProposal(types.InpspectProposalInput{
@@ -31,7 +31,7 @@ func (s *TemplateService) GenerateTemplateByNotificationRecord(record *dbmodels.
 		ProposalID: record.ProposalID,
 	})
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
 	switch record.Type {
