@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"html/template"
+	"log/slog"
 	"time"
 
 	dbmodels "github.com/ringecosystem/degov-apps/database/models"
@@ -67,18 +68,18 @@ func (s *TemplateService) parsePayload(payload *string) map[string]interface{} {
 	return result
 }
 
-func (s *TemplateService) getTemplateFileName(notificationType dbmodels.SubscribeFeatureName) string {
+func (s *TemplateService) getTemplateFileName(notificationType dbmodels.SubscribeFeatureName, mode string) string {
 	switch notificationType {
 	case dbmodels.SubscribeFeatureProposalNew:
-		return "proposal_new.html"
+		return "proposal_new." + mode
 	case dbmodels.SubscribeFeatureProposalStateChanged:
-		return "proposal_state_changed.html"
+		return "proposal_state_changed." + mode
 	case dbmodels.SubscribeFeatureVoteEnd:
-		return "vote_end.html"
+		return "vote_end." + mode
 	case dbmodels.SubscribeFeatureVoteEmitted:
-		return "vote_emitted.html"
+		return "vote_emitted." + mode
 	default:
-		return "proposal_new.html" // fallback
+		return "unknown." + mode // fallback
 	}
 }
 
@@ -151,61 +152,69 @@ func (s *TemplateService) GenerateTemplateByNotificationRecord(record *dbmodels.
 		UserAddress:     record.UserAddress,
 	}
 
-	// Get template file name based on notification type
-	templateFileName := s.getTemplateFileName(record.Type)
+	richTemplateFileName := s.getTemplateFileName(record.Type, "html")
+	richTemplatePath := "template/" + richTemplateFileName
+	plainTemplateFileName := s.getTemplateFileName(record.Type, "md")
+	plainTemplatePath := "template/" + plainTemplateFileName
 
-	// Get template file path for embedded filesystem
-	templatePath := "template/" + templateFileName
-
-	// Read template content from embedded filesystem
-	templateContent, err := templates.TemplateFS.ReadFile(templatePath)
+	richText, err := s.renderTemplate(richTemplateFileName, richTemplatePath, templateData)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read embedded template file: %w", err)
 	}
-
-	// Parse and execute template
-	tmpl, err := template.New(templateFileName).Parse(string(templateContent))
+	palinText, err := s.renderTemplate(plainTemplateFileName, plainTemplatePath, templateData)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse template: %w", err)
-	}
-
-	var buf bytes.Buffer
-	if err := tmpl.Execute(&buf, templateData); err != nil {
-		return nil, fmt.Errorf("failed to execute template: %w", err)
+		return nil, fmt.Errorf("failed to read embedded template file: %w", err)
 	}
 
 	title := fmt.Sprintf("[DeGov] [%s] [%s]: %s", dao.Name, s.getTemplateTitle(record.Type), proposal.Title)
 
 	return &types.TemplateOutput{
-		Title:   utils.TruncateText(title, 80),
-		Content: buf.String(),
+		Title:            utils.TruncateText(title, 80),
+		RichTextContent:  richText,
+		PlainTextContent: palinText,
 	}, nil
 }
 
-func (s *TemplateService) GenerateTemplateOTP(input types.GenerateTemplateOTPInput) (*types.TemplateOutput, error) {
-	templateContent, err := templates.TemplateFS.ReadFile("template/otp.html")
+func (s *TemplateService) renderTemplate(templateName string, templateFile string, data interface{}) (string, error) {
+	templateContent, err := templates.TemplateFS.ReadFile(templateFile)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read embedded template file: %w", err)
+		return "", fmt.Errorf("failed to read embedded template file: %w", err)
 	}
-
 	// Parse and execute template
-	tmpl, err := template.New("otp").Parse(string(templateContent))
+	tmpl, err := template.New(templateName).Parse(string(templateContent))
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse template: %w", err)
+		return "", fmt.Errorf("failed to parse template: %w", err)
 	}
 
+	var buf bytes.Buffer
+	if err := tmpl.Execute(&buf, data); err != nil {
+		return "", fmt.Errorf("failed to execute template: %w", err)
+	}
+
+	content := buf.String()
+	return content, nil
+}
+
+func (s *TemplateService) GenerateTemplateOTP(input types.GenerateTemplateOTPInput) (*types.TemplateOutput, error) {
 	templateData := TemplateOTPData{
 		DegovSiteConfig: config.GetDegovSiteConfig(),
 		OTP:             input.OTP,
 	}
-
-	var buf bytes.Buffer
-	if err := tmpl.Execute(&buf, templateData); err != nil {
-		return nil, fmt.Errorf("failed to execute template: %w", err)
+	richText, err := s.renderTemplate("otp-rich-text", "template/otp.html", templateData)
+	if err != nil {
+		slog.Error("failed to render OTP template", err)
+		return nil, err
+	}
+	plainText, err := s.renderTemplate("otp-plain-text", "template/otp.md", templateData)
+	if err != nil {
+		slog.Error("failed to render OTP template", err)
+		return nil, err
 	}
 
 	return &types.TemplateOutput{
-		Title:   "[DeGov] Login Verification",
-		Content: buf.String(),
+		Title:            "[DeGov] Email Verification",
+		RichTextContent:  richText,
+		PlainTextContent: plainText,
 	}, nil
+
 }

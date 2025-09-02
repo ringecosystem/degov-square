@@ -5,6 +5,7 @@ type GenerateTemplateOTPInput struct {
 }
 
 type TemplateOutput struct {
-	Title   string `json:"title"`
-	Content string `json:"content"`
+	Title            string `json:"title"`
+	RichTextContent  string `json:"rich_text_content"`
+	PlainTextContent string `json:"plain_text_content"`
 }

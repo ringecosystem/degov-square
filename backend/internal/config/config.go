@@ -115,6 +115,10 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("TASK_NOTIFICATION_EVENT_INTERVAL", "2m")
 	v.SetDefault("TASK_NOTIFICATION_DISPATCHER_ENABLED", true)
 	v.SetDefault("TASK_NOTIFICATION_DISPATCHER_INTERVAL", "30s")
+
+	// sendgrid
+	v.SetDefault("SENDGRID_FROM_USER", "DeGov Notifications")
+	v.SetDefault("SENDGRID_FROM_EMAIL", "notifications@degov.ai")
 }
 
 // Server configuration methods
