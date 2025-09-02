@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Confirm your email address - DeGov.AI</title>
+    <style>
+      /* Reset styles for email clients */
+      body,
+      table,
+      td,
+      p,
+      a,
+      li,
+      blockquote {
+        -webkit-text-size-adjust: 100%;
+        -ms-text-size-adjust: 100%;
+        margin: 0; /* Add margin reset */
+        padding: 0; /* Add padding reset */
+      }
+      table,
+      td {
+        mso-table-lspace: 0pt;
+        mso-table-rspace: 0pt;
+      }
+      img {
+        -ms-interpolation-mode: bicubic;
+        border: 0;
+        height: auto;
+        line-height: 100%;
+        outline: none;
+        text-decoration: none;
+      }
+
+      /* Main styles */
+      body {
+        background-color: #000000;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji",
+          "Segoe UI Symbol";
+        color: #ffffff;
+      }
+
+      .email-container {
+        max-width: 600px;
+        margin: 40px auto;
+        background-color: #1a1a1a;
+        border-radius: 12px; /* Smoother corners to match image */
+        overflow: hidden;
+      }
+
+      .header-logo {
+        padding: 40px;
+        text-align: center;
+        background-color: #1a1a1a;
+      }
+
+      .header-logo img {
+        max-width: 200px;
+        height: auto;
+        vertical-align: middle;
+      }
+
+      .divider,
+      .footer-divider {
+        border-bottom: 1px solid #333333;
+        margin: 0 40px; /* Align divider with content padding */
+      }
+
+      .content {
+        padding: 35px 40px 40px 40px; /* Precise padding */
+        background-color: #1a1a1a;
+      }
+
+      .title {
+        font-size: 28px;
+        color: #ffffff;
+        margin-bottom: 16px; /* Adjusted spacing */
+        font-weight: 600;
+        line-height: 1.3;
+      }
+
+      .message {
+        font-size: 15px; /* Slightly smaller for better proportion */
+        line-height: 1.6;
+        color: #b0b0b0;
+        margin-bottom: 30px; /* Adjusted spacing */
+      }
+
+      /* Reset inner paragraph margin */
+      .message p,
+      .unsubscribe-text p {
+        margin: 0;
+      }
+
+      .verification-code-box {
+        background-color: #2b2b2b;
+        border-radius: 8px;
+        padding: 18px 25px; /* Adjusted padding for visual height */
+        text-align: center;
+        margin-bottom: 25px; /* Adjusted spacing */
+      }
+
+      .verification-code-box p {
+        margin: 0;
+      }
+
+      .verification-code {
+        font-size: 36px; /* Larger to match image's prominence */
+        font-weight: bold;
+        color: #ffffff;
+        letter-spacing: 8px; /* Wider spacing */
+        font-family: "Courier New", Courier, monospace;
+      }
+
+      .signature {
+        font-size: 15px; /* Adjusted font size */
+        color: #b0b0b0;
+        line-height: 1.5; /* Spacing for the two lines */
+      }
+
+      .signature-name {
+        font-weight: 600;
+      }
+
+      .footer-content {
+        padding: 25px 40px; /* Controls space around footer content */
+        text-align: left;
+        background-color: #1a1a1a;
+      }
+
+      .footer-project-name {
+        color: #ffffff;
+        font-size: 15px; /* Adjusted font size */
+        font-weight: 600;
+        margin: 0; /* Reset paragraph margin */
+      }
+
+      .social-icons {
+        margin-top: 0; /* Reset margin */
+        text-align: right;
+      }
+
+      .social-icon {
+        display: inline-block;
+        margin-left: 20px; /* More space between icons */
+        width: 20px; /* Smaller icon size */
+        height: 20px;
+        vertical-align: middle;
+      }
+
+      .social-icon img {
+        width: 100%;
+        height: auto;
+      }
+
+      .unsubscribe-section {
+        padding: 30px 40px;
+        text-align: center;
+        background-color: #1a1a1a;
+        margin-top: 0; /* Remove extra margin */
+      }
+
+      .unsubscribe-text {
+        color: #888888;
+        font-size: 12px; /* Smaller font size */
+        line-height: 1.6;
+      }
+
+      .unsubscribe-link {
+        color: #55acee;
+        text-decoration: underline;
+      }
+
+      /* Responsive */
+      @media only screen and (max-width: 600px) {
+        .email-container {
+          width: 100% !important;
+          margin: 0 !important;
+          border-radius: 0;
+        }
+        .header-logo,
+        .content,
+        .footer-content,
+        .unsubscribe-section {
+          padding: 25px !important;
+        }
+        .divider,
+        .footer-divider {
+          margin: 0 25px !important;
+        }
+        .title {
+          font-size: 24px !important;
+        }
+        .verification-code {
+          font-size: 30px !important;
+          letter-spacing: 6px !important;
+        }
+
+        /* Stack footer columns on mobile */
+        .footer-content td {
+          display: block !important;
+          width: 100% !important;
+          text-align: center !important;
+        }
+        .footer-content td:last-child {
+          padding-top: 20px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <table
+      role="presentation"
+      cellspacing="0"
+      cellpadding="0"
+      border="0"
+      width="100%"
+    >
+      <tr>
+        <td>
+          <div class="email-container">
+            <div class="header-logo">
+              <img
+                src="https://cdn.jsdelivr.net/gh/ringecosystem/degov-registry@main/assets/common/light-degov-4x.png"
+                alt="DeGov.AI"
+                style="width: auto; height: auto; vertical-align: middle"
+              />
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="content">
+              <h1 class="title">Confirm your email address</h1>
+
+              <div class="message">
+                <p>
+                  There's one quick step to confirm your email address. Please
+                  enter this verification code on Deov:
+                </p>
+              </div>
+
+              <div class="verification-code-box">
+                <p class="verification-code">563821</p>
+              </div>
+
+              <div class="expiry-note">
+                <p>
+                  Verification codes expire after two hours. Do not share this
+                  code with anyone.
+                </p>
+              </div>
+
+              <div class="signature">
+                Thanks,<br />
+                <span class="signature-name">DeGov.AI</span>
+              </div>
+            </div>
+
+            <div class="footer-divider"></div>
+
+            <table
+              role="presentation"
+              cellspacing="0"
+              cellpadding="0"
+              border="0"
+              width="100%"
+            >
+              <tr>
+                <td class="footer-content">
+                  <table
+                    role="presentation"
+                    cellspacing="0"
+                    cellpadding="0"
+                    border="0"
+                    width="100%"
+                  >
+                    <tr>
+                      <td style="width: 50%; vertical-align: middle">
+                        <p class="footer-project-name">RingDAO - DeGov.AI</p>
+                      </td>
+                      <td
+                        style="
+                          width: 50%;
+                          text-align: right;
+                          vertical-align: middle;
+                        "
+                      >
+                        <div class="social-icons">
+                          <a href="#" class="social-icon"
+                            ><img
+                              src="https://cdn.jsdelivr.net/gh/ringecosystem/degov-registry@main/assets/common/light-x-4x.png"
+                              alt="Twitter"
+                          /></a>
+                          <a href="#" class="social-icon"
+                            ><img
+                              src="https://cdn.jsdelivr.net/gh/ringecosystem/degov-registry@main/assets/common/light-telegram-4x.png"
+                              alt="Telegram"
+                          /></a>
+                          <a href="#" class="social-icon"
+                            ><img
+                              src="https://cdn.jsdelivr.net/gh/ringecosystem/degov-registry@main/assets/common/light-github-4x.png"
+                              alt="GitHub"
+                          /></a>
+                        </div>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+
+            <div class="unsubscribe-section">
+              <p class="unsubscribe-text">
+                Want to change how you receive these emails?<br />
+                You can
+                <a href="#" class="unsubscribe-link"
+                  >update your subscribe preferences</a
+                >
+              </p>
+            </div>
+          </div>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
