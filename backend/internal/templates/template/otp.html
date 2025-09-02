@@ -1,4 +1,29 @@
 {{template "layout.html" .}}
+
+<!-- -->
+{{define "title"}} Confirm Your Email {{end}}
+
+<!-- -->
+{{define "header"}}
+<style id="dark-theme-styles">
+  .verification-code-box { background-color: #2b2b2b; border-radius: 8px; padding: 18px 25px; text-align: center; }
+  .verification-code-box p { margin: 0; }
+  .message, .expiry-note { font-size: 15px; line-height: 1.6; color: #b0b0b0; margin-bottom: 30px; }
+  .expiry-note { margin-top: 25px; margin-bottom: 30px; }
+  .expiry-note p { margin: 0; }
+</style>
+
+<style id="light-theme-styles">
+  .verification-code-box { background-color: #f0f2f5; border-radius: 8px; padding: 18px 25px; text-align: center; }
+  .verification-code-box p { margin: 0; }
+
+
+  .message, .expiry-note { font-size: 15px; line-height: 1.6; color: #65676b; margin-bottom: 30px; }
+  .expiry-note { margin-top: 25px; margin-bottom: 30px; }
+  .message p, .expiry-note p { margin: 0; }
+</style>
+{{end}}
+
 <!-- -->
 {{define "content"}}
 <div>
@@ -6,13 +31,12 @@
 
   <div class="message">
     <p>
-      There's one quick step to confirm your email address. Please enter this
-      verification code on Deov:
+      There's one quick step to confirm your email address. Please enter this verification code on DeGov:
     </p>
   </div>
 
   <div class="verification-code-box">
-    <p class="verification-code">563821</p>
+    <p class="verification-code">{{.Expiration}}</p>
   </div>
 
   <div class="expiry-note">

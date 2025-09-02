@@ -25,6 +25,7 @@ type UserInteractionService struct {
 	otpCache        *cache.Cache
 	rateLimitCache  *cache.Cache
 	notifierService *NotifierService
+	userService     *UserService
 }
 
 func NewUserInteractionService() *UserInteractionService {
@@ -38,6 +39,7 @@ func NewUserInteractionService() *UserInteractionService {
 		otpCache:        otpCache,
 		rateLimitCache:  rateLimitCache,
 		notifierService: NewNotifierService(),
+		userService:     NewUserService(),
 	}
 }
 
@@ -108,7 +110,14 @@ func (s *UserInteractionService) BindNotificationChannel(baseInput types.BasicIn
 	}
 
 	if err == nil {
-		return nil, errors.New("channel type already exists for this user")
+		if existingChannel.Verified == 1 {
+			return nil, errors.New("channel type already exists for this user")
+		}
+
+		return s.resendOTPForChannel(types.BasicInput[*dbmodels.NotificationChannel]{
+			User:  user,
+			Input: &existingChannel,
+		})
 	}
 
 	channelID := utils.NextIDString()
@@ -231,6 +240,12 @@ func (s *UserInteractionService) resendOTPForChannel(baseInput types.BasicInput[
 		s.rateLimitCache.Set(rateLimitKey, time.Now(), 1*time.Minute)
 	}
 
+	ensName, err := s.userService.GetENSName(user.Address)
+	if err != nil {
+		slog.Warn("Failed to get ENS name", "address", user.Address, "err", err)
+		ensName = utils.StringPtr("")
+	}
+
 	switch input.ChannelType {
 	case dbmodels.NotificationChannelTypeEmail:
 		otpCode, err := utils.NextOTPCode()
@@ -240,7 +255,11 @@ func (s *UserInteractionService) resendOTPForChannel(baseInput types.BasicInput[
 		s.otpCache.Set(input.ID, otpCode, 3*time.Minute)
 
 		templateOutput, err := s.templateService.GenerateTemplateOTP(types.GenerateTemplateOTPInput{
-			OTP: otpCode,
+			DegovSiteConfig: config.GetDegovSiteConfig(),
+			OTP:             otpCode,
+			Expiration:      3,
+			UserAddress:     user.Address,
+			EnsName:         ensName,
 		})
 		if err != nil {
 			return nil, fmt.Errorf("error generating email content: %w", err)

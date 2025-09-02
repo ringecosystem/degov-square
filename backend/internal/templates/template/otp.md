@@ -1,9 +1,15 @@
 {{template "layout.md" .}}
 
 {{define "content"}}
-Hello,
+Hello {{if .EnsName}}{{.EnsName}}{{else}}{{.UserAddress}}{{end}},
 
-Your One-Time Password (OTP) is: **{{.OTP}}**
+To confirm and link this email address to your account, please use the following One-Time Password (OTP).
 
-This code will expire in 10 minutes.
+Your confirmation code is:
+
+**{{.OTP}}**
+
+This code is valid for {{.Expiration}} minutes.
+
+If you did not make this request, please disregard this email. No further action is required.
 {{end}}

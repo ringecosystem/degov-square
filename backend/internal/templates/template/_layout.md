@@ -1,16 +1,17 @@
 {{define "layout.md"}}
 
-# [DeGov] {{.Title}}
+## DeGov.AI
 
 ---
 
 {{block "content" .}}
-Default content.
+This is default content, which should be overridden by a specific template.
 {{end}}
 
 ---
 
-_This is an automated notification from DeGov._
-_DAO: RING-DAO_
-_Site: this is site_
+RingDAO - DeGov.AI
+
+Want to change how you receive these emails?
+You can update your subscribe preferences https://apps.degiv.ai/subscribe/preference
 {{end}}

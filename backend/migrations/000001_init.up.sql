@@ -5,6 +5,7 @@ create table
     id varchar(50) not null,
     address varchar(255) not null,
     email varchar(255),
+    ens_name varchar(255),
     ctime timestamp default now (),
     utime timestamp,
     primary key (id)
