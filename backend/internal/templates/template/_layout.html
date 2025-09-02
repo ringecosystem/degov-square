@@ -1,3 +1,4 @@
+{{define "layout.html"}}
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -115,30 +116,9 @@
             <div class="divider"></div>
 
             <div class="content">
-              <h1 class="title">Confirm your email address</h1>
-
-              <div class="message">
-                <p>
-                  There's one quick step to confirm your email address. Please
-                  enter this verification code on Deov:
-                </p>
-              </div>
-
-              <div class="verification-code-box">
-                <p class="verification-code">563821</p>
-              </div>
-
-              <div class="expiry-note">
-                <p>
-                  Verification codes expire after two hours. Do not share this
-                  code with anyone.
-                </p>
-              </div>
-
-              <div class="signature">
-                Thanks,<br />
-                <span class="signature-name">DeGov.AI</span>
-              </div>
+              {{block "content" .}}
+                <p>This is default content, which should be overridden by a specific template.</p>
+              {{end}}
             </div>
 
             <div class="footer-divider"></div>
@@ -209,3 +189,4 @@
     </table>
   </body>
 </html>
+{{end}}

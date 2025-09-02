@@ -5,8 +5,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"html/template"
+	tplHtml "html/template"
 	"log/slog"
+	"strings"
+	tplText "text/template"
 	"time"
 
 	dbmodels "github.com/ringecosystem/degov-apps/database/models"
@@ -22,13 +24,26 @@ type TemplateService struct {
 	daoService       *DaoService
 	proposalService  *ProposalService
 	daoConfigService *DaoConfigService
+	htmlTemplates    *tplHtml.Template
+	textTemplates    *tplText.Template
 }
 
 func NewTemplateService() *TemplateService {
+	htmlTmpls := tplHtml.Must(tplHtml.New("").ParseFS(
+		templates.TemplateFS,
+		"template/*.html",
+	))
+
+	textTmpls := tplText.Must(tplText.New("").ParseFS(
+		templates.TemplateFS,
+		"template/*.md",
+	))
 	return &TemplateService{
 		daoService:       NewDaoService(),
 		proposalService:  NewProposalService(),
 		daoConfigService: NewDaoConfigService(),
+		htmlTemplates:    htmlTmpls,
+		textTemplates:    textTmpls,
 	}
 }
 
@@ -153,17 +168,15 @@ func (s *TemplateService) GenerateTemplateByNotificationRecord(record *dbmodels.
 	}
 
 	richTemplateFileName := s.getTemplateFileName(record.Type, "html")
-	richTemplatePath := "template/" + richTemplateFileName
 	plainTemplateFileName := s.getTemplateFileName(record.Type, "md")
-	plainTemplatePath := "template/" + plainTemplateFileName
 
-	richText, err := s.renderTemplate(richTemplateFileName, richTemplatePath, templateData)
+	richText, err := s.renderTemplate(richTemplateFileName, templateData)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read embedded template file: %w", err)
+		return nil, fmt.Errorf("failed to render rich text template %s: %w", richTemplateFileName, err)
 	}
-	palinText, err := s.renderTemplate(plainTemplateFileName, plainTemplatePath, templateData)
+	palinText, err := s.renderTemplate(plainTemplateFileName, templateData)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read embedded template file: %w", err)
+		return nil, fmt.Errorf("failed to render plain text template %s: %w", plainTemplateFileName, err)
 	}
 
 	title := fmt.Sprintf("[DeGov] [%s] [%s]: %s", dao.Name, s.getTemplateTitle(record.Type), proposal.Title)
@@ -175,24 +188,23 @@ func (s *TemplateService) GenerateTemplateByNotificationRecord(record *dbmodels.
 	}, nil
 }
 
-func (s *TemplateService) renderTemplate(templateName string, templateFile string, data interface{}) (string, error) {
-	templateContent, err := templates.TemplateFS.ReadFile(templateFile)
-	if err != nil {
-		return "", fmt.Errorf("failed to read embedded template file: %w", err)
-	}
-	// Parse and execute template
-	tmpl, err := template.New(templateName).Parse(string(templateContent))
-	if err != nil {
-		return "", fmt.Errorf("failed to parse template: %w", err)
-	}
-
+func (s *TemplateService) renderTemplate(templateName string, data interface{}) (string, error) {
 	var buf bytes.Buffer
-	if err := tmpl.Execute(&buf, data); err != nil {
-		return "", fmt.Errorf("failed to execute template: %w", err)
+	var err error
+
+	if strings.HasSuffix(templateName, ".html") {
+		err = s.htmlTemplates.ExecuteTemplate(&buf, templateName, data)
+	} else if strings.HasSuffix(templateName, ".md") {
+		err = s.textTemplates.ExecuteTemplate(&buf, templateName, data)
+	} else {
+		return "", fmt.Errorf("unsupported template type: %s", templateName)
 	}
 
-	content := buf.String()
-	return content, nil
+	if err != nil {
+		return "", fmt.Errorf("failed to execute template %s: %w", templateName, err)
+	}
+
+	return buf.String(), nil
 }
 
 func (s *TemplateService) GenerateTemplateOTP(input types.GenerateTemplateOTPInput) (*types.TemplateOutput, error) {
@@ -200,14 +212,14 @@ func (s *TemplateService) GenerateTemplateOTP(input types.GenerateTemplateOTPInp
 		DegovSiteConfig: config.GetDegovSiteConfig(),
 		OTP:             input.OTP,
 	}
-	richText, err := s.renderTemplate("otp-rich-text", "template/otp.html", templateData)
+	richText, err := s.renderTemplate("otp.html", templateData)
 	if err != nil {
-		slog.Error("failed to render OTP template", "err", err)
+		slog.Error("failed to render OTP html template", "err", err)
 		return nil, err
 	}
-	plainText, err := s.renderTemplate("otp-plain-text", "template/otp.md", templateData)
+	plainText, err := s.renderTemplate("otp.md", templateData)
 	if err != nil {
-		slog.Error("failed to render OTP template", "err", err)
+		slog.Error("failed to render OTP md template", "err", err)
 		return nil, err
 	}
 

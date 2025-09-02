@@ -1,151 +1,30 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="X-UA-Compatible" content="ie=edge">
-  <title>Your {{.DegovSiteConfig.Name}} Verification Code</title>
-  <style>
-    /* General Styles */
-    body {
-      margin: 0;
-      padding: 0;
-      -webkit-font-smoothing: antialiased;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
-      background-color: #f4f4f7;
-      color: #333333;
-    }
-    table {
-      border-collapse: collapse;
-      mso-table-lspace: 0pt;
-      mso-table-rspace: 0pt;
-    }
-    .main-wrapper {
-      background-color: #ffffff;
-    }
-    a {
-      color: #007bff;
-      text-decoration: none;
-    }
-    .otp-code {
-      font-size: 36px;
-      font-weight: bold;
-      letter-spacing: 4px;
-      color: #1a1a1a;
-      padding: 15px 0;
-      margin: 20px 0;
-      background-color: #f0f0f5;
-      border-radius: 8px;
-    }
-    .footer-text {
-      font-size: 12px;
-      color: #888888;
-    }
-    .social-icon-light {
-      display: block !important;
-    }
-    .social-icon-dark {
-      display: none !important;
-    }
-    .logo-light {
-        display: block !important;
-        max-height: 48px;
-    }
-    .logo-dark {
-        display: none !important;
-        max-height: 48px;
-    }
+{{template "layout.html" .}}
+<!-- -->
+{{define "content"}}
+<div>
+  <h1 class="title">Confirm your email address</h1>
 
-    /* Dark Mode Styles */
-    @media (prefers-color-scheme: dark) {
-      body {
-        background-color: #1a1a1a !important;
-        color: #e0e0e0 !important;
-      }
-      .main-wrapper {
-        background-color: #2a2a2a !important;
-      }
-      .content-cell {
-        color: #e0e0e0 !important;
-      }
-      h1, p {
-        color: #e0e0e0 !important;
-      }
-      .otp-code {
-        background-color: #3a3a3a !important;
-        color: #ffffff !important;
-      }
-      .footer-text {
-        color: #aaaaaa !important;
-      }
-      a {
-        color: #58a6ff !important;
-      }
-      .logo-light {
-        display: none !important;
-      }
-      .logo-dark {
-        display: block !important;
-      }
-      .social-icon-light {
-        display: none !important;
-      }
-      .social-icon-dark {
-        display: block !important;
-      }
-    }
-  </style>
-</head>
-<body style="margin: 0; padding: 0; background-color: #f4f4f7;">
-  <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #f4f4f7;">
-    <tr>
-      <td align="center">
-        <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px; margin: 20px auto;" class="main-wrapper">
-          <tr>
-            <td align="center" style="padding: 20px;">
-              <a href="{{.DegovSiteConfig.Home}}" target="_blank">
-                <img src="{{.DegovSiteConfig.LogoLight}}" alt="{{.DegovSiteConfig.Name}} Logo" width="160" class="logo-light" style="border:0; max-height: 48px; width: auto;">
-                <img src="{{.DegovSiteConfig.LogoDark}}" alt="{{.DegovSiteConfig.Name}} Logo" width="160" class="logo-dark" style="border:0; display:none; max-height: 48px; width: auto;">
-                </a>
-            </td>
-          </tr>
+  <div class="message">
+    <p>
+      There's one quick step to confirm your email address. Please enter this
+      verification code on Deov:
+    </p>
+  </div>
 
-          <tr>
-            <td align="center" style="padding: 0 30px 30px 30px;" class="content-cell">
-              <h1 style="font-size: 24px; font-weight: bold; margin-top: 0;">Your Verification Code</h1>
-              <p style="font-size: 16px; line-height: 1.5;">Please use the following verification code to complete your action. This code is valid for 10 minutes.</p>
+  <div class="verification-code-box">
+    <p class="verification-code">563821</p>
+  </div>
 
-              <div class="otp-code" style="font-size: 36px; font-weight: bold; letter-spacing: 4px; color: #1a1a1a; padding: 15px 0; margin: 20px 0; background-color: #f0f0f5; border-radius: 8px;">
-                {{.OTP}}
-              </div>
+  <div class="expiry-note">
+    <p>
+      Verification codes expire after two hours. Do not share this code with
+      anyone.
+    </p>
+  </div>
 
-              <p style="font-size: 14px; line-height: 1.5; color: #555555;">If you did not request this code, you can safely ignore this email. Someone may have entered your email address by mistake.</p>
-            </td>
-          </tr>
-
-          <tr>
-            <td align="center" style="padding: 20px 30px; border-top: 1px solid #dddddd33;">
-              <p style="margin: 0 0 15px 0;">
-                <a href="{{.DegovSiteConfig.Home}}" target="_blank" style="margin: 0 8px;">Home</a> |
-                <a href="{{.DegovSiteConfig.Apps}}" target="_blank" style="margin: 0 8px;">Apps</a> |
-                <a href="{{.DegovSiteConfig.Docs}}" target="_blank" style="margin: 0 8px;">Docs</a>
-              </p>
-              <div style="margin-bottom: 15px;">
-                {{range .DegovSiteConfig.Socials}}
-                <a href="{{.Link}}" target="_blank" style="display: inline-block; margin: 0 10px;">
-                  <img src="{{.IconLight}}" alt="{{.Name}}" width="24" height="24" class="social-icon-light">
-                  <img src="{{.IconDark}}" alt="{{.Name}}" width="24" height="24" class="social-icon-dark" style="display:none;">
-                  </a>
-                {{end}}
-              </div>
-              <p class="footer-text" style="font-size: 12px; color: #888888; margin: 0;">
-                &copy; {{.CurrentYear}} {{.DegovSiteConfig.Name}}. All rights reserved.
-              </p>
-            </td>
-          </tr>
-        </table>
-        </td>
-    </tr>
-  </table>
-</body>
-</html>
+  <div class="signature">
+    Thanks,<br />
+    <span class="signature-name">DeGov.AI</span>
+  </div>
+</div>
+{{end}}
