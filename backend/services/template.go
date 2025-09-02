@@ -7,6 +7,8 @@ import (
 	"fmt"
 	tplHtml "html/template"
 	"log/slog"
+	"os"
+	"path/filepath"
 	"reflect"
 	"strings"
 	tplText "text/template"
@@ -185,7 +187,6 @@ func (s *TemplateService) GenerateTemplateByNotificationRecord(record *dbmodels.
 }
 
 func (s *TemplateService) renderTemplate(templateName string, data interface{}) (string, error) {
-
 	var finData interface{}
 	templateData, serr := structToMap(data)
 	if serr != nil {
@@ -213,7 +214,14 @@ func (s *TemplateService) renderTemplate(templateName string, data interface{}) 
 		return "", fmt.Errorf("failed to execute template %s: %w", templateName, err)
 	}
 
-	return buf.String(), nil
+	renderedContent := buf.Bytes()
+	if config.GetAppEnv().IsDevelopment() {
+		if outputBasePath := config.GetString("DEBUG_TEMPLATE_OUTPUT_PATH"); outputBasePath != "" {
+			go writeDebugTemplateFile(outputBasePath, templateName, renderedContent)
+		}
+	}
+
+	return string(renderedContent), nil
 }
 
 func (s *TemplateService) GenerateTemplateOTP(input types.GenerateTemplateOTPInput) (*types.TemplateOutput, error) {
@@ -259,4 +267,37 @@ func structToMap(data interface{}) (map[string]interface{}, error) {
 	}
 
 	return result, nil
+}
+
+func writeDebugTemplateFile(outputBasePath, templateName string, content []byte) {
+	if err := os.MkdirAll(outputBasePath, 0755); err != nil {
+		slog.Warn("WARN: Failed to create debug template directory %s: %v", outputBasePath, err)
+		return
+	}
+
+	ext := filepath.Ext(templateName)
+
+	sanitizedTemplateName := strings.ReplaceAll(templateName, "/", "_")
+	sanitizedBaseName := strings.TrimSuffix(sanitizedTemplateName, ext)
+
+	var filePath string
+	for i := 1; i < 10000000; i++ {
+		fileName := fmt.Sprintf("%s_%07d%s", sanitizedBaseName, i, ext)
+		filePath = filepath.Join(outputBasePath, fileName)
+
+		if _, err := os.Stat(filePath); os.IsNotExist(err) {
+			break
+		}
+	}
+
+	if filePath == "" {
+		slog.Warn("WARN: Could not find an available debug file name for %s in %s", templateName, outputBasePath)
+		return
+	}
+
+	if err := os.WriteFile(filePath, content, 0644); err != nil {
+		slog.Warn("WARN: Failed to write debug template to %s: %v", filePath, err)
+	} else {
+		slog.Info("INFO: Debug template written to %s", filePath)
+	}
 }
