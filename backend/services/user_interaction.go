@@ -3,6 +3,7 @@ package services
 import (
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/patrickmn/go-cache"
@@ -196,15 +197,10 @@ func (s *UserInteractionService) resendOTPForChannel(baseInput types.BasicInput[
 	user := baseInput.User
 	input := baseInput.Input
 
-	if input.ChannelType != dbmodels.NotificationChannelTypeEmail {
-		return &gqlmodels.ResendOTPOutput{
-			Code:    0,
-			Message: utils.StringPtr("this method do not need send OTP to verify"),
-		}, nil
-	}
-
 	if !config.GetAppEnv().IsDevelopment() {
-		rateLimitKey := fmt.Sprintf("otp_rate_limit_%s_%s_%s", user.Id, input.ChannelType, input.ChannelValue)
+		replacer := strings.NewReplacer(" ", "", "\n", "", "\r", "")
+		stdValue := strings.ToLower(replacer.Replace(input.ChannelValue))
+		rateLimitKey := fmt.Sprintf("otp_rate_limit_%s_%s_%s", user.Id, input.ChannelType, stdValue)
 
 		if cachedTime, found := s.rateLimitCache.Get(rateLimitKey); found {
 			if lastSentTime, ok := cachedTime.(time.Time); ok {
@@ -230,14 +226,30 @@ func (s *UserInteractionService) resendOTPForChannel(baseInput types.BasicInput[
 		s.rateLimitCache.Set(rateLimitKey, time.Now(), 1*time.Minute)
 	}
 
-	otpCode, err := utils.NextOTPCode()
-	if err != nil {
-		return nil, fmt.Errorf("error generating OTP code: %w", err)
-	}
-	s.otpCache.Set(input.ID, otpCode, 3*time.Minute)
+	switch input.ChannelType {
+	case dbmodels.NotificationChannelTypeEmail:
+		otpCode, err := utils.NextOTPCode()
+		if err != nil {
+			return nil, fmt.Errorf("error generating OTP code: %w", err)
+		}
+		s.otpCache.Set(input.ID, otpCode, 3*time.Minute)
 
-	return &gqlmodels.ResendOTPOutput{
-		Code:       0,
-		Expiration: utils.Int32Ptr(3 * 60),
-	}, nil
+		return &gqlmodels.ResendOTPOutput{
+			Code:       0,
+			Expiration: utils.Int32Ptr(3 * 60),
+		}, nil
+
+	case dbmodels.NotificationChannelTypeWebhook:
+		return &gqlmodels.ResendOTPOutput{
+			Code:    0,
+			Message: utils.StringPtr("this method do not need send OTP to verify"),
+		}, nil
+
+	default:
+		return &gqlmodels.ResendOTPOutput{
+			Code:    0,
+			Message: utils.StringPtr("do not support this notification channel"),
+		}, nil
+	}
+
 }
