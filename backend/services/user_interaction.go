@@ -236,12 +236,12 @@ func (s *UserInteractionService) resendOTPForChannel(baseInput types.BasicInput[
 		}
 		s.otpCache.Set(input.ID, otpCode, 3*time.Minute)
 
-		emailContent, err := s.templateService.GenerateTemplateOTP(types.GenerateTemplateOTPInput{
-			OTP: otpCode,
-		})
-		if err != nil {
-			return nil, fmt.Errorf("error generating email content: %w", err)
-		}
+		// emailContent, err := s.templateService.GenerateTemplateOTP(types.GenerateTemplateOTPInput{
+		// 	OTP: otpCode,
+		// })
+		// if err != nil {
+		// 	return nil, fmt.Errorf("error generating email content: %w", err)
+		// }
 
 		return &gqlmodels.ResendOTPOutput{
 			Code:       0,
