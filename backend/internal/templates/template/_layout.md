@@ -10,7 +10,7 @@ This is default content, which should be overridden by a specific template.
 
 ---
 
-{{- with .DaoConfig -}}
+{{with .DaoConfig -}}
   {{- if .Name}}{{.Name}} - {{end -}}
 {{- end -}}
 DeGov.AI

@@ -1,7 +1,8 @@
 {{template "layout.md" .}}
 
 {{define "content"}}
-Hello {{if .EnsName}}{{.EnsName}}{{else}}{{.UserAddress}}{{end}},
+
+Hello {{with .EnsName}}{{.}}{{else}}{{.UserAddress}}{{end}},
 
 To confirm and link this email address to your account, please use the following One-Time Password (OTP).
 

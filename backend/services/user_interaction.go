@@ -243,7 +243,7 @@ func (s *UserInteractionService) resendOTPForChannel(baseInput types.BasicInput[
 	ensName, err := s.userService.GetENSName(user.Address)
 	if err != nil {
 		slog.Warn("Failed to get ENS name", "address", user.Address, "err", err)
-		ensName = utils.StringPtr("")
+		// ensName = utils.StringPtr("")
 	}
 
 	switch input.ChannelType {

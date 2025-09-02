@@ -9,7 +9,7 @@
   {{end}}
 
   {{if eq $theme "dark"}}
-  <style id="dark-theme-styles">
+  <style>
     .verification-code-box { background-color: #2b2b2b; border-radius: 8px; padding: 18px 25px; text-align: center; }
     .verification-code-box p { margin: 0; }
     .message, .expiry-note { font-size: 15px; line-height: 1.6; color: #b0b0b0; margin-bottom: 30px; }
@@ -19,7 +19,7 @@
     .signature-name { font-weight: 600; }
   </style>
   {{else}}
-  <style id="light-theme-styles">
+  <style>
     .verification-code-box { background-color: #f0f2f5; border-radius: 8px; padding: 18px 25px; text-align: center; }
     .verification-code-box p { margin: 0; }
     .message, .expiry-note { font-size: 15px; line-height: 1.6; color: #65676b; margin-bottom: 30px; }
