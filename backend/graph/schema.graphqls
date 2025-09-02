@@ -167,17 +167,16 @@ type SubscribedProposalOutput {
   state: String!
 }
 
-type BindNotifyChannelOutput {
-  expiration: Int!
-}
-
 type VerifyNotififyChannelOutput {
   code: Int!
   message: String
 }
 
 type ResendOTPOutput {
-  expiration: Int!
+  code: Int!
+  message: String
+  expiration: Int
+  rateLimit: Int
 }
 
 ### === inputs
@@ -271,8 +270,7 @@ type Mutation {
 
   # User interactions
   modifyLikeDao(input: ModifyLikeDaoInput!): Boolean! @auth
-  bindNotifyChannel(input: BindNotifyChannelInput!): BindNotifyChannelOutput!
-    @auth
+  bindNotifyChannel(input: BindNotifyChannelInput!): ResendOTPOutput! @auth
   verifyNotififyChannel(
     input: VerifyNotififyChannelInput!
   ): VerifyNotififyChannelOutput! @auth

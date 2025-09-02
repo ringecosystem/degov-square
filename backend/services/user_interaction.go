@@ -11,23 +11,27 @@ import (
 	"github.com/ringecosystem/degov-apps/database"
 	dbmodels "github.com/ringecosystem/degov-apps/database/models"
 	gqlmodels "github.com/ringecosystem/degov-apps/graph/models"
+	"github.com/ringecosystem/degov-apps/internal/config"
 	"github.com/ringecosystem/degov-apps/internal/utils"
 	"github.com/ringecosystem/degov-apps/types"
 )
 
 type UserInteractionService struct {
-	db         *gorm.DB
-	daoService *DaoService
-	otpCache   *cache.Cache
+	db             *gorm.DB
+	daoService     *DaoService
+	otpCache       *cache.Cache
+	rateLimitCache *cache.Cache
 }
 
 func NewUserInteractionService() *UserInteractionService {
 	otpCache := cache.New(3*time.Minute, 5*time.Minute)
+	rateLimitCache := cache.New(1*time.Minute, 2*time.Minute)
 
 	return &UserInteractionService{
-		db:         database.GetDB(),
-		daoService: NewDaoService(),
-		otpCache:   otpCache,
+		db:             database.GetDB(),
+		daoService:     NewDaoService(),
+		otpCache:       otpCache,
+		rateLimitCache: rateLimitCache,
 	}
 }
 
@@ -87,7 +91,7 @@ func (s *UserInteractionService) ModifyLikeDao(baseInput types.BasicInput[gqlmod
 	return true, nil
 }
 
-func (s *UserInteractionService) BindNotifyChannel(baseInput types.BasicInput[gqlmodels.BindNotifyChannelInput]) (*gqlmodels.BindNotifyChannelOutput, error) {
+func (s *UserInteractionService) BindNotifyChannel(baseInput types.BasicInput[gqlmodels.BindNotifyChannelInput]) (*gqlmodels.ResendOTPOutput, error) {
 	user := baseInput.User
 	input := baseInput.Input
 
@@ -117,17 +121,10 @@ func (s *UserInteractionService) BindNotifyChannel(baseInput types.BasicInput[gq
 		return nil, fmt.Errorf("error creating notification channel: %w", err)
 	}
 
-	sendOutput, err := s.resendOTPForChannel(types.BasicInput[*dbmodels.NotificationChannel]{
+	return s.resendOTPForChannel(types.BasicInput[*dbmodels.NotificationChannel]{
 		User:  user,
 		Input: channel,
 	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to send otp: %w", err)
-	}
-
-	return &gqlmodels.BindNotifyChannelOutput{
-		Expiration: sendOutput.Expiration,
-	}, nil
 }
 
 func (s *UserInteractionService) VerifyNotififyChannel(baseInput types.BasicInput[gqlmodels.VerifyNotififyChannelInput]) (*gqlmodels.VerifyNotififyChannelOutput, error) {
@@ -199,6 +196,24 @@ func (s *UserInteractionService) resendOTPForChannel(baseInput types.BasicInput[
 	user := baseInput.User
 	input := baseInput.Input
 
+	if input.ChannelType != dbmodels.NotificationChannelTypeEmail {
+
+	}
+
+	if !config.GetAppEnv().IsDevelopment() {
+		rateLimitKey := fmt.Sprintf("otp_rate_limit_%s_%s_%s", user.Id, input.ChannelType, input.ChannelValue)
+
+		if _, found := s.rateLimitCache.Get(rateLimitKey); found {
+			return &gqlmodels.ResendOTPOutput{
+				Code:      1,
+				RateLimit: utils.Int32Ptr(60), // 60 seconds
+				Message:   utils.StringPtr("OTP can only be sent once per minute. Please try again later"),
+			}, nil
+		}
+
+		s.rateLimitCache.Set(rateLimitKey, time.Now(), 1*time.Minute)
+	}
+
 	otpCode, err := utils.NextOTPCode()
 	if err != nil {
 		return nil, fmt.Errorf("error generating OTP code: %w", err)
@@ -206,6 +221,7 @@ func (s *UserInteractionService) resendOTPForChannel(baseInput types.BasicInput[
 	s.otpCache.Set(input.ID, otpCode, 3*time.Minute)
 
 	return &gqlmodels.ResendOTPOutput{
-		Expiration: 3 * 60, // 180 seconds
+		Code:       0,
+		Expiration: utils.Int32Ptr(3 * 60),
 	}, nil
 }

@@ -34,7 +34,7 @@ func (r *mutationResolver) ModifyLikeDao(ctx context.Context, input gqlmodels.Mo
 }
 
 // BindNotifyChannel is the resolver for the bindNotifyChannel field.
-func (r *mutationResolver) BindNotifyChannel(ctx context.Context, input gqlmodels.BindNotifyChannelInput) (*gqlmodels.BindNotifyChannelOutput, error) {
+func (r *mutationResolver) BindNotifyChannel(ctx context.Context, input gqlmodels.BindNotifyChannelInput) (*gqlmodels.ResendOTPOutput, error) {
 	user, _ := r.authUtils.GetUser(ctx)
 	return r.userInteractionService.BindNotifyChannel(types.BasicInput[gqlmodels.BindNotifyChannelInput]{
 		User:  user,

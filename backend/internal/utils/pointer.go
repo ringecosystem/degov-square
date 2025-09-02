@@ -23,6 +23,11 @@ func IntPtr(i int) *int {
 	return &i
 }
 
+// Int32Ptr returns a pointer to the given int32 value.
+func Int32Ptr(i int32) *int32 {
+	return &i
+}
+
 // Int64Ptr returns a pointer to the given int64 value.
 func Int64Ptr(i int64) *int64 {
 	return &i

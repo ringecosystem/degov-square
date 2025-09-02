@@ -66,8 +66,8 @@ func (NotificationEvent) TableName() string {
 }
 
 const (
-	ChannelTypeEmail   NotificationChannelType = "EMAIL"
-	ChannelTypeWebhook NotificationChannelType = "WEBHOOK"
+	NotificationChannelTypeEmail   NotificationChannelType = "EMAIL"
+	NotificationChannelTypeWebhook NotificationChannelType = "WEBHOOK"
 )
 
 type NotificationChannel struct {
