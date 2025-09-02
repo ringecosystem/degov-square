@@ -33,6 +33,24 @@ func (r *mutationResolver) ModifyLikeDao(ctx context.Context, input gqlmodels.Mo
 	return result, err
 }
 
+// BindNotifyChannel is the resolver for the bindNotifyChannel field.
+func (r *mutationResolver) BindNotifyChannel(ctx context.Context, input gqlmodels.BindNotifyChannelInput) (*gqlmodels.VerifyNotififyChannelOutput, error) {
+	user, _ := r.authUtils.GetUser(ctx)
+	return r.userInteractionService.BindNotifyChannel(types.BasicInput[gqlmodels.BindNotifyChannelInput]{
+		User:  user,
+		Input: input,
+	})
+}
+
+// VerifyNotififyChannel is the resolver for the verifyNotififyChannel field.
+func (r *mutationResolver) VerifyNotififyChannel(ctx context.Context, input gqlmodels.VerifyNotififyChannelInput) (*gqlmodels.VerifyNotififyChannelOutput, error) {
+	user, _ := r.authUtils.GetUser(ctx)
+	return r.userInteractionService.VerifyNotififyChannel(types.BasicInput[gqlmodels.VerifyNotififyChannelInput]{
+		User:  user,
+		Input: input,
+	})
+}
+
 // SubscribeDao is the resolver for the subscribeDao field.
 func (r *mutationResolver) SubscribeDao(ctx context.Context, input gqlmodels.SubscribeDaoInput) (*gqlmodels.SubscribedDaoOutput, error) {
 	user, _ := r.authUtils.GetUser(ctx)

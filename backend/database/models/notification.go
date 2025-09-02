@@ -6,7 +6,7 @@ import (
 
 // type NotificationType string
 type NotificationRecordState string
-type UserChannelType string
+type NotificationChannelType string
 type NotificationEventState string
 
 const (
@@ -66,20 +66,20 @@ func (NotificationEvent) TableName() string {
 }
 
 const (
-	ChannelTypeEmail   UserChannelType = "EMAIL"
-	ChannelTypeWebhook UserChannelType = "WEBHOOK"
+	ChannelTypeEmail   NotificationChannelType = "EMAIL"
+	ChannelTypeWebhook NotificationChannelType = "WEBHOOK"
 )
 
-type UserChannel struct {
-	ID           string          `gorm:"column:id;type:varchar(50);primaryKey" json:"id"`
-	UserID       string          `gorm:"column:user_id;type:varchar(50);not null" json:"user_id"`
-	Verified     int             `gorm:"column:verified;not null;default:0" json:"verified"`
-	ChannelType  UserChannelType `gorm:"column:channel_type;type:varchar(50);not null" json:"channel_type"`
-	ChannelValue string          `gorm:"column:channel_value;type:varchar(500);not null" json:"channel_value"`
-	Payload      *string         `gorm:"column:payload;type:text" json:"payload,omitempty"`
-	CTime        time.Time       `gorm:"column:ctime;default:now()" json:"ctime"`
+type NotificationChannel struct {
+	ID           string                  `gorm:"column:id;type:varchar(50);primaryKey" json:"id"`
+	UserID       string                  `gorm:"column:user_id;type:varchar(50);not null" json:"user_id"`
+	Verified     int                     `gorm:"column:verified;not null;default:0" json:"verified"`
+	ChannelType  NotificationChannelType `gorm:"column:channel_type;type:varchar(50);not null" json:"channel_type"`
+	ChannelValue string                  `gorm:"column:channel_value;type:varchar(500);not null" json:"channel_value"`
+	Payload      *string                 `gorm:"column:payload;type:text" json:"payload,omitempty"`
+	CTime        time.Time               `gorm:"column:ctime;default:now()" json:"ctime"`
 }
 
-func (UserChannel) TableName() string {
-	return "dgv_user_channel"
+func (NotificationChannel) TableName() string {
+	return "dgv_notification_channel"
 }

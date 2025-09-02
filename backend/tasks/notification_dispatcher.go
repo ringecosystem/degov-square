@@ -75,7 +75,6 @@ func (t *NotificationDispatcherTask) dispatchNotificationRecordByRecord(record *
 	if err != nil {
 		return err
 	}
-	// return t.notificationService.SendNotification(record, template)
 	slog.Debug("Dispatch notification record", "record_id", record.ID, "template", template)
 	return nil
 }

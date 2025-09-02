@@ -51,6 +51,11 @@ enum FeatureName {
   VOTE_EMITTED
 }
 
+enum NotificationChannelType {
+  EMAIL
+  WEBHOOK
+}
+
 ### ==== entities
 
 type User {
@@ -162,6 +167,15 @@ type SubscribedProposalOutput {
   state: String!
 }
 
+type BindNotifyChannelOutput {
+  expiration: Int!
+}
+
+type VerifyNotififyChannelOutput {
+  code: Int!
+  message: String
+}
+
 ### === inputs
 
 input GetNonceInput {
@@ -188,16 +202,15 @@ input EvmAbiInput {
   contract: String!
 }
 
-# input FeatureSettingsDaoInput {
-#   proposalNew: Boolean
-#   voteEnd: Boolean
-# }
+input BindNotifyChannelInput {
+  type: NotificationChannelType!
+  value: String!
+}
 
-# input FeatureSettingsProposalInput {
-#   voteEnd: Boolean
-#   voteEmitted: Boolean
-#   proposalStateChanged: Boolean
-# }
+input VerifyNotififyChannelInput {
+  id: String!
+  otpCode: String!
+}
 
 input FeatureSettingsInput {
   name: FeatureName!
@@ -249,7 +262,14 @@ type Mutation {
 
   # User interactions
   modifyLikeDao(input: ModifyLikeDaoInput!): Boolean! @auth
+  bindNotifyChannel(
+    input: BindNotifyChannelInput!
+  ): VerifyNotififyChannelOutput! @auth
+  verifyNotififyChannel(
+    input: VerifyNotififyChannelInput!
+  ): VerifyNotififyChannelOutput! @auth
 
+  # subscribe
   subscribeDao(input: SubscribeDaoInput!): SubscribedDaoOutput! @auth
   subscribeProposal(input: SubscribeProposalInput!): SubscribedProposalOutput!
     @auth

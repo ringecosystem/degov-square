@@ -81,3 +81,17 @@ func (s *UserInteractionService) ModifyLikeDao(baseInput types.BasicInput[gqlmod
 
 	return true, nil
 }
+
+func (s *UserInteractionService) BindNotifyChannel(baseInput types.BasicInput[gqlmodels.BindNotifyChannelInput]) (*gqlmodels.VerifyNotififyChannelOutput, error) {
+	user := baseInput.User
+	input := baseInput.Input
+
+	return nil, nil
+}
+
+func (s *UserInteractionService) VerifyNotififyChannel(baseInput types.BasicInput[gqlmodels.VerifyNotififyChannelInput]) (*gqlmodels.VerifyNotififyChannelOutput, error) {
+	user := baseInput.User
+	input := baseInput.Input
+
+	return nil, nil
+}

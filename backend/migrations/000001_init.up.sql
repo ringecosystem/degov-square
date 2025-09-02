@@ -174,25 +174,25 @@ comment on column dgv_notification_record.user_id is 'user id';
 comment on column dgv_notification_record.proposal_id is 'proposal id';
 comment on column dgv_notification_record.vote_id is 'vote id';
 
--- User channel table
+-- Notification channel table
 create table
-  if not exists dgv_user_channel (
+  if not exists dgv_notification_channel (
     id varchar(50) not null,
     user_id varchar(50) not null,
     user_address varchar(255) not null,
     verified int not null default 0, -- whether the channel is verified
-    channel_type varchar(50) not null, -- { EMAIL, SMS, PUSH }
+    channel_type varchar(50) not null, -- { EMAIL, SMS, WEBHOOK }
     channel_value varchar(500) not null, -- email address or phone number
     payload text, -- additional data for the channel
     ctime timestamp default now (),
     primary key (id)
   );
 
-comment on table dgv_user_channel is 'Notification channel settings for users';
-comment on column dgv_user_channel.user_id is 'user id';
-comment on column dgv_user_channel.channel_type is 'notification channel type';
-comment on column dgv_user_channel.channel_value is 'notification channel value (email or phone)';
-comment on column dgv_user_channel.payload is 'additional data for the channel';
+comment on table dgv_notification_channel is 'Notification channel settings';
+comment on column dgv_notification_channel.user_id is 'user id';
+comment on column dgv_notification_channel.channel_type is 'notification channel type';
+comment on column dgv_notification_channel.channel_value is 'notification channel value';
+comment on column dgv_notification_channel.payload is 'additional data for the channel';
 
 -- Proposal tracking table (with notification updates)
 create table
