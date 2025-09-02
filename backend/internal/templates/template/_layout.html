@@ -1,4 +1,16 @@
 {{define "layout.html"}}
+{{/* Helper template to determine the correct image source based on the theme.
+  It expects a dictionary with keys: "Theme", "Dark", "Light", "Default".
+  The {{- ... -}} syntax is used to trim whitespace, ensuring the output is a clean URL.
+*/}}
+{{define "image_src_by_theme"}}
+  {{- if eq .Theme "dark" -}}
+    {{- or .Dark .Default -}}
+  {{- else -}}
+    {{- or .Light .Default -}}
+  {{- end -}}
+{{end}}
+
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -6,6 +18,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{{block "title" .}} - DeGov.AI</title>
 
+    {{$theme := "dark"}}
+    {{if eq .DegovSiteConfig.EmailTheme "light"}}
+      {{$theme = "light"}}
+    {{end}}
+
+    {{if eq $theme "dark"}}
     <style id="dark-theme-styles">
       /* Reset styles */
       body, table, td, p, a, li, blockquote { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; margin: 0; padding: 0; }
@@ -22,8 +40,6 @@
       .title { font-size: 28px; color: #ffffff; margin-bottom: 16px; font-weight: 600; line-height: 1.3; }
       .expiry-note p { margin: 0; }
       .verification-code { font-size: 36px; font-weight: bold; color: #ffffff; letter-spacing: 8px; font-family: "Courier New", Courier, monospace; }
-      .signature { font-size: 15px; color: #b0b0b0; line-height: 1.5; }
-      .signature-name { font-weight: 600; }
       .footer-content { padding: 25px 40px; text-align: left; background-color: #1a1a1a; }
       .footer-project-name { color: #ffffff; font-size: 15px; font-weight: 600; margin: 0; }
       .social-icons { margin-top: 0; text-align: right; }
@@ -44,8 +60,7 @@
         .footer-content td:last-child { padding-top: 20px; }
       }
     </style>
-
-<!--
+    {{else}}
     <style id="light-theme-styles">
       /* Reset styles */
       body, table, td, p, a, li, blockquote { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; margin: 0; padding: 0; }
@@ -62,8 +77,6 @@
       .title { font-size: 28px; color: #1c1e21; margin-bottom: 16px; font-weight: 600; line-height: 1.3; }
       .unsubscribe-text p { margin: 0; }
       .verification-code { font-size: 36px; font-weight: bold; color: #1c1e21; letter-spacing: 8px; font-family: "Courier New", Courier, monospace; }
-      .signature { font-size: 15px; color: #65676b; line-height: 1.5; }
-      .signature-name { font-weight: 600; }
       .footer-content { padding: 25px 40px; text-align: left; background-color: #ffffff; }
       .footer-project-name { color: #1c1e21; font-size: 15px; font-weight: 600; margin: 0; }
       .social-icons { margin-top: 0; text-align: right; }
@@ -84,29 +97,33 @@
         .footer-content td:last-child { padding-top: 20px; }
       }
     </style>
-     -->
+    {{end}}
 
     {{block "header" .}}
       <meta name="_name" content="_content" />
     {{end}}
   </head>
   <body>
-    <table
-      role="presentation"
-      cellspacing="0"
-      cellpadding="0"
-      border="0"
-      width="100%"
-    >
+    {{$config := .DegovSiteConfig}}
+    {{$theme := "dark"}}
+    {{if eq $config.EmailTheme "light"}}
+      {{$theme = "light"}}
+    {{end}}
+
+    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
       <tr>
         <td>
           <div class="email-container">
             <div class="header-logo">
-              <img
-                src="https://cdn.jsdelivr.net/gh/ringecosystem/degov-registry@main/assets/common/light-degov-4x.png"
-                alt="DeGov.AI"
-                style="width: auto; height: auto; vertical-align: middle"
-              />
+              <a href="{{$config.Home}}" target="_blank">
+                <img
+                  src='{{/* Call the helper template. Note the single quotes for the attribute. */}}
+                       {{- template "image_src_by_theme" (dict "Theme" $theme "Dark" $config.LogoDark "Light" $config.LogoLight "Default" $config.Logo) -}}
+                       '
+                  alt="{{$config.Name}}"
+                  style="width: auto; height: auto; vertical-align: middle"
+                />
+              </a>
             </div>
 
             <div class="divider"></div>
@@ -119,49 +136,29 @@
 
             <div class="footer-divider"></div>
 
-            <table
-              role="presentation"
-              cellspacing="0"
-              cellpadding="0"
-              border="0"
-              width="100%"
-            >
+            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
               <tr>
                 <td class="footer-content">
-                  <table
-                    role="presentation"
-                    cellspacing="0"
-                    cellpadding="0"
-                    border="0"
-                    width="100%"
-                  >
+                  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
                     <tr>
                       <td style="width: 50%; vertical-align: middle">
-                        <p class="footer-project-name">RingDAO - DeGov.AI</p>
+                        <p class="footer-project-name">{{$config.Name}}</p>
+                        <p class="footer-project-name">
+                          {{if and .DaoConfig .DaoConfig.Name}}{{.DaoConfig.Name}} - {{end}}DeGov.AI
+                        </p>
                       </td>
-                      <td
-                        style="
-                          width: 50%;
-                          text-align: right;
-                          vertical-align: middle;
-                        "
-                      >
+                      <td style="width: 50%; text-align: right; vertical-align: middle;">
                         <div class="social-icons">
-                           <a href="#" class="social-icon"
-                            ><img
-                              src="https://cdn.jsdelivr.net/gh/ringecosystem/degov-registry@main/assets/common/light-x-4x.png"
-                              alt="Twitter"
-                          /></a>
-                          <a href="#" class="social-icon"
-                            ><img
-                              src="https://cdn.jsdelivr.net/gh/ringecosystem/degov-registry@main/assets/common/light-telegram-4x.png"
-                              alt="Telegram"
-                          /></a>
-                          <a href="#" class="social-icon"
-                            ><img
-                              src="https://cdn.jsdelivr.net/gh/ringecosystem/degov-registry@main/assets/common/light-github-4x.png"
-                              alt="GitHub"
-                          /></a>
+                          {{range $config.Socials}}
+                           <a href="{{.Link}}" class="social-icon" target="_blank">
+                              <img
+                                src='{{/* Reuse the same helper template for social icons */}}
+                                     {{- template "image_src_by_theme" (dict "Theme" $theme "Dark" .IconDark "Light" .IconLight "Default" .Icon) -}}
+                                     '
+                                alt="{{.Name}}"
+                              />
+                           </a>
+                          {{end}}
                         </div>
                       </td>
                     </tr>
@@ -174,9 +171,7 @@
               <p class="unsubscribe-text">
                 Want to change how you receive these emails?<br />
                 You can
-                <a href="#" class="unsubscribe-link"
-                  >update your subscribe preferences</a
-                >
+                <a href="#" class="unsubscribe-link">update your subscribe preferences</a>
               </p>
             </div>
           </div>
