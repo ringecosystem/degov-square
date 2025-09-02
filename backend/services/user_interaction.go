@@ -97,7 +97,7 @@ func (s *UserInteractionService) ModifyLikeDao(baseInput types.BasicInput[gqlmod
 	return true, nil
 }
 
-func (s *UserInteractionService) BindNotifyChannel(baseInput types.BasicInput[gqlmodels.BindNotifyChannelInput]) (*gqlmodels.ResendOTPOutput, error) {
+func (s *UserInteractionService) BindNotificationChannel(baseInput types.BasicInput[gqlmodels.BindNotificationChannelInput]) (*gqlmodels.ResendOTPOutput, error) {
 	user := baseInput.User
 	input := baseInput.Input
 
@@ -133,13 +133,13 @@ func (s *UserInteractionService) BindNotifyChannel(baseInput types.BasicInput[gq
 	})
 }
 
-func (s *UserInteractionService) VerifyNotififyChannel(baseInput types.BasicInput[gqlmodels.VerifyNotififyChannelInput]) (*gqlmodels.VerifyNotififyChannelOutput, error) {
+func (s *UserInteractionService) VerifyNotificationChannel(baseInput types.BasicInput[gqlmodels.VerifyNotificationChannelInput]) (*gqlmodels.VerifyNotificationChannelOutput, error) {
 	user := baseInput.User
 	input := baseInput.Input
 
 	cachedOTP, found := s.otpCache.Get(input.ID)
 	if !found {
-		return &gqlmodels.VerifyNotififyChannelOutput{
+		return &gqlmodels.VerifyNotificationChannelOutput{
 			Code:    1,
 			Message: utils.StringPtr("OTP code has expired or does not exist"),
 		}, nil
@@ -147,14 +147,14 @@ func (s *UserInteractionService) VerifyNotififyChannel(baseInput types.BasicInpu
 
 	cachedOTPStr, ok := cachedOTP.(string)
 	if !ok {
-		return &gqlmodels.VerifyNotififyChannelOutput{
+		return &gqlmodels.VerifyNotificationChannelOutput{
 			Code:    1,
 			Message: utils.StringPtr("Invalid OTP code format"),
 		}, nil
 	}
 
 	if cachedOTPStr != input.OtpCode {
-		return &gqlmodels.VerifyNotififyChannelOutput{
+		return &gqlmodels.VerifyNotificationChannelOutput{
 			Code:    1,
 			Message: utils.StringPtr("Invalid OTP code"),
 		}, nil
@@ -166,7 +166,7 @@ func (s *UserInteractionService) VerifyNotififyChannel(baseInput types.BasicInpu
 	err := s.db.Where("id = ? AND user_id = ?", input.ID, user.Id).First(&channel).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return &gqlmodels.VerifyNotififyChannelOutput{
+			return &gqlmodels.VerifyNotificationChannelOutput{
 				Code:    1,
 				Message: utils.StringPtr("Notification channel not found"),
 			}, nil
@@ -178,7 +178,7 @@ func (s *UserInteractionService) VerifyNotififyChannel(baseInput types.BasicInpu
 		return nil, fmt.Errorf("error updating channel verification status: %w", err)
 	}
 
-	return &gqlmodels.VerifyNotififyChannelOutput{
+	return &gqlmodels.VerifyNotificationChannelOutput{
 		Code: 0,
 	}, nil
 }

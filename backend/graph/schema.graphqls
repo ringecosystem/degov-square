@@ -167,7 +167,7 @@ type SubscribedProposalOutput {
   state: String!
 }
 
-type VerifyNotififyChannelOutput {
+type VerifyNotificationChannelOutput {
   code: Int!
   message: String
 }
@@ -205,12 +205,12 @@ input EvmAbiInput {
   contract: String!
 }
 
-input BindNotifyChannelInput {
+input BindNotificationChannelInput {
   type: NotificationChannelType!
   value: String!
 }
 
-input VerifyNotififyChannelInput {
+input VerifyNotificationChannelInput {
   id: String!
   otpCode: String!
 }
@@ -270,10 +270,10 @@ type Mutation {
 
   # User interactions
   modifyLikeDao(input: ModifyLikeDaoInput!): Boolean! @auth
-  bindNotifyChannel(input: BindNotifyChannelInput!): ResendOTPOutput! @auth
-  verifyNotififyChannel(
-    input: VerifyNotififyChannelInput!
-  ): VerifyNotififyChannelOutput! @auth
+  bindNotificationChannel(input: BindNotificationChannelInput!): ResendOTPOutput! @auth
+  verifyNotificationChannel(
+    input: VerifyNotificationChannelInput!
+  ): VerifyNotificationChannelOutput! @auth
   resendOTP(input: resendOTPInput!): ResendOTPOutput! @auth
 
   # subscribe

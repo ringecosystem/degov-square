@@ -33,19 +33,19 @@ func (r *mutationResolver) ModifyLikeDao(ctx context.Context, input gqlmodels.Mo
 	return result, err
 }
 
-// BindNotifyChannel is the resolver for the bindNotifyChannel field.
-func (r *mutationResolver) BindNotifyChannel(ctx context.Context, input gqlmodels.BindNotifyChannelInput) (*gqlmodels.ResendOTPOutput, error) {
+// BindNotificationChannel is the resolver for the bindNotificationChannel field.
+func (r *mutationResolver) BindNotificationChannel(ctx context.Context, input gqlmodels.BindNotificationChannelInput) (*gqlmodels.ResendOTPOutput, error) {
 	user, _ := r.authUtils.GetUser(ctx)
-	return r.userInteractionService.BindNotifyChannel(types.BasicInput[gqlmodels.BindNotifyChannelInput]{
+	return r.userInteractionService.BindNotificationChannel(types.BasicInput[gqlmodels.BindNotificationChannelInput]{
 		User:  user,
 		Input: input,
 	})
 }
 
-// VerifyNotififyChannel is the resolver for the verifyNotififyChannel field.
-func (r *mutationResolver) VerifyNotififyChannel(ctx context.Context, input gqlmodels.VerifyNotififyChannelInput) (*gqlmodels.VerifyNotififyChannelOutput, error) {
+// VerifyNotificationChannel is the resolver for the verifyNotificationChannel field.
+func (r *mutationResolver) VerifyNotificationChannel(ctx context.Context, input gqlmodels.VerifyNotificationChannelInput) (*gqlmodels.VerifyNotificationChannelOutput, error) {
 	user, _ := r.authUtils.GetUser(ctx)
-	return r.userInteractionService.VerifyNotififyChannel(types.BasicInput[gqlmodels.VerifyNotififyChannelInput]{
+	return r.userInteractionService.VerifyNotificationChannel(types.BasicInput[gqlmodels.VerifyNotificationChannelInput]{
 		User:  user,
 		Input: input,
 	})
