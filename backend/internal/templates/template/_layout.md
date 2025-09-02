@@ -10,7 +10,10 @@ This is default content, which should be overridden by a specific template.
 
 ---
 
-{{if and .DaoConfig .DaoConfig.Name}}{{.DaoConfig.Name}} - {{end}}DeGov.AI
+{{- with .DaoConfig -}}
+  {{- if .Name}}{{.Name}} - {{end -}}
+{{- end -}}
+DeGov.AI
 
 Want to change how you receive these emails?
 You can update your subscribe preferences https://apps.degiv.ai/subscribe/preference

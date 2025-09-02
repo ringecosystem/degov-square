@@ -143,7 +143,10 @@
                     <tr>
                       <td style="width: 50%; vertical-align: middle">
                         <p class="footer-project-name">
-                          {{if and .DaoConfig .DaoConfig.Name}}{{.DaoConfig.Name}} - {{end}}DeGov.AI
+                          {{- with .DaoConfig -}}
+                            {{- if .Name}}{{.Name}} - {{end -}}
+                          {{- end -}}
+                          DeGov.AI
                         </p>
                       </td>
                       <td style="width: 50%; text-align: right; vertical-align: middle;">
