@@ -202,12 +202,12 @@ func (s *TemplateService) GenerateTemplateOTP(input types.GenerateTemplateOTPInp
 	}
 	richText, err := s.renderTemplate("otp-rich-text", "template/otp.html", templateData)
 	if err != nil {
-		slog.Error("failed to render OTP template", err)
+		slog.Error("failed to render OTP template", "err", err)
 		return nil, err
 	}
 	plainText, err := s.renderTemplate("otp-plain-text", "template/otp.md", templateData)
 	if err != nil {
-		slog.Error("failed to render OTP template", err)
+		slog.Error("failed to render OTP template", "err", err)
 		return nil, err
 	}
 
