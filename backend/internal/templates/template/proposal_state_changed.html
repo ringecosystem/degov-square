@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Proposal Status Changed</title>
+</head>
+<body>
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2>📊 Proposal Status Changed in {{.Dao.Name}}</h2>
+        
+        <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h3>{{.Proposal.Title}}</h3>
+            <p><strong>Proposal ID:</strong> {{.Proposal.ProposalId}}</p>
+            <p><strong>DAO:</strong> {{.Dao.Name}}</p>
+        </div>
+        
+        <div style="margin: 20px 0; padding: 15px; background-color: #fff3cd; border-left: 4px solid #ffc107; border-radius: 4px;">
+            <p><strong>Status Change:</strong></p>
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <span style="background-color: #6c757d; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px;">
+                    {{if .PayloadData.old_state}}{{.PayloadData.old_state}}{{else}}Previous{{end}}
+                </span>
+                <span>→</span>
+                <span style="background-color: #28a745; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px;">
+                    {{if .PayloadData.new_state}}{{.PayloadData.new_state}}{{else}}{{.Proposal.State}}{{end}}
+                </span>
+            </div>
+        </div>
+        
+        {{if .Proposal.Message}}
+        <div style="margin: 20px 0;">
+            <h4>Description:</h4>
+            <p>{{.Proposal.Message}}</p>
+        </div>
+        {{end}}
+        
+        <div style="margin: 20px 0; text-align: center;">
+            <a href="{{.ProposalUrl}}" style="background-color: #007bff; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block;">
+                View Proposal
+            </a>
+        </div>
+        
+        <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+        <p style="color: #666; font-size: 12px; text-align: center;">
+            You are receiving this email because you subscribed to notifications from {{.Dao.Name}}.
+        </p>
+    </div>
+</body>
+</html>

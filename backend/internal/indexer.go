@@ -192,6 +192,38 @@ func (d *DegovIndexer) QueryVotesOffset(ctx context.Context, offset int, proposa
 	return response.VoteCasts, nil
 }
 
+func (d *DegovIndexer) QueryVote(ctx context.Context, id string) (*VoteCast, error) {
+	query := `
+	query QueryVote($id: String!) {
+		voteCasts(where: {id_eq: $id}) {
+			proposalId
+			reason
+			support
+			voter
+			weight
+			transactionHash
+			id
+			blockNumber
+			blockTimestamp
+		}
+	}
+	`
+
+	req := graphql.NewRequest(query)
+	req.Var("id", id)
+
+	var response VoteCastsResponse
+	if err := d.client.Run(ctx, req, &response); err != nil {
+		return nil, fmt.Errorf("failed to execute QueryVotesOffset: %w", err)
+	}
+	voteCasts := response.VoteCasts
+	if len(voteCasts) > 0 {
+		return &voteCasts[0], nil
+	}
+
+	return nil, fmt.Errorf("no vote found with id %s", id)
+}
+
 func (d *DegovIndexer) QueryExpiringProposals(ctx context.Context) ([]Proposal, error) {
 	query := `
 	query QueryExpiringProposals($limit: Int!, $offset: Int!, $start: BigInt!, $end: BigInt!) {

@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Vote Submitted</title>
+</head>
+<body>
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2>✅ Vote Submitted in {{.Dao.Name}}</h2>
+        
+        <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h3>{{.Proposal.Title}}</h3>
+            <p><strong>Proposal ID:</strong> {{.Proposal.ProposalId}}</p>
+            <p><strong>DAO:</strong> {{.Dao.Name}}</p>
+            {{if .VoteID}}<p><strong>Vote ID:</strong> {{.VoteID}}</p>{{end}}
+        </div>
+        
+        <div style="margin: 20px 0; padding: 15px; background-color: #d1ecf1; border-left: 4px solid #17a2b8; border-radius: 4px;">
+            <p><strong>🗳️ A vote has been submitted!</strong></p>
+            <p>A new vote was cast on this proposal. The vote has been recorded on the blockchain.</p>
+        </div>
+        
+        {{if .Proposal.Message}}
+        <div style="margin: 20px 0;">
+            <h4>Proposal Description:</h4>
+            <p>{{.Proposal.Message}}</p>
+        </div>
+        {{end}}
+        
+        <div style="margin: 20px 0; text-align: center;">
+            <a href="{{.ProposalUrl}}" style="background-color: #007bff; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block;">
+                View Proposal
+            </a>
+        </div>
+        
+        <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+        <p style="color: #666; font-size: 12px; text-align: center;">
+            You are receiving this email because you subscribed to notifications from {{.Dao.Name}}.
+        </p>
+    </div>
+</body>
+</html>
