@@ -10,11 +10,13 @@ import (
 
 type NotificationDispatcherTask struct {
 	notificationService *services.NotificationService
+	templateService     *services.TemplateService
 }
 
 func NewNotificationDispatcherTask() *NotificationDispatcherTask {
 	return &NotificationDispatcherTask{
 		notificationService: services.NewNotificationService(),
+		templateService:     services.NewTemplateService(),
 	}
 }
 
@@ -69,6 +71,11 @@ func (t *NotificationDispatcherTask) dispatcherNotificationRecord() error {
 }
 
 func (t *NotificationDispatcherTask) dispatchNotificationRecordByRecord(record *dbmodels.NotificationRecord) error {
-
+	template, err := t.templateService.GenerateTemplateByNotificationRecord(record)
+	if err != nil {
+		return err
+	}
+	// return t.notificationService.SendNotification(record, template)
+	slog.Debug("Dispatch notification record", "record_id", record.ID, "template", template)
 	return nil
 }
