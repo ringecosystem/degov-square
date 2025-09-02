@@ -197,7 +197,10 @@ func (s *UserInteractionService) resendOTPForChannel(baseInput types.BasicInput[
 	input := baseInput.Input
 
 	if input.ChannelType != dbmodels.NotificationChannelTypeEmail {
-
+		return &gqlmodels.ResendOTPOutput{
+			Code:    0,
+			Message: utils.StringPtr("this method do not need send OTP to verify"),
+		}, nil
 	}
 
 	if !config.GetAppEnv().IsDevelopment() {
@@ -211,7 +214,7 @@ func (s *UserInteractionService) resendOTPForChannel(baseInput types.BasicInput[
 					remainingSeconds := int32(remaining.Seconds())
 					return &gqlmodels.ResendOTPOutput{
 						Code:      1,
-						RateLimit: utils.Int32Ptr(remainingSeconds),
+						RateLimit: &remainingSeconds,
 						Message:   utils.StringPtr(fmt.Sprintf("OTP can only be sent once per minute. Please try again in %d seconds", remainingSeconds)),
 					}, nil
 				}
