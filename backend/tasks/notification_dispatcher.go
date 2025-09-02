@@ -9,14 +9,18 @@ import (
 )
 
 type NotificationDispatcherTask struct {
-	notificationService *services.NotificationService
-	templateService     *services.TemplateService
+	notificationService    *services.NotificationService
+	templateService        *services.TemplateService
+	notifierService        *services.NotifierService
+	userInteractionService *services.UserInteractionService
 }
 
 func NewNotificationDispatcherTask() *NotificationDispatcherTask {
 	return &NotificationDispatcherTask{
-		notificationService: services.NewNotificationService(),
-		templateService:     services.NewTemplateService(),
+		notificationService:    services.NewNotificationService(),
+		templateService:        services.NewTemplateService(),
+		notifierService:        services.NewNotifierService(),
+		userInteractionService: services.NewUserInteractionService(),
 	}
 }
 
@@ -36,7 +40,25 @@ func (t *NotificationDispatcherTask) dispatcherNotificationRecord() error {
 		return err
 	}
 	for _, record := range records {
-		if err := t.dispatchNotificationRecordByRecord(&record); err != nil {
+		channels, err := t.userInteractionService.ListChannel(types.BasicInput[types.ListChannelInput]{
+			User: &types.UserSessInfo{
+				Id: record.UserID,
+			},
+			Input: types.ListChannelInput{
+				Verified: true,
+			},
+		})
+		if err != nil {
+			slog.Error("Failed to list user channels", "user_id", record.UserID, "error", err)
+			t.notificationService.UpdateRecordRetryTimes(types.UpdateRecordRetryTimes{
+				ID:         record.ID,
+				TimesRetry: record.TimesRetry + 1,
+				Message:    *record.Message + "\n\nFailed to list user channels: " + err.Error(),
+			})
+			continue
+		}
+
+		if err := t.dispatchNotificationRecordByRecord(&record, channels); err != nil {
 			slog.Error("Failed to dispatch notification record", "record_id", record.ID, "error", err)
 
 			timesRetry := record.TimesRetry + 1
@@ -70,11 +92,28 @@ func (t *NotificationDispatcherTask) dispatcherNotificationRecord() error {
 	return nil
 }
 
-func (t *NotificationDispatcherTask) dispatchNotificationRecordByRecord(record *dbmodels.NotificationRecord) error {
-	template, err := t.templateService.GenerateTemplateByNotificationRecord(record)
+func (t *NotificationDispatcherTask) dispatchNotificationRecordByRecord(record *dbmodels.NotificationRecord, channels []dbmodels.NotificationChannel) error {
+	templateOutput, err := t.templateService.GenerateTemplateByNotificationRecord(record)
 	if err != nil {
 		return err
 	}
-	slog.Debug("Dispatch notification record", "record_id", record.ID, "template", template)
+	slog.Debug("Dispatch notification record", "record_id", record.ID, "template", templateOutput)
+
+	for _, channel := range channels {
+		if err := t.notifierService.Notify(types.NotifyInput{
+			Type:     channel.ChannelType,
+			To:       channel.ChannelValue,
+			Template: templateOutput,
+		}); err != nil {
+			// todo: The best practice is to record the failure of a channel to avoid repeated pushes, but there will not be multiple channels for the time being
+			slog.Warn(
+				"Failed to notify",
+				"channel_type", channel.ChannelType,
+				"channel_to", channel.ChannelValue,
+				"error", err,
+			)
+			return err
+		}
+	}
 	return nil
 }

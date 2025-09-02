@@ -13,6 +13,7 @@ import (
 	"github.com/ringecosystem/degov-apps/internal"
 	"github.com/ringecosystem/degov-apps/internal/config"
 	"github.com/ringecosystem/degov-apps/internal/templates"
+	"github.com/ringecosystem/degov-apps/internal/utils"
 	"github.com/ringecosystem/degov-apps/types"
 )
 
@@ -66,7 +67,6 @@ func (s *TemplateService) parsePayload(payload *string) map[string]interface{} {
 	return result
 }
 
-// getTemplateFileName returns the template file name based on notification type
 func (s *TemplateService) getTemplateFileName(notificationType dbmodels.SubscribeFeatureName) string {
 	switch notificationType {
 	case dbmodels.SubscribeFeatureProposalNew:
@@ -82,14 +82,29 @@ func (s *TemplateService) getTemplateFileName(notificationType dbmodels.Subscrib
 	}
 }
 
-func (s *TemplateService) GenerateTemplateByNotificationRecord(record *dbmodels.NotificationRecord) (string, error) {
+func (s *TemplateService) getTemplateTitle(notificationType dbmodels.SubscribeFeatureName) string {
+	switch notificationType {
+	case dbmodels.SubscribeFeatureProposalNew:
+		return "New Proposal"
+	case dbmodels.SubscribeFeatureProposalStateChanged:
+		return "Proposal State Changed"
+	case dbmodels.SubscribeFeatureVoteEnd:
+		return "Vote End Reminder"
+	case dbmodels.SubscribeFeatureVoteEmitted:
+		return "Vote Emitted"
+	default:
+		return "Unknown" // fallback
+	}
+}
+
+func (s *TemplateService) GenerateTemplateByNotificationRecord(record *dbmodels.NotificationRecord) (*types.TemplateOutput, error) {
 	// Get DAO information
 	dao, err := s.daoService.Inspect(types.BasicInput[string]{
 		User:  nil,
 		Input: record.DaoCode,
 	})
 	if err != nil {
-		return "", fmt.Errorf("failed to get DAO info: %w", err)
+		return nil, fmt.Errorf("failed to get DAO info: %w", err)
 	}
 
 	// Get proposal information
@@ -98,12 +113,12 @@ func (s *TemplateService) GenerateTemplateByNotificationRecord(record *dbmodels.
 		ProposalID: record.ProposalID,
 	})
 	if err != nil {
-		return "", fmt.Errorf("failed to get proposal info: %w", err)
+		return nil, fmt.Errorf("failed to get proposal info: %w", err)
 	}
 
 	daoConfig, err := s.daoConfigService.StandardConfig(dao.Code)
 	if err != nil {
-		return "", fmt.Errorf("failed to get DAO config info: %w", err)
+		return nil, fmt.Errorf("failed to get DAO config info: %w", err)
 	}
 
 	var vote *internal.VoteCast
@@ -115,7 +130,7 @@ func (s *TemplateService) GenerateTemplateByNotificationRecord(record *dbmodels.
 		cancel()
 
 		if err != nil {
-			return "", fmt.Errorf("failed to get vote info: %w", err)
+			return nil, fmt.Errorf("failed to get vote info: %w", err)
 		}
 
 		vote = voteById
@@ -145,33 +160,38 @@ func (s *TemplateService) GenerateTemplateByNotificationRecord(record *dbmodels.
 	// Read template content from embedded filesystem
 	templateContent, err := templates.TemplateFS.ReadFile(templatePath)
 	if err != nil {
-		return "", fmt.Errorf("failed to read embedded template file: %w", err)
+		return nil, fmt.Errorf("failed to read embedded template file: %w", err)
 	}
 
 	// Parse and execute template
 	tmpl, err := template.New(templateFileName).Parse(string(templateContent))
 	if err != nil {
-		return "", fmt.Errorf("failed to parse template: %w", err)
+		return nil, fmt.Errorf("failed to parse template: %w", err)
 	}
 
 	var buf bytes.Buffer
 	if err := tmpl.Execute(&buf, templateData); err != nil {
-		return "", fmt.Errorf("failed to execute template: %w", err)
+		return nil, fmt.Errorf("failed to execute template: %w", err)
 	}
 
-	return buf.String(), nil
+	title := fmt.Sprintf("[DeGov] [%s] [%s]: %s", dao.Name, s.getTemplateTitle(record.Type), proposal.Title)
+
+	return &types.TemplateOutput{
+		Title:   utils.TruncateText(title, 80),
+		Content: buf.String(),
+	}, nil
 }
 
-func (s *TemplateService) GenerateTemplateOTP(input types.GenerateTemplateOTPInput) (string, error) {
+func (s *TemplateService) GenerateTemplateOTP(input types.GenerateTemplateOTPInput) (*types.TemplateOutput, error) {
 	templateContent, err := templates.TemplateFS.ReadFile("template/otp.html")
 	if err != nil {
-		return "", fmt.Errorf("failed to read embedded template file: %w", err)
+		return nil, fmt.Errorf("failed to read embedded template file: %w", err)
 	}
 
 	// Parse and execute template
 	tmpl, err := template.New("otp").Parse(string(templateContent))
 	if err != nil {
-		return "", fmt.Errorf("failed to parse template: %w", err)
+		return nil, fmt.Errorf("failed to parse template: %w", err)
 	}
 
 	templateData := TemplateOTPData{
@@ -181,8 +201,11 @@ func (s *TemplateService) GenerateTemplateOTP(input types.GenerateTemplateOTPInp
 
 	var buf bytes.Buffer
 	if err := tmpl.Execute(&buf, templateData); err != nil {
-		return "", fmt.Errorf("failed to execute template: %w", err)
+		return nil, fmt.Errorf("failed to execute template: %w", err)
 	}
 
-	return buf.String(), nil
+	return &types.TemplateOutput{
+		Title:   "[DeGov] Login Verification",
+		Content: buf.String(),
+	}, nil
 }

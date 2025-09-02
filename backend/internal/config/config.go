@@ -105,7 +105,7 @@ func setDefaults(v *viper.Viper) {
 	// Task defaults
 	v.SetDefault("TASK_DAO_SYNC_ENABLED", true)
 	v.SetDefault("TASK_DAO_SYNC_INTERVAL", "5m")
-	v.SetDefault("TASK_VOTE_TRACKING_ENABLED", true)
+	v.SetDefault("TASK_VOTE_TRACKING_ENABLED", false)
 	v.SetDefault("TASK_VOTE_TRACKING_INTERVAL", "3m")
 	v.SetDefault("TASK_VOTE_END_TRACKING_ENABLED", true)
 	v.SetDefault("TASK_VOTE_END_TRACKING_INTERVAL", "10m")

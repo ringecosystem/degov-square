@@ -3,6 +3,7 @@ package services
 import (
 	"errors"
 	"fmt"
+	"log/slog"
 	"strings"
 	"time"
 
@@ -23,6 +24,7 @@ type UserInteractionService struct {
 	templateService *TemplateService
 	otpCache        *cache.Cache
 	rateLimitCache  *cache.Cache
+	notifierService *NotifierService
 }
 
 func NewUserInteractionService() *UserInteractionService {
@@ -35,6 +37,7 @@ func NewUserInteractionService() *UserInteractionService {
 		templateService: NewTemplateService(),
 		otpCache:        otpCache,
 		rateLimitCache:  rateLimitCache,
+		notifierService: NewNotifierService(),
 	}
 }
 
@@ -236,12 +239,19 @@ func (s *UserInteractionService) resendOTPForChannel(baseInput types.BasicInput[
 		}
 		s.otpCache.Set(input.ID, otpCode, 3*time.Minute)
 
-		// emailContent, err := s.templateService.GenerateTemplateOTP(types.GenerateTemplateOTPInput{
-		// 	OTP: otpCode,
-		// })
-		// if err != nil {
-		// 	return nil, fmt.Errorf("error generating email content: %w", err)
-		// }
+		templateOutput, err := s.templateService.GenerateTemplateOTP(types.GenerateTemplateOTPInput{
+			OTP: otpCode,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("error generating email content: %w", err)
+		}
+		if err := s.notifierService.Notify(types.NotifyInput{
+			Type:     dbmodels.NotificationChannelTypeEmail,
+			To:       input.ChannelValue,
+			Template: templateOutput,
+		}); err != nil {
+			slog.Warn("Failed to notify", "err", err)
+		}
 
 		return &gqlmodels.ResendOTPOutput{
 			Code:       0,
@@ -261,4 +271,17 @@ func (s *UserInteractionService) resendOTPForChannel(baseInput types.BasicInput[
 		}, nil
 	}
 
+}
+
+func (s UserInteractionService) ListChannel(baseInput types.BasicInput[types.ListChannelInput]) ([]dbmodels.NotificationChannel, error) {
+	user := baseInput.User
+	verified := 0
+	if baseInput.Input.Verified {
+		verified = 1
+	}
+	var results []dbmodels.NotificationChannel
+	s.db.
+		Where("user_id = ? or user_address = ? and verified = ?", user.Id, user.Address, verified).
+		Find(&results)
+	return results, nil
 }

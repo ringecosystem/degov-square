@@ -43,3 +43,13 @@ type UpdateRecordRetryTimes struct {
 	TimesRetry int
 	Message    string
 }
+
+type ListChannelInput struct {
+	Verified bool
+}
+
+type NotifyInput struct {
+	Type     dbmodels.NotificationChannelType
+	To       string
+	Template *TemplateOutput
+}
