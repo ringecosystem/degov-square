@@ -2,6 +2,7 @@ package services
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/ringecosystem/degov-apps/database"
@@ -338,38 +339,62 @@ func (s *SubscribeService) ListSubscribedUser(input types.ListSubscribeUserInput
 		return nil, fmt.Errorf("no strategies provided for feature %s", input.Feature)
 	}
 
-	sql := "SELECT DISTINCT f.user_id, f.user_address, f.chain_id, f.dao_code, LEAST(d.ctime, p.ctime) AS ctime FROM dgv_subscribed_feature AS f " +
-		"LEFT JOIN dgv_user_subscribed_dao AS d ON f.user_id = d.user_id AND f.dao_code = d.dao_code " +
-		"LEFT JOIN dgv_user_subscribed_proposal AS p ON f.user_id = p.user_id AND f.proposal_id = p.proposal_id " +
-		"WHERE f.feature = ? AND f.strategy IN ? AND f.dao_code = ? "
-
 	queryParams := make([]interface{}, 0)
+	whereConditions := make([]string, 0)
+
+	whereConditions = append(whereConditions, "f.feature = ?", "f.strategy IN ?", "f.dao_code = ?")
 	queryParams = append(queryParams, input.Feature, strategies, input.DaoCode)
 
-	// proposal id handling
 	if input.ProposalID != nil {
-		sql += "AND (f.proposal_id = ? OR f.proposal_id IS NULL) "
+		whereConditions = append(whereConditions, "(f.proposal_id = ? OR f.proposal_id IS NULL)")
 		queryParams = append(queryParams, *input.ProposalID)
 	} else {
-		sql += "AND f.proposal_id IS NULL "
+		whereConditions = append(whereConditions, "f.proposal_id IS NULL")
 	}
 
 	if input.TimeEvent != nil {
-		sql += "AND ((d.state = 'ACTIVE' AND d.ctime <= ?) OR (p.state = 'ACTIVE' AND p.ctime <= ?)) "
+		whereConditions = append(whereConditions, "((d.state = 'ACTIVE' AND d.ctime <= ?) OR (p.state = 'ACTIVE' AND p.ctime <= ?))")
 		queryParams = append(queryParams, *input.TimeEvent, *input.TimeEvent)
 	} else {
-		sql += "AND (d.state = 'ACTIVE' OR p.state = 'ACTIVE') "
+		whereConditions = append(whereConditions, "(d.state = 'ACTIVE' OR p.state = 'ACTIVE')")
 	}
 
-	// ordering and pagination
+	sqlTemplate := `
+WITH RankedResults AS (
+    SELECT
+        f.user_id, f.user_address, f.chain_id, f.dao_code,
+        LEAST(d.ctime, p.ctime) AS ctime,
+        f.ctime AS order_ctime,
+        ROW_NUMBER() OVER(
+            PARTITION BY f.user_id, f.user_address, f.chain_id, f.dao_code, LEAST(d.ctime, p.ctime)
+            ORDER BY f.ctime ASC, f.user_id ASC
+        ) as rn
+    FROM
+        dgv_subscribed_feature AS f
+    LEFT JOIN
+        dgv_user_subscribed_dao AS d ON f.user_id = d.user_id AND f.dao_code = d.dao_code
+    LEFT JOIN
+        dgv_user_subscribed_proposal AS p ON f.user_id = p.user_id AND f.proposal_id = p.proposal_id
+    WHERE
+        %s
+)
+SELECT user_id, user_address, chain_id, dao_code, ctime
+FROM RankedResults
+WHERE rn = 1
+ORDER BY order_ctime ASC, user_id ASC
+LIMIT ? OFFSET ?
+`
+
+	whereClause := strings.Join(whereConditions, " AND ")
+	finalSQL := fmt.Sprintf(sqlTemplate, whereClause)
+
 	if input.Limit <= 0 {
 		input.Limit = 100
 	}
-	sql += "ORDER BY f.ctime ASC, f.user_id ASC LIMIT ? OFFSET ?"
 	queryParams = append(queryParams, input.Limit, input.Offset)
 
 	var outputs []types.ListSubscribedUserOutput
-	if err := s.db.Raw(sql, queryParams...).Scan(&outputs).Error; err != nil {
+	if err := s.db.Raw(finalSQL, queryParams...).Scan(&outputs).Error; err != nil {
 		return nil, err
 	}
 
