@@ -16,5 +16,78 @@
 {{end}}
 
 {{define "content"}}
+  {{$proposalDb := .Proposal.ProposalDb}}
+  {{$proposalIndexer := .Proposal.ProposalIndexer}}
+  {{$dao := .Dao}}
+  {{$vote := .Vote}}
+  {{$payload := .PayloadData}}
 
+  <p style="margin: 0 0 20px; font-size: 16px; line-height: 1.6;">
+    Hello {{if .EnsName}}{{.EnsName}}{{else}}{{.UserAddress}}{{end}},
+  </p>
+  <p style="margin: 0 0 25px; font-size: 16px; line-height: 1.6;">
+    This is a friendly reminder that voting for the proposal <strong>"{{$proposalDb.Title}}"</strong> in {{$dao.Name}} is ending soon.
+  </p>
+
+  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="font-size: 15px; line-height: 1.7; margin-bottom: 25px;">
+    <tr>
+      <td style="padding: 4px 0; width: 130px; vertical-align: top;"><strong>Proposal:</strong></td>
+      <td style="padding: 4px 0;"><a href="{{$proposalDb.ProposalLink}}" target="_blank" style="color: #55acee; text-decoration: underline;">{{$proposalDb.Title}}</a></td>
+    </tr>
+    <tr>
+      <td style="padding: 4px 0; vertical-align: top;"><strong>Voting Ends:</strong></td>
+      <td style="padding: 4px 0;">{{$proposalIndexer.VoteEndTimestamp | formatDate}} {{if $payload.TimeRemainingSeconds}}({{$payload.TimeRemainingSeconds | formatDurationShort}} remaining){{end}}</td>
+    </tr>
+    <tr>
+      <td style="padding: 4px 0; vertical-align: top;"><strong>Your Voting Power:</strong></td>
+      <td style="padding: 4px 0;">{{(formatBigIntWithDecimals $vote.VoteIndexer.Weight $proposalIndexer.Decimals) | formatLargeNumber}}</td>
+    </tr>
+  </table>
+
+  <div class="divider" style="margin-top: 30px; margin-left: 0; margin-right: 0;"></div>
+
+  <h3 style="margin: 30px 0 15px; font-size: 20px; font-weight: 600;">📊 Voting Progress ({{(formatBigIntWithDecimals $vote.TotalVotePower $proposalIndexer.Decimals) | formatLargeNumber}} / {{(formatBigIntWithDecimals $proposalIndexer.Quorum $proposalIndexer.Decimals) | formatLargeNumber}})</h3>
+  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="font-size: 15px; line-height: 1.7;">
+    <tr>
+      <td style="padding: 6px 0;">✅&nbsp; <strong>For:</strong></td>
+      <td style="padding: 6px 0; text-align: right;">{{(formatBigIntWithDecimals $proposalIndexer.MetricsVotesWeightForSum $proposalIndexer.Decimals) | formatLargeNumber}} ({{$vote.PercentFor | formatPercent}})</td>
+    </tr>
+    <tr>
+      <td style="padding: 6px 0;">❌&nbsp; <strong>Against:</strong></td>
+      <td style="padding: 6px 0; text-align: right;">{{(formatBigIntWithDecimals $proposalIndexer.MetricsVotesWeightAgainstSum $proposalIndexer.Decimals) | formatLargeNumber}} ({{$vote.PercentAgainst | formatPercent}})</td>
+    </tr>
+    <tr>
+      <td style="padding: 6px 0;">⚪️&nbsp; <strong>Abstain:</strong></td>
+      <td style="padding: 6px 0; text-align: right;">{{(formatBigIntWithDecimals $proposalIndexer.MetricsVotesWeightAbstainSum $proposalIndexer.Decimals) | formatLargeNumber}} ({{$vote.PercentAbstain | formatPercent}})</td>
+    </tr>
+  </table>
+
+  <div class="divider" style="margin-top: 30px; margin-left: 0; margin-right: 0;"></div>
+
+  <h3 style="margin: 30px 0 15px; font-size: 20px; font-weight: 600;">Quorum Progress</h3>
+  <p style="margin: 0; font-size: 16px; line-height: 1.6;">
+    {{if ge $vote.PercentQuorum 100.0}}
+      <strong>{{$vote.PercentQuorum | formatPercent}}</strong> ✅ (Threshold exceeded!)
+    {{else}}
+      <strong>{{$vote.PercentQuorum | formatPercent}}</strong> ⚠️ (Needs more votes!)
+    {{end}}
+  </p>
+
+  <p style="margin: 30px 0 25px; font-size: 16px; line-height: 1.6;">
+    Every vote counts in decentralized governance. Make your voice heard!
+  </p>
+  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-bottom: 25px;">
+    <tr>
+      <td>
+        <a href="{{$proposalDb.ProposalLink}}" target="_blank" style="display: inline-block; padding: 14px 28px; font-size: 16px; font-weight: 600; color: #ffffff; background-color: #55acee; border-radius: 8px; text-decoration: none;">
+          Cast Your Vote Now
+        </a>
+      </td>
+    </tr>
+  </table>
+
+  <p style="margin: 0; font-size: 16px; line-height: 1.6;">
+    Best regards,<br />
+    The {{.DegovSiteConfig.Name}} Team
+  </p>
 {{end}}
