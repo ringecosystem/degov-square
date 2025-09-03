@@ -266,7 +266,7 @@ func (d *DegovIndexer) QueryExpiringProposals(ctx context.Context) ([]Proposal, 
 
 	now := time.Now()
 	startTimestamp := now.UnixMilli()
-	endTimestamp := now.Add(20 * time.Minute).UnixMilli()
+	endTimestamp := now.Add(2 * 24 * 60 * time.Minute).UnixMilli()
 
 	for {
 		req := graphql.NewRequest(query)

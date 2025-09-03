@@ -108,7 +108,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("TASK_VOTE_TRACKING_ENABLED", false)
 	v.SetDefault("TASK_VOTE_TRACKING_INTERVAL", "3m")
 	v.SetDefault("TASK_VOTE_END_TRACKING_ENABLED", true)
-	v.SetDefault("TASK_VOTE_END_TRACKING_INTERVAL", "10m")
+	v.SetDefault("TASK_VOTE_END_TRACKING_INTERVAL", "4m")
 	v.SetDefault("TASK_PROPOSAL_TRACKING_ENABLED", true)
 	v.SetDefault("TASK_PROPOSAL_TRACKING_INTERVAL", "3m")
 	v.SetDefault("TASK_NOTIFICATION_EVENT_ENABLED", true)

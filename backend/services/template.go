@@ -298,6 +298,6 @@ func writeDebugTemplateFile(outputBasePath, templateName string, content []byte)
 	if err := os.WriteFile(filePath, content, 0644); err != nil {
 		slog.Warn("WARN: Failed to write debug template to %s: %v", filePath, err)
 	} else {
-		slog.Info("INFO: Debug template written to %s", filePath)
+		slog.Info("INFO: Debug template written", "filePath", filePath)
 	}
 }
