@@ -112,9 +112,9 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("TASK_PROPOSAL_TRACKING_ENABLED", true)
 	v.SetDefault("TASK_PROPOSAL_TRACKING_INTERVAL", "3m")
 	v.SetDefault("TASK_NOTIFICATION_EVENT_ENABLED", true)
-	v.SetDefault("TASK_NOTIFICATION_EVENT_INTERVAL", "2m")
+	v.SetDefault("TASK_NOTIFICATION_EVENT_INTERVAL", "10s")
 	v.SetDefault("TASK_NOTIFICATION_DISPATCHER_ENABLED", true)
-	v.SetDefault("TASK_NOTIFICATION_DISPATCHER_INTERVAL", "30s")
+	v.SetDefault("TASK_NOTIFICATION_DISPATCHER_INTERVAL", "5s")
 
 	// sendgrid
 	v.SetDefault("SENDGRID_FROM_USER", "DeGov Notifications")

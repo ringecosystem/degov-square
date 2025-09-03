@@ -33,8 +33,13 @@ func (t *NotificationEventTask) Execute() error {
 }
 
 func (t *NotificationEventTask) buildNotificationRecord() error {
+	states := []dbmodels.NotificationEventState{
+		dbmodels.NotificationEventStatePending,
+		dbmodels.NotificationEventStateProgress,
+	}
 	events, err := t.notificationService.ListLimitEvents(types.ListLimitEventsInput{
-		Limit: 10,
+		Limit:  100,
+		States: &states,
 	})
 	if err != nil {
 		return err

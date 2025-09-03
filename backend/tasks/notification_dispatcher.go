@@ -33,8 +33,12 @@ func (t *NotificationDispatcherTask) Execute() error {
 }
 
 func (t *NotificationDispatcherTask) dispatcherNotificationRecord() error {
+	states := []dbmodels.NotificationRecordState{
+		dbmodels.NotificationRecordStatePending,
+	}
 	records, err := t.notificationService.ListLimitRecords(types.ListLimitRecordsInput{
-		Limit: 10,
+		Limit:  100,
+		States: &states,
 	})
 	if err != nil {
 		return err

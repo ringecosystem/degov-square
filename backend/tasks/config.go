@@ -54,7 +54,7 @@ func GetTaskDefinitions() []TaskDefinition {
 				Interval: cfg.GetTaskVoteEndTrackingInterval(),
 				Enabled:  cfg.GetTaskVoteEndTrackingEnabled(),
 			},
-			Constructor: func() Task { return NewTrackingProposalTask() },
+			Constructor: func() Task { return NewTrackingVoteEndTask() },
 		},
 		{
 			Config: TaskConfig{
