@@ -334,6 +334,12 @@ func GetDuration(key string) time.Duration {
 	return GetConfig().GetDuration(key)
 }
 
+func GetEmailStyle() types.EmailStyle {
+	return types.EmailStyle{
+		ContainerMaxWidth: "600px",
+	}
+}
+
 func GetDegovSiteConfig() types.DegovSiteConfig {
 	return types.DegovSiteConfig{
 		EmailTheme: GetStringWithDefault("DEGOV_SITE_EMAIL_THEME", "dark"),

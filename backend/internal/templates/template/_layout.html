@@ -26,7 +26,7 @@
 
       /* Main styles for Dark Theme */
       body { background-color: #000000; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol"; color: #ffffff; }
-      .email-container { max-width: 600px; margin: 40px auto; background-color: #1a1a1a; border-radius: 12px; overflow: hidden; }
+      .email-container { max-width: {{ if and .EmailStyle .EmailStyle.ContainerMaxWidth }}{{ .EmailStyle.ContainerMaxWidth }}{{ else }}600px{{ end }}; margin: 40px auto; background-color: #1a1a1a; border-radius: 12px; overflow: hidden; }
       .header-logo { padding: 40px; text-align: center; background-color: #1a1a1a; }
       .header-logo img { max-width: 200px; height: auto; vertical-align: middle; }
       .divider, .footer-divider { border-bottom: 1px solid #333333; margin: 0 40px; }
@@ -63,7 +63,7 @@
 
       /* Main styles */
       body { background-color: #f0f2f5; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol"; color: #1c1e21; }
-      .email-container { max-width: 600px; margin: 40px auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; border: 1px solid #d2d6dc; }
+      .email-container { max-width: {{ if and .EmailStyle .EmailStyle.ContainerMaxWidth }}{{ .EmailStyle.ContainerMaxWidth }}{{ else }}600px{{ end }}; margin: 40px auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; border: 1px solid #d2d6dc; }
       .header-logo { padding: 40px; text-align: center; background-color: #ffffff; }
       .header-logo img { max-width: 200px; height: auto; vertical-align: middle; }
       .divider, .footer-divider { border-bottom: 1px solid #d2d6dc; margin: 0 40px; }

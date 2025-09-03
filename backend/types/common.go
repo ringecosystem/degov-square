@@ -68,3 +68,7 @@ type DegovSiteConfigSocial struct {
 	IconDark  string
 	Link      string
 }
+
+type EmailStyle struct {
+	ContainerMaxWidth string
+}

@@ -52,6 +52,8 @@ func NewTemplateService() *TemplateService {
 
 type TemplateNotificationRecordData struct {
 	DegovSiteConfig types.DegovSiteConfig      `json:"degov_site_config"`
+	EmailStyle      *types.EmailStyle          `json:"email_style"`
+	Title           *string                    `json:"title"`
 	DaoConfig       *types.DaoConfig           `json:"dao_config"`
 	Dao             *gqlmodels.Dao             `json:"dao"`
 	Proposal        *dbmodels.ProposalTracking `json:"proposal"`
@@ -93,21 +95,6 @@ func (s *TemplateService) getTemplateFileName(notificationType dbmodels.Subscrib
 		return "vote_emitted." + mode
 	default:
 		return "unknown." + mode // fallback
-	}
-}
-
-func (s *TemplateService) getTemplateTitle(notificationType dbmodels.SubscribeFeatureName) string {
-	switch notificationType {
-	case dbmodels.SubscribeFeatureProposalNew:
-		return "New Proposal"
-	case dbmodels.SubscribeFeatureProposalStateChanged:
-		return "Proposal State Changed"
-	case dbmodels.SubscribeFeatureVoteEnd:
-		return "Vote End Reminder"
-	case dbmodels.SubscribeFeatureVoteEmitted:
-		return "Vote Emitted"
-	default:
-		return "Unknown" // fallback
 	}
 }
 
@@ -153,8 +140,25 @@ func (s *TemplateService) GenerateTemplateByNotificationRecord(record *dbmodels.
 	// Parse payload data
 	payloadData := s.parsePayload(record.Payload)
 
+	title := "New notification from DeGov.AI"
+	switch record.Type {
+	case dbmodels.SubscribeFeatureProposalNew:
+		title = fmt.Sprintf("[%s] New Proposal: %s", dao.Name, proposal.Title)
+	case dbmodels.SubscribeFeatureProposalStateChanged:
+		title = fmt.Sprintf("[%s] Proposal Status Update: %s", dao.Name, proposal.Title)
+	case dbmodels.SubscribeFeatureVoteEnd:
+		title = fmt.Sprintf("[%s] Vote End Reminder: %s", dao.Name, proposal.Title)
+	case dbmodels.SubscribeFeatureVoteEmitted:
+		title = fmt.Sprintf("[%s] Vote Emitted: %s", dao.Name, proposal.Title)
+	}
+
+	emailStyle := config.GetEmailStyle()
+	emailStyle.ContainerMaxWidth = "85%"
+
 	templateData := TemplateNotificationRecordData{
 		DegovSiteConfig: config.GetDegovSiteConfig(),
+		EmailStyle:      &emailStyle,
+		Title:           &title,
 		DaoConfig:       daoConfig,
 		Dao:             dao,
 		Proposal:        proposal,
@@ -176,8 +180,6 @@ func (s *TemplateService) GenerateTemplateByNotificationRecord(record *dbmodels.
 	if err != nil {
 		return nil, fmt.Errorf("failed to render plain text template %s: %w", plainTemplateFileName, err)
 	}
-
-	title := fmt.Sprintf("[DeGov] [%s] [%s]: %s", dao.Name, s.getTemplateTitle(record.Type), proposal.Title)
 
 	return &types.TemplateOutput{
 		Title:            utils.TruncateText(title, 80),
@@ -225,6 +227,10 @@ func (s *TemplateService) renderTemplate(templateName string, data interface{}) 
 }
 
 func (s *TemplateService) GenerateTemplateOTP(input types.GenerateTemplateOTPInput) (*types.TemplateOutput, error) {
+	if input.EmailStyle == nil {
+		emailStyle := config.GetEmailStyle()
+		input.EmailStyle = &emailStyle
+	}
 	richText, err := s.renderTemplate("otp.html", input)
 	if err != nil {
 		slog.Error("failed to render OTP html template", "err", err)

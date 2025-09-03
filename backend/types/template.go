@@ -2,6 +2,7 @@ package types
 
 type GenerateTemplateOTPInput struct {
 	DegovSiteConfig DegovSiteConfig `json:"degov_site_config"`
+	EmailStyle      *EmailStyle      `json:"email_style"`
 	OTP             string          `json:"otp"`
 	Expiration      int             `json:"expiration"`
 	UserAddress     string          `json:"user_address"`
