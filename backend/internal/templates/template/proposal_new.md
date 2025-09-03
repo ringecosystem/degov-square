@@ -9,7 +9,7 @@ A new proposal has been created in {{.Dao.Name}} that you're subscribed to.
 
 ### **Proposal Details**
 
-- **Title:** [{{.Proposal.ProposalIndexer.Title}}]({{.Proposal.ProposalDb.ProposalLink}})
+- **Title:** [{{.Proposal.ProposalDb.Title}}]({{.Proposal.ProposalDb.ProposalLink}})
 - **Proposer:** {{if .Proposal.ProposerEnsName}}{{.Proposal.ProposerEnsName}}{{else}}{{.Proposal.ProposalIndexer.Proposer}}{{end}}
 - **DAO:** {{.Dao.Name}}
 - **Chain:** {{.Dao.ChainName}}

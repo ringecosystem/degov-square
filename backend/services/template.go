@@ -9,8 +9,10 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"strconv"
 	"strings"
 	tplText "text/template"
+	"time"
 
 	htmltomarkdown "github.com/JohannesKaufmann/html-to-markdown/v2"
 	"github.com/gomarkdown/markdown"
@@ -36,12 +38,15 @@ type TemplateService struct {
 }
 
 func NewTemplateService() *TemplateService {
-	htmlTmpls := tplHtml.Must(tplHtml.New("").ParseFS(
+	funcMap := tplText.FuncMap{
+		"formatDate": formatDate,
+	}
+	htmlTmpls := tplHtml.Must(tplHtml.New("").Funcs(funcMap).ParseFS(
 		templates.TemplateFS,
 		"template/*.html",
 	))
 
-	textTmpls := tplText.Must(tplText.New("").ParseFS(
+	textTmpls := tplText.Must(tplText.New("").Funcs(funcMap).ParseFS(
 		templates.TemplateFS,
 		"template/*.md",
 	))
@@ -62,7 +67,7 @@ type templateNotificationRecordData struct {
 	DaoConfig       *types.DaoConfig       `json:"dao_config"`
 	Dao             *gqlmodels.Dao         `json:"dao"`
 	Proposal        *emailProposalInfo     `json:"proposal"`
-	Vote            *internal.VoteCast     `json:"vote,omitempty"`
+	Vote            *emailVoteInfo         `json:"vote,omitempty"`
 	PayloadData     map[string]interface{} `json:"payload_data"`
 	EventID         string                 `json:"event_id"`
 	UserID          string                 `json:"user_id"`
@@ -77,6 +82,10 @@ type emailProposalInfo struct {
 	ProposalDescriptionHtml     *string                    `json:"proposal_description_html"`
 	ProposerEnsName             *string                    `json:"proposer_ens_name"`
 	TweetLink                   *string                    `json:"tweet_link"`
+}
+
+type emailVoteInfo struct {
+	VoteIndexer *internal.VoteCast `json:"vote_indexer"`
 }
 
 // parsePayload attempts to parse the payload as JSON, falls back to string if failed
@@ -159,14 +168,18 @@ func (s *TemplateService) GenerateTemplateByNotificationRecord(record *dbmodels.
 		// FormatedProposalDescription: proposal.FormatedDescription,
 	}
 
-	switch record.Type {
-	case dbmodels.SubscribeFeatureProposalNew:
-		title = fmt.Sprintf("[%s] New Proposal: %s", dao.Name, proposal.Title)
+	if record.Type == dbmodels.SubscribeFeatureProposalNew || record.Type == dbmodels.SubscribeFeatureVoteEnd {
 		proposalIndexer, err := degovIndexer.InspectProposal(proposal.ProposalID)
 		if err != nil {
 			return nil, fmt.Errorf("failed to inspect full proposal: %w", err)
 		}
 		emailProposal.ProposalIndexer = proposalIndexer
+	}
+
+	switch record.Type {
+	case dbmodels.SubscribeFeatureProposalNew:
+		title = fmt.Sprintf("[%s] New Proposal: %s", dao.Name, proposal.Title)
+		proposalIndexer := emailProposal.ProposalIndexer
 		if !config.GetDegovSiteConfig().EmailProposalIncludeDescription {
 			proposalDescriptionHtml := mdToHTML([]byte(proposalIndexer.Description))
 			emailProposal.ProposalDescriptionHtml = &proposalDescriptionHtml
@@ -381,4 +394,31 @@ func mdToHTML(md []byte) string {
 
 	maybeUnsafeHTML := markdown.Render(doc, renderer)
 	return string(bluemonday.UGCPolicy().SanitizeBytes(maybeUnsafeHTML))
+}
+
+// formatDate formats a Unix timestamp string into the "Month Day, Year at Hour:Minute PM Timezone" layout.
+func formatDate(timestampStr string) string {
+	i, err := strconv.ParseInt(timestampStr, 10, 64)
+	if err != nil {
+		slog.Warn("Could not parse timestamp string", "timestampStr", timestampStr, "error", err)
+		return timestampStr
+	}
+
+	// Create a time.Time object from the Unix timestamp (seconds).
+	t := time.Unix(i, 0)
+
+	// 1. Convert the time to the UTC timezone.
+	t = t.UTC()
+
+	// 2. Use the new format layout string.
+	//    Based on Go's reference time: Mon Jan 2 15:04:05 MST 2006
+	//    "January" -> Full month name (e.g., "September")
+	//    "2"       -> Day of the month without leading zero (e.g., "2")
+	//    "2006"    -> Four-digit year (e.g., "2025")
+	//    "at"      -> The literal string "at"
+	//    "3"       -> Hour in 12-hour format without leading zero (e.g., "4")
+	//    "04"      -> Minute with leading zero (e.g., "04")
+	//    "PM"      -> AM/PM marker (e.g., "PM")
+	//    "MST"     -> Timezone abbreviation (will display "UTC" since we converted to UTC)
+	return t.Format("January 2, 2006 at 3:04 PM MST")
 }
