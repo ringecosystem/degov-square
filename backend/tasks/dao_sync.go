@@ -149,10 +149,6 @@ func (t *DaoSyncTask) processSingleDao(remoteLink GithubConfigLink, daoInfo DaoR
 
 	indexer := internal.NewDegovIndexer(daoConfig.Config.Indexer.Endpoint)
 
-	// Query data metrics from the indexer with timeout
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-
 	var state = dbmodels.DaoStateActive
 	if daoInfo.State != "" {
 		state = daoInfo.State
@@ -169,7 +165,7 @@ func (t *DaoSyncTask) processSingleDao(remoteLink GithubConfigLink, daoInfo DaoR
 	}
 
 	// Try to get metrics data
-	metrics, err := indexer.QueryGlobalDataMetrics(ctx)
+	metrics, err := indexer.QueryGlobalDataMetrics()
 	if err != nil {
 		slog.Warn("Failed to query data metrics", "dao", daoConfig.Config.Code, "error", err)
 		// Metrics fields will be nil, indicating no update needed

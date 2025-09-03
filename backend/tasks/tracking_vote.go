@@ -82,10 +82,10 @@ func (t *TrackingVoteTask) trackingVote() error {
 				dao:       dao,
 				proposal:  proposal,
 			}); err != nil {
-				slog.Error("Failed to track vote by proposal", "error", err, "dao", dao.Code, "proposal", proposal.ProposalId)
+				slog.Error("Failed to track vote by proposal", "error", err, "dao", dao.Code, "proposal", proposal.ProposalID)
 				continue
 			}
-			slog.Info("Tracked vote by proposal", "dao", dao.Code, "proposal", proposal.ProposalId)
+			slog.Info("Tracked vote by proposal", "dao", dao.Code, "proposal", proposal.ProposalID)
 		}
 	}
 	return nil
@@ -99,7 +99,7 @@ func (t *TrackingVoteTask) trackingVoteByProposal(input trackingVoteInput) error
 	}
 
 	if len(processedVotes) == 0 {
-		slog.Info("No new votes to process", "dao_code", input.proposal.DaoCode, "proposal", input.proposal.ProposalId)
+		slog.Info("No new votes to process", "dao_code", input.proposal.DaoCode, "proposal", input.proposal.ProposalID)
 		return nil
 	}
 
@@ -117,7 +117,7 @@ func (t *TrackingVoteTask) fetchAllAndProcessVotes(input trackingVoteInput) ([]p
 
 	for {
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-		votes, err := indexer.QueryVotesOffset(ctx, lastOffsetVote, proposal.ProposalId)
+		votes, err := indexer.QueryVotesOffset(ctx, lastOffsetVote, proposal.ProposalID)
 		cancel()
 
 		if err != nil {
@@ -137,7 +137,7 @@ func (t *TrackingVoteTask) fetchAllAndProcessVotes(input trackingVoteInput) ([]p
 		}
 
 		lastOffsetVote += len(votes)
-		if err := t.proposalService.UpdateOffsetTrackingVote(proposal.ProposalId, proposal.DaoCode, lastOffsetVote); err != nil {
+		if err := t.proposalService.UpdateOffsetTrackingVote(proposal.ProposalID, proposal.DaoCode, lastOffsetVote); err != nil {
 			return nil, fmt.Errorf("failed to update offset tracking vote: %w", err)
 		}
 	}
@@ -151,7 +151,7 @@ func (t *TrackingVoteTask) generateAndStoreNotificationEvents(proposal *dbmodels
 			ChainID:    proposal.ChainId,
 			DaoCode:    proposal.DaoCode,
 			Type:       dbmodels.SubscribeFeatureVoteEmitted,
-			ProposalID: proposal.ProposalId,
+			ProposalID: proposal.ProposalID,
 			VoteID:     &vote.Vote.ID,
 			TimeEvent:  vote.Timestamp,
 		}

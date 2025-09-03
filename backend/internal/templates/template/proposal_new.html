@@ -11,38 +11,119 @@
   {{end}}
 
   {{if eq $theme "dark"}}
-  <style>
-  </style>
+  <style></style>
   {{else}}
-  <style>
-  </style>
+  <style></style>
   {{end}}
 {{end}}
 
 {{define "content"}}
-<div>
-  <h1 class="title">Confirm your email address</h1>
+  {{$config := .DegovSiteConfig}}
+  {{$dao := .Dao}}
+  {{$proposal := .Proposal}}
 
-  <div class="message">
-    <p>
-      There's one quick step to confirm your email address. Please enter this verification code on DeGov:
-    </p>
-  </div>
+  <p style="margin: 0 0 20px; font-size: 16px; line-height: 1.6;">
+    Hello {{if .EnsName}}{{.EnsName}}{{else}}{{.UserAddress}}{{end}},
+  </p>
+  <p style="margin: 0 0 20px; font-size: 16px; line-height: 1.6;">
+    A new proposal has been created in <strong>{{$dao.Name}}</strong> that you're subscribed to.
+  </p>
 
-  <div class="verification-code-box">
-    <p class="verification-code">{{.OTP}}</p>
-  </div>
+  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-top: 30px;">
+    <tr>
+      <td>
+        <h3 style="margin: 0 0 15px; font-size: 20px; font-weight: 600;">Proposal Details</h3>
+      </td>
+    </tr>
+  </table>
+  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="font-size: 15px; line-height: 1.7;">
+    <tr>
+      <td style="padding: 8px 0; width: 100px; vertical-align: top;"><strong>Title:</strong></td>
+      <td style="padding: 8px 0;"><a href="{{$proposal.ProposalDb.ProposalLink}}" target="_blank" style="color: #55acee; text-decoration: underline;">{{$proposal.ProposalIndexer.Title}}</a></td>
+    </tr>
+    <tr>
+      <td style="padding: 8px 0; vertical-align: top;"><strong>Proposer:</strong></td>
+      <td style="padding: 8px 0;">{{if $proposal.ProposerEnsName}}{{$proposal.ProposerEnsName}}{{else}}{{$proposal.ProposalIndexer.Proposer}}{{end}}</td>
+    </tr>
+    <tr>
+      <td style="padding: 8px 0; vertical-align: top;"><strong>DAO:</strong></td>
+      <td style="padding: 8px 0;">{{$dao.Name}}</td>
+    </tr>
+    <tr>
+      <td style="padding: 8px 0; vertical-align: top;"><strong>Chain:</strong></td>
+      <td style="padding: 8px 0;">{{$dao.ChainName}}</td>
+    </tr>
+    <tr>
+      <td style="padding: 8px 0; vertical-align: top;"><strong>Created:</strong></td>
+      <td style="padding: 8px 0;">{{$proposal.ProposalIndexer.BlockTimestamp | formatDate}}</td>
+    </tr>
+    <tr>
+      <td style="padding: 8px 0; vertical-align: top;"><strong>Voting Starts:</strong></td>
+      <td style="padding: 8px 0;">{{$proposal.ProposalIndexer.VoteStartTimestamp | formatDate}}</td>
+    </tr>
+    <tr>
+      <td style="padding: 8px 0; vertical-align: top;"><strong>Voting Ends:</strong></td>
+      <td style="padding: 8px 0;">{{$proposal.ProposalIndexer.VoteEndTimestamp | formatDate}}</td>
+    </tr>
+  </table>
 
-  <div class="expiry-note">
-    <p>
-      Verification codes expire after {{.Expiration}} minutes. Do not share this code with
-      anyone.
-    </p>
-  </div>
+  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-top: 30px;">
+    <tr>
+      <td>
+        <h3 style="margin: 0 0 20px; font-size: 20px; font-weight: 600;">Take Action</h3>
+      </td>
+    </tr>
+    <tr>
+      <td style="padding-bottom: 12px;">
+        <a href="{{$proposal.ProposalDb.ProposalLink}}" target="_blank" style="display: inline-block; padding: 12px 25px; font-size: 16px; font-weight: 600; color: #ffffff; background-color: #55acee; border-radius: 8px; text-decoration: none;">
+          View & Vote on This Proposal
+        </a>
+      </td>
+    </tr>
+    {{if .DaoConfig.OffChainDiscussionURL}}
+    <tr>
+      <td style="padding-top: 10px;">
+        <a href="{{.DaoConfig.OffChainDiscussionURL}}" target="_blank" style="color: #55acee; text-decoration: underline; font-size: 15px;">Join Discussion &rarr;</a>
+      </td>
+    </tr>
+    {{end}}
+    {{if .Proposal.TweetLink}}
+    <tr>
+      <td style="padding-top: 10px;">
+        <a href="{{.Proposal.TweetLink}}" target="_blank" style="color: #55acee; text-decoration: underline; font-size: 15px;">View Tweet &rarr;</a>
+      </td>
+    </tr>
+    {{end}}
+  </table>
 
-  <div class="signature">
-    Thanks,<br />
-    <span class="signature-name">DeGov.AI</span>
-  </div>
-</div>
+  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-top: 30px;">
+    <tr>
+      <td style="padding: 15px; border: 1px solid #333333; border-radius: 8px;">
+        <p style="margin: 0; font-size: 15px; line-height: 1.6;">
+          ⏰ <strong>Important:</strong> Please cast your vote before the voting period ends on <strong>{{$proposal.ProposalIndexer.VoteEndTimestamp | formatDate}}</strong>.
+        </p>
+      </td>
+    </tr>
+  </table>
+
+  {{if $config.EmailProposalIncludeDescription}}
+    {{if $proposal.ProposalDescriptionMarkdown}}
+    <div class="divider" style="margin: 40px 0;"></div>
+    <h3 style="margin: 0 0 15px; font-size: 20px; font-weight: 600;">Proposal Description</h3>
+    <div class="proposal-description" style="font-size: 15px; line-height: 1.7;">
+      {{/*
+        <pre style="font-family: inherit; white-space: pre-wrap; margin: 0; padding: 0;">{{$proposal.ProposalDescriptionMarkdown}}</pre>
+      */}}
+      {{$proposal.ProposalDescriptionHtml}}
+    </div>
+    {{end}}
+  {{end}}
+
+  <p style="margin: 40px 0 20px; font-size: 16px; line-height: 1.6;">
+    Your participation helps shape the future of <strong>{{$dao.Name}}</strong>!
+  </p>
+  <p style="margin: 0; font-size: 16px; line-height: 1.6;">
+    Best regards,<br />
+    The {{$config.Name}} Team
+  </p>
 {{end}}

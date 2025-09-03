@@ -342,14 +342,15 @@ func GetEmailStyle() types.EmailStyle {
 
 func GetDegovSiteConfig() types.DegovSiteConfig {
 	return types.DegovSiteConfig{
-		EmailTheme: GetStringWithDefault("DEGOV_SITE_EMAIL_THEME", "dark"),
-		Logo:       GetStringWithDefault("DEGOV_SITE_LOGO", "https://cdn.jsdelivr.net/gh/ringecosystem/degov-registry@main/assets/common/light-degov-4x.png"),
-		LogoLight:  GetStringWithDefault("DEGOV_SITE_LOGO_LIGHT", "https://cdn.jsdelivr.net/gh/ringecosystem/degov-registry@main/assets/common/light-degov-4x.png"),
-		LogoDark:   GetStringWithDefault("DEGOV_SITE_LOGO_DARK", "https://cdn.jsdelivr.net/gh/ringecosystem/degov-registry@main/assets/common/dark-degov-4x.png"),
-		Name:       GetStringWithDefault("DEGOV_SITE_NAME", "DeGov.AI"),
-		Home:       GetStringWithDefault("DEGOV_SITE_HOME", "https://degov.ai"),
-		Apps:       GetStringWithDefault("DEGOV_SITE_APPS", "https://apps.degov.ai"),
-		Docs:       GetStringWithDefault("DEGOV_SITE_DOCS", "https://docs.degov.ai"),
+		EmailTheme:                      GetStringWithDefault("DEGOV_SITE_EMAIL_THEME", "dark"),
+		EmailProposalIncludeDescription: GetBool("DEGOV_SITE_EMAIL_PROPOSAL_INCLUDE_DESCRIPTION"),
+		Logo:                            GetStringWithDefault("DEGOV_SITE_LOGO", "https://cdn.jsdelivr.net/gh/ringecosystem/degov-registry@main/assets/common/light-degov-4x.png"),
+		LogoLight:                       GetStringWithDefault("DEGOV_SITE_LOGO_LIGHT", "https://cdn.jsdelivr.net/gh/ringecosystem/degov-registry@main/assets/common/light-degov-4x.png"),
+		LogoDark:                        GetStringWithDefault("DEGOV_SITE_LOGO_DARK", "https://cdn.jsdelivr.net/gh/ringecosystem/degov-registry@main/assets/common/dark-degov-4x.png"),
+		Name:                            GetStringWithDefault("DEGOV_SITE_NAME", "DeGov.AI"),
+		Home:                            GetStringWithDefault("DEGOV_SITE_HOME", "https://degov.ai"),
+		Apps:                            GetStringWithDefault("DEGOV_SITE_APPS", "https://apps.degov.ai"),
+		Docs:                            GetStringWithDefault("DEGOV_SITE_DOCS", "https://docs.degov.ai"),
 		Socials: []types.DegovSiteConfigSocial{
 			{
 				Name:      "Twitter",

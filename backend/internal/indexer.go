@@ -93,7 +93,7 @@ func (d *DegovIndexer) GetEndpoint() string {
 }
 
 // QueryDataMetrics executes the QueryDataMetrics GraphQL query and returns a single DataMetrics object
-func (d *DegovIndexer) QueryGlobalDataMetrics(ctx context.Context) (*DataMetrics, error) {
+func (d *DegovIndexer) QueryGlobalDataMetrics() (*DataMetrics, error) {
 	query := `
 		query QueryDataMetrics {
 			dataMetrics(where: {id_eq: "global"}) {
@@ -113,6 +113,9 @@ func (d *DegovIndexer) QueryGlobalDataMetrics(ctx context.Context) (*DataMetrics
 
 	req := graphql.NewRequest(query)
 
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
 	var response DataMetricsResponse
 	if err := d.client.Run(ctx, req, &response); err != nil {
 		return nil, fmt.Errorf("failed to execute QueryDataMetrics: %w", err)
@@ -126,8 +129,50 @@ func (d *DegovIndexer) QueryGlobalDataMetrics(ctx context.Context) (*DataMetrics
 	return nil, fmt.Errorf("no data metrics found for global id")
 }
 
+func (d *DegovIndexer) InspectProposal(proposalId string) (*Proposal, error) {
+	query := `
+		query QueryProposal($proposalId: String!) {
+			proposals(where: {proposalId_eq: $proposalId}) {
+				id
+				proposalId
+				title
+				quorum
+				voteStartTimestamp
+				voteEndTimestamp
+				voteStart
+				voteEnd
+				decimals
+				blockInterval
+				clockMode
+				proposer
+				blockNumber
+				blockTimestamp
+				transactionHash
+				description
+			}
+		}
+	`
+
+	req := graphql.NewRequest(query)
+	req.Var("proposalId", proposalId)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	var response ProposalsResponse
+	if err := d.client.Run(ctx, req, &response); err != nil {
+		return nil, fmt.Errorf("failed to execute QueryProposal: %w", err)
+	}
+
+	// Return the first item if available, otherwise return nil
+	if len(response.Proposals) > 0 {
+		return &response.Proposals[0], nil
+	}
+
+	return nil, fmt.Errorf("no proposal found with id %s", proposalId)
+}
+
 // QueryProposalsOffset executes the QueryProposalsOffset GraphQL query and returns proposals list
-func (d *DegovIndexer) QueryProposalsOffset(ctx context.Context, offset int) ([]Proposal, error) {
+func (d *DegovIndexer) QueryProposalsOffset(offset int) ([]Proposal, error) {
 	query := `
 		query QueryProposalsOffset($limit: Int!, $offset: Int!) {
 			proposals(orderBy: blockNumber_ASC_NULLS_FIRST, limit: $limit, offset: $offset) {
@@ -154,6 +199,9 @@ func (d *DegovIndexer) QueryProposalsOffset(ctx context.Context, offset int) ([]
 	req := graphql.NewRequest(query)
 	req.Var("limit", 30)
 	req.Var("offset", offset)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
 
 	var response ProposalsResponse
 	if err := d.client.Run(ctx, req, &response); err != nil {
@@ -192,7 +240,7 @@ func (d *DegovIndexer) QueryVotesOffset(ctx context.Context, offset int, proposa
 	return response.VoteCasts, nil
 }
 
-func (d *DegovIndexer) QueryVote(ctx context.Context, id string) (*VoteCast, error) {
+func (d *DegovIndexer) QueryVote(id string) (*VoteCast, error) {
 	query := `
 	query QueryVote($id: String!) {
 		voteCasts(where: {id_eq: $id}) {
@@ -212,6 +260,9 @@ func (d *DegovIndexer) QueryVote(ctx context.Context, id string) (*VoteCast, err
 	req := graphql.NewRequest(query)
 	req.Var("id", id)
 
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
 	var response VoteCastsResponse
 	if err := d.client.Run(ctx, req, &response); err != nil {
 		return nil, fmt.Errorf("failed to execute QueryVotesOffset: %w", err)
@@ -224,7 +275,7 @@ func (d *DegovIndexer) QueryVote(ctx context.Context, id string) (*VoteCast, err
 	return nil, fmt.Errorf("no vote found with id %s", id)
 }
 
-func (d *DegovIndexer) QueryExpiringProposals(ctx context.Context) ([]Proposal, error) {
+func (d *DegovIndexer) QueryExpiringProposals() ([]Proposal, error) {
 	query := `
 	query QueryExpiringProposals($limit: Int!, $offset: Int!, $start: BigInt!, $end: BigInt!) {
 	  proposals(
@@ -267,6 +318,9 @@ func (d *DegovIndexer) QueryExpiringProposals(ctx context.Context) ([]Proposal, 
 	now := time.Now()
 	startTimestamp := now.UnixMilli()
 	endTimestamp := now.Add(2 * 24 * 60 * time.Minute).UnixMilli()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
 
 	for {
 		req := graphql.NewRequest(query)

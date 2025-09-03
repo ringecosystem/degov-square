@@ -2,7 +2,6 @@ package services
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
 	tplHtml "html/template"
@@ -12,8 +11,12 @@ import (
 	"reflect"
 	"strings"
 	tplText "text/template"
-	"time"
 
+	htmltomarkdown "github.com/JohannesKaufmann/html-to-markdown/v2"
+	"github.com/gomarkdown/markdown"
+	"github.com/gomarkdown/markdown/html"
+	"github.com/gomarkdown/markdown/parser"
+	"github.com/microcosm-cc/bluemonday"
 	dbmodels "github.com/ringecosystem/degov-apps/database/models"
 	gqlmodels "github.com/ringecosystem/degov-apps/graph/models"
 	"github.com/ringecosystem/degov-apps/internal"
@@ -29,6 +32,7 @@ type TemplateService struct {
 	daoConfigService *DaoConfigService
 	htmlTemplates    *tplHtml.Template
 	textTemplates    *tplText.Template
+	userService      *UserService
 }
 
 func NewTemplateService() *TemplateService {
@@ -47,21 +51,32 @@ func NewTemplateService() *TemplateService {
 		daoConfigService: NewDaoConfigService(),
 		htmlTemplates:    htmlTmpls,
 		textTemplates:    textTmpls,
+		userService:      NewUserService(),
 	}
 }
 
-type TemplateNotificationRecordData struct {
-	DegovSiteConfig types.DegovSiteConfig      `json:"degov_site_config"`
-	EmailStyle      *types.EmailStyle          `json:"email_style"`
-	Title           *string                    `json:"title"`
-	DaoConfig       *types.DaoConfig           `json:"dao_config"`
-	Dao             *gqlmodels.Dao             `json:"dao"`
-	Proposal        *dbmodels.ProposalTracking `json:"proposal"`
-	Vote            *internal.VoteCast         `json:"vote,omitempty"`
-	PayloadData     map[string]interface{}     `json:"payload_data"`
-	EventID         string                     `json:"event_id"`
-	UserID          string                     `json:"user_id"`
-	UserAddress     string                     `json:"user_address"`
+type templateNotificationRecordData struct {
+	DegovSiteConfig types.DegovSiteConfig  `json:"degov_site_config"`
+	EmailStyle      *types.EmailStyle      `json:"email_style"`
+	Title           *string                `json:"title"`
+	DaoConfig       *types.DaoConfig       `json:"dao_config"`
+	Dao             *gqlmodels.Dao         `json:"dao"`
+	Proposal        *emailProposalInfo     `json:"proposal"`
+	Vote            *internal.VoteCast     `json:"vote,omitempty"`
+	PayloadData     map[string]interface{} `json:"payload_data"`
+	EventID         string                 `json:"event_id"`
+	UserID          string                 `json:"user_id"`
+	UserAddress     string                 `json:"user_address"`
+	EnsName         *string                `json:"ens_name"`
+}
+
+type emailProposalInfo struct {
+	ProposalDb                  *dbmodels.ProposalTracking `json:"proposal_db"`
+	ProposalIndexer             *internal.Proposal         `json:"proposal_indexer"`
+	ProposalDescriptionMarkdown *string                    `json:"proposal_description_markdown"`
+	ProposalDescriptionHtml     *string                    `json:"proposal_description_html"`
+	ProposerEnsName             *string                    `json:"proposer_ens_name"`
+	TweetLink                   *string                    `json:"tweet_link"`
 }
 
 // parsePayload attempts to parse the payload as JSON, falls back to string if failed
@@ -122,13 +137,11 @@ func (s *TemplateService) GenerateTemplateByNotificationRecord(record *dbmodels.
 		return nil, fmt.Errorf("failed to get DAO config info: %w", err)
 	}
 
+	degovIndexer := internal.NewDegovIndexer(daoConfig.Indexer.Endpoint)
+
 	var vote *internal.VoteCast
 	if record.VoteID != nil {
-		degovIndexer := internal.NewDegovIndexer(daoConfig.Indexer.Endpoint)
-
-		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-		voteById, err := degovIndexer.QueryVote(ctx, *record.VoteID)
-		cancel()
+		voteById, err := degovIndexer.QueryVote(*record.VoteID)
 
 		if err != nil {
 			return nil, fmt.Errorf("failed to get vote info: %w", err)
@@ -139,34 +152,81 @@ func (s *TemplateService) GenerateTemplateByNotificationRecord(record *dbmodels.
 
 	// Parse payload data
 	payloadData := s.parsePayload(record.Payload)
-
 	title := "New notification from DeGov.AI"
+	emailProposal := emailProposalInfo{
+		ProposalDb: proposal,
+		// ProposalIndexer:             proposalIndexer,
+		// FormatedProposalDescription: proposal.FormatedDescription,
+	}
+
 	switch record.Type {
 	case dbmodels.SubscribeFeatureProposalNew:
 		title = fmt.Sprintf("[%s] New Proposal: %s", dao.Name, proposal.Title)
+		proposalIndexer, err := degovIndexer.InspectProposal(proposal.ProposalID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to inspect full proposal: %w", err)
+		}
+		emailProposal.ProposalIndexer = proposalIndexer
+		if !config.GetDegovSiteConfig().EmailProposalIncludeDescription {
+			proposalDescriptionHtml := mdToHTML([]byte(proposalIndexer.Description))
+			emailProposal.ProposalDescriptionHtml = &proposalDescriptionHtml
+			proposalDescriptionMarkdown, err := htmltomarkdown.ConvertString(proposalDescriptionHtml)
+			if err != nil {
+				slog.Warn("failed to convert html to markdown", "error", err)
+			} else {
+				emailProposal.ProposalDescriptionMarkdown = &proposalDescriptionMarkdown
+			}
+		}
+
+		ensName, err := s.userService.GetENSName(proposalIndexer.Proposer)
+		if err != nil {
+			slog.Warn("failed to query ens name for user", "user_address", proposalIndexer.Proposer, "error", err)
+		} else {
+			emailProposal.ProposerEnsName = ensName
+		}
+		degovAgent := internal.NewDegovAgent()
+		agentVote, err := degovAgent.QueryVote(int(dao.ChainID), proposal.ProposalID)
+		if err != nil {
+			slog.Warn("[degov-agent] failed to query vote", "error", err)
+		} else {
+			tweetLink := fmt.Sprintf("https://x.com/%s/status/%s", agentVote.TwitterUser.Username, agentVote.ID)
+			emailProposal.TweetLink = &tweetLink
+		}
+		break
 	case dbmodels.SubscribeFeatureProposalStateChanged:
 		title = fmt.Sprintf("[%s] Proposal Status Update: %s", dao.Name, proposal.Title)
+		break
 	case dbmodels.SubscribeFeatureVoteEnd:
 		title = fmt.Sprintf("[%s] Vote End Reminder: %s", dao.Name, proposal.Title)
+		break
 	case dbmodels.SubscribeFeatureVoteEmitted:
 		title = fmt.Sprintf("[%s] Vote Emitted: %s", dao.Name, proposal.Title)
+		break
 	}
+
+	ensName, err := s.userService.GetENSName(record.UserAddress)
+	if err != nil {
+		slog.Warn("failed to query ens name for user", "user_address", record.UserAddress, "error", err)
+	}
+
+	degovSiteConfig := config.GetDegovSiteConfig()
 
 	emailStyle := config.GetEmailStyle()
 	emailStyle.ContainerMaxWidth = "85%"
 
-	templateData := TemplateNotificationRecordData{
-		DegovSiteConfig: config.GetDegovSiteConfig(),
+	templateData := templateNotificationRecordData{
+		DegovSiteConfig: degovSiteConfig,
 		EmailStyle:      &emailStyle,
 		Title:           &title,
 		DaoConfig:       daoConfig,
 		Dao:             dao,
-		Proposal:        proposal,
+		Proposal:        &emailProposal,
 		Vote:            vote,
 		PayloadData:     payloadData,
 		EventID:         record.EventID,
 		UserID:          record.UserID,
 		UserAddress:     record.UserAddress,
+		EnsName:         ensName,
 	}
 
 	richTemplateFileName := s.getTemplateFileName(record.Type, "html")
@@ -306,4 +366,19 @@ func writeDebugTemplateFile(outputBasePath, templateName string, content []byte)
 	} else {
 		slog.Info("INFO: Debug template written", "filePath", filePath)
 	}
+}
+
+func mdToHTML(md []byte) string {
+	// create markdown parser with extensions
+	extensions := parser.CommonExtensions | parser.AutoHeadingIDs | parser.NoEmptyLineBeforeBlock
+	p := parser.NewWithExtensions(extensions)
+	doc := p.Parse(md)
+
+	// create HTML renderer with extensions
+	htmlFlags := html.CommonFlags | html.HrefTargetBlank
+	opts := html.RendererOptions{Flags: htmlFlags}
+	renderer := html.NewRenderer(opts)
+
+	maybeUnsafeHTML := markdown.Render(doc, renderer)
+	return string(bluemonday.UGCPolicy().SanitizeBytes(maybeUnsafeHTML))
 }

@@ -22,7 +22,7 @@ type ProposalTracking struct {
 	ChainId            int           `gorm:"column:chain_id;not null" json:"chain_id"` // Chain ID for the DAO
 	Title              string        `gorm:"column:title;type:varchar(500);not null" json:"title"`
 	ProposalLink       string        `gorm:"column:proposal_link;type:varchar(255);not null" json:"proposal_link"`
-	ProposalId         string        `gorm:"column:proposal_id;type:varchar(50);not null" json:"proposal_id"`
+	ProposalID         string        `gorm:"column:proposal_id;type:varchar(50);not null" json:"proposal_id"`
 	State              ProposalState `gorm:"column:state;type:varchar(50);not null" json:"state"`
 	ProposalCreatedAt  *time.Time    `gorm:"column:proposal_created_at" json:"proposal_created_at,omitempty"` // Proposal creation time
 	ProposalAtBlock    int           `gorm:"column:proposal_at_block;not null" json:"proposal_at_block"`      // Block number when the proposal was created

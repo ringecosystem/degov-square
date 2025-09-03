@@ -50,15 +50,16 @@ type BasicInput[T any] struct {
 }
 
 type DegovSiteConfig struct {
-	EmailTheme string
-	Logo       string
-	LogoLight  string
-	LogoDark   string
-	Name       string
-	Home       string
-	Apps       string
-	Docs       string
-	Socials    []DegovSiteConfigSocial
+	EmailTheme                      string
+	EmailProposalIncludeDescription bool
+	Logo                            string
+	LogoLight                       string
+	LogoDark                        string
+	Name                            string
+	Home                            string
+	Apps                            string
+	Docs                            string
+	Socials                         []DegovSiteConfigSocial
 }
 
 type DegovSiteConfigSocial struct {

@@ -1,9 +1,7 @@
 package tasks
 
 import (
-	"context"
 	"log/slog"
-	"time"
 
 	dbmodels "github.com/ringecosystem/degov-apps/database/models"
 	"github.com/ringecosystem/degov-apps/internal"
@@ -52,9 +50,7 @@ func (t *TrackingVoteEndTask) trackingVoteEnd() error {
 
 		indexer := internal.NewDegovIndexer(daoConfig.Indexer.Endpoint)
 
-		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-		proposals, err := indexer.QueryExpiringProposals(ctx)
-		cancel()
+		proposals, err := indexer.QueryExpiringProposals()
 
 		if err != nil {
 			// return nil, fmt.Errorf("failed to query votes: %w", err)

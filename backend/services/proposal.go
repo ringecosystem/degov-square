@@ -54,7 +54,7 @@ func (s *ProposalService) StoreProposalTracking(input types.ProposalTrackingInpu
 		ChainId:           input.ChainId,
 		Title:             input.Title,
 		ProposalLink:      input.ProposalLink,
-		ProposalId:        input.ProposalID,
+		ProposalID:        input.ProposalID,
 		State:             dbmodels.ProposalStateUnknown, // Default state
 		ProposalCreatedAt: input.ProposalCreatedAt,
 		ProposalAtBlock:   input.ProposalAtBlock,
@@ -69,10 +69,10 @@ func (s *ProposalService) StoreProposalTracking(input types.ProposalTrackingInpu
 		ChainID:    newProposal.ChainId,
 		DaoCode:    newProposal.DaoCode,
 		Type:       dbmodels.SubscribeFeatureProposalNew,
-		ProposalID: newProposal.ProposalId,
+		ProposalID: newProposal.ProposalID,
 		TimeEvent:  newProposal.CTime,
 	}); err != nil {
-		slog.Warn("failed to save notification event for new proposal", "error", err, "proposal_id", newProposal.ProposalId, "dao_code", newProposal.DaoCode)
+		slog.Warn("failed to save notification event for new proposal", "error", err, "proposal_id", newProposal.ProposalID, "dao_code", newProposal.DaoCode)
 	}
 
 	return true, nil
