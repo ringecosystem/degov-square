@@ -113,7 +113,7 @@ type emailProposalInfo struct {
 	ProposalDb                  *dbmodels.ProposalTracking `json:"proposal_db"`
 	ProposalIndexer             *internal.Proposal         `json:"proposal_indexer"`
 	ProposalDescriptionMarkdown *string                    `json:"proposal_description_markdown"`
-	ProposalDescriptionHtml     *string                    `json:"proposal_description_html"`
+	ProposalDescriptionHtml     *tplHtml.HTML              `json:"proposal_description_html"`
 	ProposerEnsName             *string                    `json:"proposer_ens_name"`
 	TweetLink                   *string                    `json:"tweet_link"`
 }
@@ -231,9 +231,11 @@ func (s *TemplateService) GenerateTemplateByNotificationRecord(record *dbmodels.
 	case dbmodels.SubscribeFeatureProposalNew:
 		title = fmt.Sprintf("[%s] New Proposal: %s", dao.Name, proposal.Title)
 		proposalIndexer := emailProposal.ProposalIndexer
-		if !config.GetDegovSiteConfig().EmailProposalIncludeDescription {
+		if config.GetDegovSiteConfig().EmailProposalIncludeDescription {
 			proposalDescriptionHtml := mdToHTML([]byte(proposalIndexer.Description))
-			emailProposal.ProposalDescriptionHtml = &proposalDescriptionHtml
+			proposalDescriptionHtmlTplHtmlContent := tplHtml.HTML(proposalDescriptionHtml)
+			emailProposal.ProposalDescriptionHtml = &proposalDescriptionHtmlTplHtmlContent
+
 			proposalDescriptionMarkdown, err := htmltomarkdown.ConvertString(proposalDescriptionHtml)
 			if err != nil {
 				slog.Warn("failed to convert html to markdown", "error", err)
