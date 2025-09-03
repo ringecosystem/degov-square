@@ -35,6 +35,7 @@ func (s *NotificationService) SaveEvents(events []dbmodels.NotificationEvent) er
 		events[i].ID = utils.NextIDString()
 		events[i].Reached = 0
 		events[i].State = dbmodels.NotificationEventStatePending
+		events[i].TimeNextExecute = time.Now()
 	}
 
 	if err := s.db.Create(&events).Error; err != nil {
