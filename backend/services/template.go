@@ -46,6 +46,7 @@ func NewTemplateService() *TemplateService {
 		"formatPercent":            utils.FormatPercent,
 		"formatDurationShort":      utils.FormatDurationShort,
 		"formatBigIntWithDecimals": utils.FormatBigIntWithDecimals,
+		"formatAsMdQuote":          utils.FormatAsMdQuote,
 	}
 
 	files, err := templates.TemplateFS.ReadDir("template")

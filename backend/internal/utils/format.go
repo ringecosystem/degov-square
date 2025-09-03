@@ -227,3 +227,20 @@ func FormatBigIntWithDecimals(amountStr *string, decimals int) (string, error) {
 
 	return formattedStr, nil
 }
+
+// FormatAsQuote takes a multi-line string and prefixes each line with "> ".
+func FormatAsMdQuote(text string) string {
+	if text == "" {
+		return ""
+	}
+
+	lines := strings.Split(text, "\n")
+
+	var quotedLines []string
+
+	for _, line := range lines {
+		quotedLines = append(quotedLines, "> "+line)
+	}
+
+	return strings.Join(quotedLines, "\n")
+}

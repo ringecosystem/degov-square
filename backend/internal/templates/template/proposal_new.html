@@ -7,9 +7,53 @@
   {{end}}
 
   {{if eq $theme "dark"}}
-  <style></style>
+  <style>
+    .proposal-description { background-color: #2a2a2a; border: 1px solid #444444; border-radius: 8px; padding: 16px 20px; font-size: 14px; color: #cccccc; }
+    .proposal-description h1,
+    .proposal-description h2,
+    .proposal-description h3,
+    .proposal-description h4 { color: #ffffff; margin-top: 1.2em; margin-bottom: 0.6em; padding-bottom: 0.3em; border-bottom: 1px solid #444444; }
+    .proposal-description h1 { font-size: 1.6em; }
+    .proposal-description h2 { font-size: 1.4em; }
+    .proposal-description h3 { font-size: 1.2em; }
+    .proposal-description p { margin-top: 0; margin-bottom: 1em; line-height: 1.7; }
+    .proposal-description a { color: #55acee; }
+    .proposal-description table { width: 100%; border-collapse: collapse; margin-bottom: 1em; font-size: 0.95em; }
+    .proposal-description th,
+    .proposal-description td { border: 1px solid #444444; padding: 8px 10px; text-align: left; }
+    .proposal-description th { font-weight: 600; }
+    .proposal-description ul,
+    .proposal-description ol { padding-left: 25px; margin-bottom: 1em; }
+    .proposal-description li { margin-bottom: 0.5em; }
+    .proposal-description blockquote { margin: 0 0 1em 0; padding-left: 1em; border-left: 3px solid #555555; color: #999999; font-style: italic; }
+    .proposal-description code { background-color: #333333; padding: 0.2em 0.4em; border-radius: 4px; font-family: monospace; }
+    .proposal-description pre { background-color: #333333; padding: 1em; border-radius: 6px; white-space: pre-wrap; word-break: break-all; }
+    .proposal-description pre code { padding: 0; background-color: transparent; }
+  </style>
   {{else}}
-  <style></style>
+  <style>
+    .proposal-description { background-color: #f8f9fa; border: 1px solid #e9ecef; border-radius: 8px; padding: 16px 20px; font-size: 14px; color: #343a40; }
+    .proposal-description h1,
+    .proposal-description h2,
+    .proposal-description h3,
+    .proposal-description h4 { color: #212529; margin-top: 1.2em; margin-bottom: 0.6em; padding-bottom: 0.3em; border-bottom: 1px solid #e9ecef; }
+    .proposal-description h1 { font-size: 1.6em; }
+    .proposal-description h2 { font-size: 1.4em; }
+    .proposal-description h3 { font-size: 1.2em; }
+    .proposal-description p { margin-top: 0; margin-bottom: 1em; line-height: 1.7; }
+    .proposal-description a { color: #55acee; }
+    .proposal-description table { width: 100%; border-collapse: collapse; margin-bottom: 1em; font-size: 0.95em; }
+    .proposal-description th,
+    .proposal-description td { border: 1px solid #dee2e6; padding: 8px 10px; text-align: left; }
+    .proposal-description th { font-weight: 600; }
+    .proposal-description ul,
+    .proposal-description ol { padding-left: 25px; margin-bottom: 1em; }
+    .proposal-description li { margin-bottom: 0.5em; }
+    .proposal-description blockquote { margin: 0 0 1em 0; padding-left: 1em; border-left: 3px solid #ced4da; color: #6c757d; font-style: italic; }
+    .proposal-description code { background-color: #e9ecef; padding: 0.2em 0.4em; border-radius: 4px; font-family: monospace; }
+    .proposal-description pre { background-color: #e9ecef; padding: 1em; border-radius: 6px; white-space: pre-wrap; word-break: break-all; }
+    .proposal-description pre code { padding: 0; background-color: transparent; }
+  </style>
   {{end}}
 {{end}}
 

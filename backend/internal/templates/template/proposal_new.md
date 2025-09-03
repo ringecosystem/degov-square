@@ -37,7 +37,7 @@ Please review the proposal and cast your vote.
 
 ### **Proposal Description**
 
-{{.Proposal.ProposalDescriptionMarkdown}}
+{{.Proposal.ProposalDescriptionMarkdown | formatAsMdQuote}}
   {{end}}
 {{end}}
 
