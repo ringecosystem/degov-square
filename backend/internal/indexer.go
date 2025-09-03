@@ -149,6 +149,13 @@ func (d *DegovIndexer) InspectProposal(proposalId string) (*Proposal, error) {
 				blockTimestamp
 				transactionHash
 				description
+
+				metricsVotesCount
+				metricsVotesWeightAbstainSum
+				metricsVotesWeightAgainstSum
+				metricsVotesWeightForSum
+				metricsVotesWithParamsCount
+				metricsVotesWithoutParamsCount
 			}
 		}
 	`
@@ -192,6 +199,13 @@ func (d *DegovIndexer) QueryProposalsOffset(offset int) ([]Proposal, error) {
 				blockTimestamp
 				transactionHash
 				description
+
+				metricsVotesCount
+				metricsVotesWeightAbstainSum
+				metricsVotesWeightAgainstSum
+				metricsVotesWeightForSum
+				metricsVotesWithParamsCount
+				metricsVotesWithoutParamsCount
 			}
 		}
 	`

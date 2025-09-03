@@ -231,7 +231,6 @@ func (s *TemplateService) GenerateTemplateByNotificationRecord(record *dbmodels.
 	switch record.Type {
 	case dbmodels.SubscribeFeatureProposalNew:
 		title = fmt.Sprintf("[%s] New Proposal: %s", dao.Name, proposal.Title)
-		proposalIndexer := emailProposal.ProposalIndexer
 		if config.GetDegovSiteConfig().EmailProposalIncludeDescription {
 			proposalDescriptionHtml := mdToHTML([]byte(proposalIndexer.Description))
 			proposalDescriptionHtmlTplHtmlContent := tplHtml.HTML(proposalDescriptionHtml)
@@ -263,7 +262,6 @@ func (s *TemplateService) GenerateTemplateByNotificationRecord(record *dbmodels.
 		title = fmt.Sprintf("[%s] Proposal Status Update: %s", dao.Name, proposal.Title)
 	case dbmodels.SubscribeFeatureVoteEnd:
 		title = fmt.Sprintf("[%s] Vote End Reminder: %s", dao.Name, proposal.Title)
-		proposalIndexer := emailProposal.ProposalIndexer
 		emailVote.TotalVotePower = calculateTotalVotePower(proposalIndexer)
 		if proposalIndexer.MetricsVotesWeightForSum != nil {
 			emailVote.PercentFor = utils.CalculateBigIntRatioPercentage(*proposalIndexer.MetricsVotesWeightForSum, emailVote.TotalVotePower)
@@ -483,7 +481,6 @@ func calculateTotalVotePower(proposal *internal.Proposal) string {
 		proposal.MetricsVotesWeightAbstainSum,
 	}
 
-	fmt.Println("-----------------> Calculating total vote power", "for", proposal.MetricsVotesWeightForSum, "against", proposal.MetricsVotesWeightAgainstSum, "abstain", proposal.MetricsVotesWeightAbstainSum)
 	for _, fieldPtr := range fields {
 		if fieldPtr == nil || *fieldPtr == "" {
 			continue
@@ -498,7 +495,6 @@ func calculateTotalVotePower(proposal *internal.Proposal) string {
 		}
 
 		total.Add(total, currentVal)
-		fmt.Println("------------------------>  + adding", "value", currentVal.String(), "new_total", total.String())
 	}
 
 	return total.String()

@@ -22,25 +22,25 @@
   {{$payload := .PayloadData}}
   {{$config := .DegovSiteConfig}}
 
-  <p style="margin: 0 0 20px; font-size: 16px; line-height: 1.6;">
+  <p style="margin: 0 0 16px; font-size: 16px; line-height: 1.6;">
     Hello {{if .EnsName}}{{.EnsName}}{{else}}{{.UserAddress}}{{end}},
   </p>
-  <p style="margin: 0 0 25px; font-size: 16px; line-height: 1.6;">
+  <p style="margin: 0 0 20px; font-size: 16px; line-height: 1.6;">
     A new vote has been cast on the proposal <strong>"{{$proposalDb.Title}}"</strong> in {{$dao.Name}}.
   </p>
 
-  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="font-size: 15px; line-height: 1.7; margin-bottom: 25px;">
+  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="font-size: 15px; line-height: 1.6; margin-bottom: 20px;">
     <tr>
-      <td style="padding: 6px 0; width: 120px; vertical-align: top;"><strong>Proposal:</strong></td>
-      <td style="padding: 6px 0;"><a href="{{$proposalDb.ProposalLink}}" target="_blank" style="color: #55acee; text-decoration: underline;">{{$proposalDb.Title}}</a></td>
+      <td style="padding: 4px 0; width: 120px; vertical-align: top;"><strong>Proposal:</strong></td>
+      <td style="padding: 4px 0;"><a href="{{$proposalDb.ProposalLink}}" target="_blank" style="color: #55acee; text-decoration: underline;">{{$proposalDb.Title}}</a></td>
     </tr>
     <tr>
-      <td style="padding: 6px 0; vertical-align: top;"><strong>Voter:</strong></td>
-      <td style="padding: 6px 0;">{{if $payload.VoterEnsName}}{{$payload.VoterEnsName}}{{else}}{{$voteIndexer.Voter}}{{end}}</td>
+      <td style="padding: 4px 0; vertical-align: top;"><strong>Voter:</strong></td>
+      <td style="padding: 4px 0;">{{if $payload.VoterEnsName}}{{$payload.VoterEnsName}}{{else}}{{$voteIndexer.Voter}}{{end}}</td>
     </tr>
     <tr>
-      <td style="padding: 6px 0; vertical-align: top;"><strong>Vote Direction:</strong></td>
-      <td style="padding: 6px 0; font-weight: bold;">
+      <td style="padding: 4px 0; vertical-align: top;"><strong>Vote Direction:</strong></td>
+      <td style="padding: 4px 0; font-weight: bold;">
         {{if eq $voteIndexer.Support 1}}✅ For
         {{else if eq $voteIndexer.Support 0}}❌ Against
         {{else}}⚪️ Abstain
@@ -48,30 +48,30 @@
       </td>
     </tr>
     <tr>
-      <td style="padding: 6px 0; vertical-align: top;"><strong>Voting Power:</strong></td>
-      <td style="padding: 6px 0;">{{(formatBigIntWithDecimals $voteIndexer.Weight $payload.DecimalsInt) | formatLargeNumber}}</td>
+      <td style="padding: 4px 0; vertical-align: top;"><strong>Voting Power:</strong></td>
+      <td style="padding: 4px 0;">{{(formatBigIntWithDecimals $voteIndexer.Weight $payload.DecimalsInt) | formatLargeNumber}}</td>
     </tr>
   </table>
 
-  <div class="divider" style="margin-top: 25px; margin-left: 0; margin-right: 0;"></div>
+  <div class="divider" style="margin-top: 20px; margin-left: 0; margin-right: 0;"></div>
 
-  <h3 style="margin: 30px 0 20px; font-size: 20px; font-weight: 600;">Quick Links</h3>
+  <h3 style="margin: 24px 0 12px; font-size: 20px; font-weight: 600;">Quick Links</h3>
   <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
     <tr>
-      <td style="padding-bottom: 12px;">
-        <a href="{{index $daoConfig.Chain.Explorers 0}}/tx/{{$voteIndexer.TransactionHash}}" target="_blank" style="display: inline-block; padding: 12px 25px; font-size: 16px; font-weight: 600; color: #ffffff; background-color: #55acee; border-radius: 8px; text-decoration: none;">
-          View This Vote
+      <td style="padding: 4px 0;">
+        <a href="{{index $daoConfig.Chain.Explorers 0}}/tx/{{$voteIndexer.TransactionHash}}" target="_blank" style="color: #55acee; text-decoration: underline; font-size: 15px; font-weight: 600;">
+          View This Vote &rarr;
         </a>
       </td>
     </tr>
     <tr>
-      <td style="padding-top: 8px;">
+      <td style="padding: 4px 0;">
          <a href="{{$proposalDb.ProposalLink}}" target="_blank" style="color: #55acee; text-decoration: underline; font-size: 15px;">View Proposal Details &rarr;</a>
       </td>
     </tr>
   </table>
 
-  <p style="margin: 30px 0 25px; font-size: 16px; line-height: 1.6;">
+  <p style="margin: 24px 0 20px; font-size: 16px; line-height: 1.6;">
     Thank you for staying engaged with {{$dao.Name}} onchain governance!
   </p>
 

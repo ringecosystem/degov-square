@@ -10,7 +10,9 @@ This is default content, which should be overridden by a specific template.
 
 ---
 
-[Home]({{.DegovSiteConfig.Home}}) | [Apps]({{.DegovSiteConfig.Apps}}) | [Docs]({{.DegovSiteConfig.Docs}})
+[Home]({{.DegovSiteConfig.Home}})
+[Apps]({{.DegovSiteConfig.Apps}})
+[Docs]({{.DegovSiteConfig.Docs}})
 
 Follow us:
 {{range .DegovSiteConfig.Socials}}
