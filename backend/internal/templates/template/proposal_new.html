@@ -1,5 +1,3 @@
-{{template "layout.html" .}}
-
 <!-- -->
 {{define "title"}} {{.Title}} {{end}}
 
@@ -43,7 +41,7 @@
     </tr>
     <tr>
       <td style="padding: 8px 0; vertical-align: top;"><strong>Proposer:</strong></td>
-      <td style="padding: 8px 0;">{{if $proposal.ProposerEnsName}}{{$proposal.ProposerEnsName}}{{else}}{{$proposal.ProposalIndexer.Proposer}}{{end}}</td>
+      <td style="padding: 8px 0;">{{$proposal.ProposalIndexer.Proposer}}{{if $proposal.ProposerEnsName}} ({{$proposal.ProposerEnsName}}){{end}}</td>
     </tr>
     <tr>
       <td style="padding: 8px 0; vertical-align: top;"><strong>DAO:</strong></td>

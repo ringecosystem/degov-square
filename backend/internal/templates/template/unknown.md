@@ -1,5 +1,3 @@
-{{template "layout.md" .}}
-
 {{define "content"}}
 Hello,
 

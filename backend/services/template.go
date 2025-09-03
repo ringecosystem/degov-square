@@ -33,8 +33,8 @@ type TemplateService struct {
 	daoService       *DaoService
 	proposalService  *ProposalService
 	daoConfigService *DaoConfigService
-	htmlTemplates    *tplHtml.Template
-	textTemplates    *tplText.Template
+	htmlTemplates    map[string]*tplHtml.Template
+	textTemplates    map[string]*tplText.Template
 	userService      *UserService
 }
 
@@ -47,15 +47,43 @@ func NewTemplateService() *TemplateService {
 		"formatDurationShort":      utils.FormatDurationShort,
 		"formatBigIntWithDecimals": utils.FormatBigIntWithDecimals,
 	}
-	htmlTmpls := tplHtml.Must(tplHtml.New("").Funcs(funcMap).ParseFS(
-		templates.TemplateFS,
-		"template/*.html",
-	))
 
-	textTmpls := tplText.Must(tplText.New("").Funcs(funcMap).ParseFS(
-		templates.TemplateFS,
-		"template/*.md",
-	))
+	files, err := templates.TemplateFS.ReadDir("template")
+	if err != nil {
+		panic(err)
+	}
+
+	htmlTmpls := make(map[string]*tplHtml.Template)
+	for _, file := range files {
+		fileName := file.Name()
+		if file.IsDir() || !strings.HasSuffix(fileName, ".html") || fileName == "_layout.html" {
+			continue
+		}
+
+		tmpl := tplHtml.Must(tplHtml.New(fileName).Funcs(funcMap).ParseFS(
+			templates.TemplateFS,
+			"template/_layout.html",
+			"template/"+fileName,
+		))
+
+		htmlTmpls[fileName] = tmpl
+	}
+
+	textTmpls := make(map[string]*tplText.Template)
+	for _, file := range files {
+		fileName := file.Name()
+		if file.IsDir() || !strings.HasSuffix(fileName, ".md") || fileName == "_layout.md" {
+			continue
+		}
+
+		tmpl := tplText.Must(tplText.New(fileName).Funcs(funcMap).ParseFS(
+			templates.TemplateFS,
+			"template/_layout.md",
+			"template/"+fileName,
+		))
+
+		textTmpls[fileName] = tmpl
+	}
 	return &TemplateService{
 		daoService:       NewDaoService(),
 		proposalService:  NewProposalService(),
@@ -234,9 +262,15 @@ func (s *TemplateService) GenerateTemplateByNotificationRecord(record *dbmodels.
 		title = fmt.Sprintf("[%s] Vote End Reminder: %s", dao.Name, proposal.Title)
 		proposalIndexer := emailProposal.ProposalIndexer
 		emailVote.TotalVotePower = calculateTotalVotePower(proposalIndexer)
-		emailVote.PercentFor = utils.CalculateBigIntRatioPercentage(*proposalIndexer.MetricsVotesWeightForSum, emailVote.TotalVotePower)
-		emailVote.PercentAgainst = utils.CalculateBigIntRatioPercentage(*proposalIndexer.MetricsVotesWeightAgainstSum, emailVote.TotalVotePower)
-		emailVote.PercentAbstain = utils.CalculateBigIntRatioPercentage(*proposalIndexer.MetricsVotesWeightAbstainSum, emailVote.TotalVotePower)
+		if proposalIndexer.MetricsVotesWeightForSum != nil {
+			emailVote.PercentFor = utils.CalculateBigIntRatioPercentage(*proposalIndexer.MetricsVotesWeightForSum, emailVote.TotalVotePower)
+		}
+		if proposalIndexer.MetricsVotesWeightAgainstSum != nil {
+			emailVote.PercentAgainst = utils.CalculateBigIntRatioPercentage(*proposalIndexer.MetricsVotesWeightAgainstSum, emailVote.TotalVotePower)
+		}
+		if proposalIndexer.MetricsVotesWeightAbstainSum != nil {
+			emailVote.PercentAbstain = utils.CalculateBigIntRatioPercentage(*proposalIndexer.MetricsVotesWeightAbstainSum, emailVote.TotalVotePower)
+		}
 		emailVote.PercentQuorum = utils.CalculateBigIntRatioPercentage(emailVote.TotalVotePower, proposalIndexer.Quorum)
 		voteEndTime, err := utils.ParseTimestamp(proposalIndexer.VoteEndTimestamp)
 		if err != nil {
@@ -309,9 +343,19 @@ func (s *TemplateService) renderTemplate(templateName string, data interface{}) 
 	var err error
 
 	if strings.HasSuffix(templateName, ".html") {
-		err = s.htmlTemplates.ExecuteTemplate(&buf, templateName, finData)
+		tmpl, ok := s.htmlTemplates[templateName]
+		if !ok {
+			return "", fmt.Errorf("html template %s not found", templateName)
+		}
+
+		err = tmpl.ExecuteTemplate(&buf, "layout.html", finData)
 	} else if strings.HasSuffix(templateName, ".md") {
-		err = s.textTemplates.ExecuteTemplate(&buf, templateName, finData)
+		tmpl, ok := s.textTemplates[templateName]
+		if !ok {
+			return "", fmt.Errorf("md template %s not found", templateName)
+		}
+
+		err = tmpl.ExecuteTemplate(&buf, "layout.md", finData)
 	} else {
 		return "", fmt.Errorf("unsupported template type: %s", templateName)
 	}
@@ -392,7 +436,7 @@ func writeDebugTemplateFile(outputBasePath, templateName string, content []byte)
 
 	var filePath string
 	for i := 1; i < 10000000; i++ {
-		fileName := fmt.Sprintf("%s_%07d.local.%s", sanitizedBaseName, i, ext)
+		fileName := fmt.Sprintf("%s_%07d.local%s", sanitizedBaseName, i, ext)
 		filePath = filepath.Join(outputBasePath, fileName)
 
 		if _, err := os.Stat(filePath); os.IsNotExist(err) {

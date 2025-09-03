@@ -1,5 +1,3 @@
-{{template "layout.md" .}}
-
 {{define "content"}}
 Hello {{if .EnsName}}{{.EnsName}}{{else}}{{.UserAddress}}{{end}},
 
@@ -10,7 +8,7 @@ A new proposal has been created in {{.Dao.Name}} that you're subscribed to.
 ### **Proposal Details**
 
 - **Title:** [{{.Proposal.ProposalDb.Title}}]({{.Proposal.ProposalDb.ProposalLink}})
-- **Proposer:** {{if .Proposal.ProposerEnsName}}{{.Proposal.ProposerEnsName}}{{else}}{{.Proposal.ProposalIndexer.Proposer}}{{end}}
+- **Proposer:** {{.Proposal.ProposalIndexer.Proposer}}{{if .Proposal.ProposerEnsName}}({{.Proposal.ProposerEnsName}}){{end}}
 - **DAO:** {{.Dao.Name}}
 - **Chain:** {{.Dao.ChainName}}
 - **Created:** {{.Proposal.ProposalIndexer.BlockTimestamp | formatDate}}

@@ -1,5 +1,3 @@
-{{template "layout.md" .}}
-
 {{define "content"}}
 {{$proposalDb := .Proposal.ProposalDb}}
 {{$proposalIndexer := .Proposal.ProposalIndexer}}

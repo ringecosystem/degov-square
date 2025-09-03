@@ -1,5 +1,3 @@
-{{template "layout.html" .}}
-
 {{define "title"}} {{.Title}} {{end}}
 
 {{define "header"}}
@@ -38,16 +36,12 @@
       <td style="padding: 4px 0; vertical-align: top;"><strong>Voting Ends:</strong></td>
       <td style="padding: 4px 0;">{{$proposalIndexer.VoteEndTimestamp | formatDate}} {{if $payload.TimeRemainingSeconds}}({{$payload.TimeRemainingSeconds | formatDurationShort}} remaining){{end}}</td>
     </tr>
+    {{if $vote.VoteIndexer}}
     <tr>
       <td style="padding: 4px 0; vertical-align: top;"><strong>Your Voting Power:</strong></td>
-      <td style="padding: 4px 0;">
-        {{if $vote.VoteIndexer}}
-          {{(formatBigIntWithDecimals $vote.VoteIndexer.Weight $payload.DecimalsInt) | formatLargeNumber}}
-        {{else}}
-          N/A
-        {{end}}
-      </td>
+      <td style="padding: 4px 0;">{{(formatBigIntWithDecimals $vote.VoteIndexer.Weight $payload.DecimalsInt) | formatLargeNumber}}</td>
     </tr>
+    {{end}}
   </table>
 
   <div class="divider" style="margin-top: 30px; margin-left: 0; margin-right: 0;"></div>

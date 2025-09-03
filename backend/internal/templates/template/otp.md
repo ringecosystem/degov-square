@@ -1,5 +1,3 @@
-{{template "layout.md" .}}
-
 {{define "content"}}
 
 Hello {{with .EnsName}}{{.}}{{else}}{{.UserAddress}}{{end}},

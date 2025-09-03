@@ -125,11 +125,8 @@ func CalculateBigIntRatioPercentage(numerator string, denominator string) float6
 	return percentFloat64
 }
 
-func FormatPercent(value string, precision int) string {
-	if precision <= 0 {
-		return value + "%"
-	}
-	return value + "." + strings.Repeat("0", precision) + "%"
+func FormatPercent(value float64) string {
+	return fmt.Sprintf("%.2f%%", value)
 }
 
 func FormatDurationShort(d time.Duration) string {
