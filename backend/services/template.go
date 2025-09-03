@@ -214,9 +214,10 @@ func (s *TemplateService) GenerateTemplateByNotificationRecord(record *dbmodels.
 			tweetLink := fmt.Sprintf("https://x.com/%s/status/%s", agentVote.TwitterUser.Username, agentVote.ID)
 			emailProposal.TweetLink = &tweetLink
 		}
-		break
 	case dbmodels.SubscribeFeatureProposalStateChanged:
 		title = fmt.Sprintf("[%s] Proposal Status Update: %s", dao.Name, proposal.Title)
+	case dbmodels.SubscribeFeatureVoteEnd:
+		title = fmt.Sprintf("[%s] Vote End Reminder: %s", dao.Name, proposal.Title)
 		proposalIndexer := emailProposal.ProposalIndexer
 		emailVote.TotalVotePower = calculateTotalVotePower(proposalIndexer)
 		emailVote.PercentFor = utils.CalculateBigIntRatioPercentage(*proposalIndexer.MetricsVotesWeightForSum, emailVote.TotalVotePower)
@@ -236,13 +237,8 @@ func (s *TemplateService) GenerateTemplateByNotificationRecord(record *dbmodels.
 		} else {
 			payloadData["DecimalsInt"] = decimalsInt
 		}
-		break
-	case dbmodels.SubscribeFeatureVoteEnd:
-		title = fmt.Sprintf("[%s] Vote End Reminder: %s", dao.Name, proposal.Title)
-		break
 	case dbmodels.SubscribeFeatureVoteEmitted:
 		title = fmt.Sprintf("[%s] Vote Emitted: %s", dao.Name, proposal.Title)
-		break
 	}
 
 	ensName, err := s.userService.GetENSName(record.UserAddress)
