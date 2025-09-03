@@ -6,6 +6,7 @@ import (
 	"fmt"
 	tplHtml "html/template"
 	"log/slog"
+	"math/big"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -39,7 +40,12 @@ type TemplateService struct {
 
 func NewTemplateService() *TemplateService {
 	funcMap := tplText.FuncMap{
-		"formatDate": formatDate,
+		"formatDate":               utils.FormatDate,
+		"formatLargeNumber":        utils.FormatLargeNumber,
+		"formatDecimal":            utils.FormatDecimal,
+		"formatPercent":            utils.FormatPercent,
+		"formatDurationShort":      utils.FormatDurationShort,
+		"formatBigIntWithDecimals": utils.FormatBigIntWithDecimals,
 	}
 	htmlTmpls := tplHtml.Must(tplHtml.New("").Funcs(funcMap).ParseFS(
 		templates.TemplateFS,
@@ -85,7 +91,12 @@ type emailProposalInfo struct {
 }
 
 type emailVoteInfo struct {
-	VoteIndexer *internal.VoteCast `json:"vote_indexer"`
+	VoteIndexer    *internal.VoteCast `json:"vote_indexer"`
+	TotalVotePower string             `json:"total_vote_power"`
+	PercentFor     float64            `json:"percent_for"`
+	PercentAgainst float64            `json:"percent_against"`
+	PercentAbstain float64            `json:"percent_abstain"`
+	PercentQuorum  float64            `json:"percent_quorum"`
 }
 
 // parsePayload attempts to parse the payload as JSON, falls back to string if failed
@@ -148,15 +159,15 @@ func (s *TemplateService) GenerateTemplateByNotificationRecord(record *dbmodels.
 
 	degovIndexer := internal.NewDegovIndexer(daoConfig.Indexer.Endpoint)
 
-	var vote *internal.VoteCast
+	var emailVote emailVoteInfo
 	if record.VoteID != nil {
-		voteById, err := degovIndexer.QueryVote(*record.VoteID)
+		voteIndexer, err := degovIndexer.QueryVote(*record.VoteID)
 
 		if err != nil {
 			return nil, fmt.Errorf("failed to get vote info: %w", err)
 		}
 
-		vote = voteById
+		emailVote.VoteIndexer = voteIndexer
 	}
 
 	// Parse payload data
@@ -164,8 +175,6 @@ func (s *TemplateService) GenerateTemplateByNotificationRecord(record *dbmodels.
 	title := "New notification from DeGov.AI"
 	emailProposal := emailProposalInfo{
 		ProposalDb: proposal,
-		// ProposalIndexer:             proposalIndexer,
-		// FormatedProposalDescription: proposal.FormatedDescription,
 	}
 
 	if record.Type == dbmodels.SubscribeFeatureProposalNew || record.Type == dbmodels.SubscribeFeatureVoteEnd {
@@ -208,6 +217,25 @@ func (s *TemplateService) GenerateTemplateByNotificationRecord(record *dbmodels.
 		break
 	case dbmodels.SubscribeFeatureProposalStateChanged:
 		title = fmt.Sprintf("[%s] Proposal Status Update: %s", dao.Name, proposal.Title)
+		proposalIndexer := emailProposal.ProposalIndexer
+		emailVote.TotalVotePower = calculateTotalVotePower(proposalIndexer)
+		emailVote.PercentFor = utils.CalculateBigIntRatioPercentage(*proposalIndexer.MetricsVotesWeightForSum, emailVote.TotalVotePower)
+		emailVote.PercentAgainst = utils.CalculateBigIntRatioPercentage(*proposalIndexer.MetricsVotesWeightAgainstSum, emailVote.TotalVotePower)
+		emailVote.PercentAbstain = utils.CalculateBigIntRatioPercentage(*proposalIndexer.MetricsVotesWeightAbstainSum, emailVote.TotalVotePower)
+		emailVote.PercentQuorum = utils.CalculateBigIntRatioPercentage(emailVote.TotalVotePower, proposalIndexer.Quorum)
+		voteEndTime, err := utils.ParseTimestamp(proposalIndexer.VoteEndTimestamp)
+		if err != nil {
+			slog.Warn("failed to parse vote end timestamp", "timestamp", proposalIndexer.VoteEndTimestamp, "error", err)
+		} else {
+			payloadData["TimeRemaining"] = utils.FormatDurationShort(time.Until(voteEndTime))
+		}
+		decimalsInt, err := strconv.Atoi(proposalIndexer.Decimals)
+		if err != nil {
+			slog.Warn("failed to parse decimals to int", "decimals", proposalIndexer.Decimals, "error", err)
+			payloadData["DecimalsInt"] = 1
+		} else {
+			payloadData["DecimalsInt"] = decimalsInt
+		}
 		break
 	case dbmodels.SubscribeFeatureVoteEnd:
 		title = fmt.Sprintf("[%s] Vote End Reminder: %s", dao.Name, proposal.Title)
@@ -234,7 +262,7 @@ func (s *TemplateService) GenerateTemplateByNotificationRecord(record *dbmodels.
 		DaoConfig:       daoConfig,
 		Dao:             dao,
 		Proposal:        &emailProposal,
-		Vote:            vote,
+		Vote:            &emailVote,
 		PayloadData:     payloadData,
 		EventID:         record.EventID,
 		UserID:          record.UserID,
@@ -396,29 +424,30 @@ func mdToHTML(md []byte) string {
 	return string(bluemonday.UGCPolicy().SanitizeBytes(maybeUnsafeHTML))
 }
 
-// formatDate formats a Unix timestamp string into the "Month Day, Year at Hour:Minute PM Timezone" layout.
-func formatDate(timestampStr string) string {
-	i, err := strconv.ParseInt(timestampStr, 10, 64)
-	if err != nil {
-		slog.Warn("Could not parse timestamp string", "timestampStr", timestampStr, "error", err)
-		return timestampStr
+func calculateTotalVotePower(proposal *internal.Proposal) string {
+	total := new(big.Int)
+
+	fields := []*string{
+		proposal.MetricsVotesWeightForSum,
+		proposal.MetricsVotesWeightAgainstSum,
+		proposal.MetricsVotesWeightAbstainSum,
 	}
 
-	// Create a time.Time object from the Unix timestamp (seconds).
-	t := time.Unix(i, 0)
+	for _, fieldPtr := range fields {
+		if fieldPtr == nil || *fieldPtr == "" {
+			continue
+		}
 
-	// 1. Convert the time to the UTC timezone.
-	t = t.UTC()
+		currentVal := new(big.Int)
 
-	// 2. Use the new format layout string.
-	//    Based on Go's reference time: Mon Jan 2 15:04:05 MST 2006
-	//    "January" -> Full month name (e.g., "September")
-	//    "2"       -> Day of the month without leading zero (e.g., "2")
-	//    "2006"    -> Four-digit year (e.g., "2025")
-	//    "at"      -> The literal string "at"
-	//    "3"       -> Hour in 12-hour format without leading zero (e.g., "4")
-	//    "04"      -> Minute with leading zero (e.g., "04")
-	//    "PM"      -> AM/PM marker (e.g., "PM")
-	//    "MST"     -> Timezone abbreviation (will display "UTC" since we converted to UTC)
-	return t.Format("January 2, 2006 at 3:04 PM MST")
+		_, ok := currentVal.SetString(*fieldPtr, 10)
+		if !ok {
+			slog.Warn("Could not parse bigint string, skipping", "value", *fieldPtr)
+			continue
+		}
+
+		total.Add(total, currentVal)
+	}
+
+	return total.String()
 }
