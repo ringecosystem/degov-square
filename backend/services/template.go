@@ -177,7 +177,9 @@ func (s *TemplateService) GenerateTemplateByNotificationRecord(record *dbmodels.
 		ProposalDb: proposal,
 	}
 
-	if record.Type == dbmodels.SubscribeFeatureProposalNew || record.Type == dbmodels.SubscribeFeatureVoteEnd {
+	if record.Type == dbmodels.SubscribeFeatureProposalNew ||
+		record.Type == dbmodels.SubscribeFeatureVoteEnd ||
+		record.Type == dbmodels.SubscribeFeatureProposalStateChanged {
 		proposalIndexer, err := degovIndexer.InspectProposal(proposal.ProposalID)
 		if err != nil {
 			return nil, fmt.Errorf("failed to inspect full proposal: %w", err)

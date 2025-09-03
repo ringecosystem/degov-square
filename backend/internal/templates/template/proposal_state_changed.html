@@ -1,124 +1,72 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <title>Proposal Status Changed - {{.Dao.Name}}</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-</head>
-<body>
-    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; padding: 20px;">
-        <!-- Header -->
-        <div style="text-align: center; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid #f0f0f0;">
-            {{if .Dao.Logo}}<img src="{{.Dao.Logo}}" alt="{{.Dao.Name}}" style="width: 50px; height: 50px; border-radius: 50%; margin-bottom: 10px;">{{end}}
-            <h1 style="color: #333; margin: 0; font-size: 24px;">📊 Proposal Status Changed</h1>
-            <p style="color: #666; margin: 5px 0 0 0; font-size: 16px;">{{.Dao.Name}}</p>
-        </div>
+{{template "layout.html" .}}
 
-        <!-- Main Content -->
-        <div style="background-color: #f8f9fa; padding: 25px; border-radius: 12px; margin: 20px 0; border-left: 4px solid #ffc107;">
-            <h2 style="color: #333; margin: 0 0 15px 0; font-size: 20px; line-height: 1.3;">{{.Proposal.Title}}</h2>
+{{define "title"}} Confirm Your Email {{end}}
 
-            <div style="margin: 15px 0;">
-                <div style="display: inline-block; margin: 5px 10px 5px 0;">
-                    <span style="background-color: #007bff; color: white; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 500;">
-                        ID: {{.Proposal.ProposalId}}
-                    </span>
-                </div>
-                {{if .Proposal.ProposalCreatedAt}}
-                <div style="display: inline-block; margin: 5px 0;">
-                    <span style="background-color: #6c757d; color: white; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 500;">
-                        {{.Proposal.ProposalCreatedAt.Format "Jan 2, 2006 15:04 UTC"}}
-                    </span>
-                </div>
-                {{end}}
-            </div>
+{{define "header"}}
+  {{$theme := "dark"}}
+  {{if eq .DegovSiteConfig.EmailTheme "light"}}
+    {{$theme = "light"}}
+  {{end}}
 
-            <div style="margin-top: 15px;">
-                <p style="margin: 0; color: #666; font-size: 14px;"><strong>Chain:</strong> {{.DaoConfig.Chain.Name}} (ID: {{.DaoConfig.Chain.ID}})</p>
-                <p style="margin: 5px 0 0 0; color: #666; font-size: 14px;"><strong>Block:</strong> {{.Proposal.ProposalAtBlock}}</p>
-            </div>
-        </div>
+  {{if eq $theme "dark"}}
+  <style></style>
+  {{else}}
+  <style></style>
+  {{end}}
+{{end}}
 
-        <!-- Status Change Information -->
-        <div style="margin: 20px 0; padding: 20px; background-color: #fff3cd; border-left: 4px solid #ffc107; border-radius: 8px;">
-            <h3 style="color: #856404; margin: 0 0 15px 0; font-size: 16px;">⚡ Status Update</h3>
-            <div style="display: flex; align-items: center; justify-content: center; gap: 15px; margin: 15px 0;">
-                {{if .PayloadData.old_state}}
-                <span style="background-color: #dc3545; color: white; padding: 8px 16px; border-radius: 25px; font-size: 14px; font-weight: 500;">
-                    {{.PayloadData.old_state}}
-                </span>
-                {{else}}
-                <span style="background-color: #6c757d; color: white; padding: 8px 16px; border-radius: 25px; font-size: 14px; font-weight: 500;">
-                    Previous State
-                </span>
-                {{end}}
-                <span style="font-size: 18px; color: #ffc107;">→</span>
-                {{if .PayloadData.new_state}}
-                <span style="background-color: #28a745; color: white; padding: 8px 16px; border-radius: 25px; font-size: 14px; font-weight: 500;">
-                    {{.PayloadData.new_state}}
-                </span>
-                {{else}}
-                <span style="background-color: #28a745; color: white; padding: 8px 16px; border-radius: 25px; font-size: 14px; font-weight: 500;">
-                    {{.Proposal.State}}
-                </span>
-                {{end}}
-            </div>
-            {{if .PayloadData.reason}}
-            <p style="color: #856404; font-size: 14px; margin: 10px 0 0 0; text-align: center;"><strong>Reason:</strong> {{.PayloadData.reason}}</p>
-            {{end}}
-        </div>
+{{define "content"}}
+  {{$proposalDb := .Proposal.ProposalDb}}
+  {{$proposalIndexer := .Proposal.ProposalIndexer}}
+  {{$dao := .Dao}}
+  {{$daoConfig := .DaoConfig}}
+  {{$payload := .PayloadData}}
+  {{$config := .DegovSiteConfig}}
 
-        {{if .Proposal.Message}}
-        <div style="margin: 20px 0; padding: 20px; background-color: #ffffff; border: 1px solid #e9ecef; border-radius: 8px;">
-            <h3 style="color: #333; margin: 0 0 10px 0; font-size: 16px;">📝 Proposal Description:</h3>
-            <p style="color: #555; line-height: 1.6; margin: 0; white-space: pre-wrap;">{{.Proposal.Message}}</p>
-        </div>
-        {{end}}
+  <p style="margin: 0 0 20px; font-size: 16px; line-height: 1.6;">
+    Hello {{if .EnsName}}{{.EnsName}}{{else}}{{.UserAddress}}{{end}},
+  </p>
+  <p style="margin: 0 0 25px; font-size: 16px; line-height: 1.6;">
+    The status of the proposal <strong>"{{$proposalDb.Title}}"</strong> you're following in {{$dao.Name}} has been updated.
+  </p>
 
-        {{if .PayloadData}}
-        {{if .PayloadData.__raw}}
-        <div style="margin: 20px 0; padding: 15px; background-color: #f8f9fa; border-radius: 8px; border-left: 3px solid #ffc107;">
-            <h4 style="color: #333; margin: 0 0 10px 0; font-size: 14px;">📄 Event Data:</h4>
-            <pre style="background-color: #ffffff; padding: 10px; border-radius: 4px; font-size: 12px; overflow-x: auto; margin: 0; color: #666;">{{.PayloadData.__raw}}</pre>
-        </div>
-        {{else if gt (len .PayloadData) 0}}
-        <div style="margin: 20px 0; padding: 15px; background-color: #f8f9fa; border-radius: 8px; border-left: 3px solid #17a2b8;">
-            <h4 style="color: #333; margin: 0 0 10px 0; font-size: 14px;">📊 Change Details:</h4>
-            {{range $key, $value := .PayloadData}}
-            {{if and (ne $key "old_state") (ne $key "new_state") (ne $key "reason")}}
-            <p style="margin: 5px 0; font-size: 13px; color: #555;"><strong>{{$key}}:</strong> {{$value}}</p>
-            {{end}}
-            {{end}}
-        </div>
-        {{end}}
-        {{end}}
+  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="font-size: 15px; line-height: 1.7; margin-bottom: 25px;">
+    <tr>
+      <td style="padding: 6px 0; width: 110px; vertical-align: top;"><strong>Proposal:</strong></td>
+      <td style="padding: 6px 0;"><a href="{{$proposalDb.ProposalLink}}" target="_blank" style="color: #55acee; text-decoration: underline;">{{$proposalDb.Title}}</a></td>
+    </tr>
+    <tr>
+      <td style="padding: 6px 0; vertical-align: top;"><strong>Latest Status:</strong></td>
+      <td style="padding: 6px 0;"><strong>{{$payload.new_state}}</strong></td>
+    </tr>
+  </table>
 
-        <!-- Action Buttons -->
-        <div style="margin: 30px 0; text-align: center;">
-            {{if and .DaoConfig.SiteURL .Proposal.ProposalLink}}
-            <a href="{{.Proposal.ProposalLink}}" style="background-color: #007bff; color: white; padding: 14px 30px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 500; margin: 5px;">
-                🔍 View Proposal
-            </a>
-            {{end}}
-            {{if .DaoConfig.SiteURL}}
-            <a href="{{.DaoConfig.SiteURL}}" style="background-color: #28a745; color: white; padding: 14px 30px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 500; margin: 5px;">
-                🏠 Visit DAO
-            </a>
-            {{end}}
-        </div>
+  <div class="divider" style="margin-top: 25px; margin-left: 0; margin-right: 0;"></div>
 
-        <!-- Footer -->
-        <hr style="border: none; border-top: 1px solid #e9ecef; margin: 40px 0 20px 0;">
-        <div style="text-align: center;">
-            <p style="color: #888; font-size: 12px; margin: 0 0 10px 0;">
-                You're receiving this because you subscribed to {{.Dao.Name}} status change notifications
-            </p>
-            {{if .DaoConfig.Links.Website}}
-            <p style="color: #888; font-size: 12px; margin: 0;">
-                Learn more: <a href="{{.DaoConfig.Links.Website}}" style="color: #007bff; text-decoration: none;">{{.DaoConfig.Links.Website}}</a>
-            </p>
-            {{end}}
-        </div>
-    </div>
-</body>
-</html>
+  <h3 style="margin: 30px 0 20px; font-size: 20px; font-weight: 600;">Quick Links</h3>
+  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+    <tr>
+      <td style="padding-bottom: 12px;">
+        <a href="{{$proposalDb.ProposalLink}}" target="_blank" style="display: inline-block; padding: 12px 25px; font-size: 16px; font-weight: 600; color: #ffffff; background-color: #55acee; border-radius: 8px; text-decoration: none;">
+          View Proposal Details
+        </a>
+      </td>
+    </tr>
+    {{if and $proposalIndexer.TransactionHash $daoConfig.Chain.Explorers}}
+    <tr>
+      <td style="padding-top: 8px;">
+         <a href="{{index $daoConfig.Chain.Explorers 0}}/tx/{{$proposalIndexer.TransactionHash}}" target="_blank" style="color: #55acee; text-decoration: underline; font-size: 15px;">View Transaction Details &rarr;</a>
+      </td>
+    </tr>
+    {{end}}
+  </table>
+
+  <p style="margin: 30px 0 25px; font-size: 16px; line-height: 1.6;">
+    Thank you for staying engaged with {{$dao.Name}} onchain governance!
+  </p>
+
+  <p style="margin: 0; font-size: 16px; line-height: 1.6;">
+    Best regards,<br />
+    The {{$config.Name}} Team
+  </p>
+{{end}}
