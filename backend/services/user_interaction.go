@@ -224,6 +224,7 @@ func (s *UserInteractionService) resendOTPForChannel(baseInput types.BasicInput[
 					remainingSeconds := int32(remaining.Seconds())
 					return &gqlmodels.ResendOTPOutput{
 						Code:      1,
+						ID:        input.ID,
 						RateLimit: &remainingSeconds,
 						Message:   utils.StringPtr(fmt.Sprintf("OTP can only be sent once per minute. Please try again in %d seconds", remainingSeconds)),
 					}, nil
@@ -231,6 +232,7 @@ func (s *UserInteractionService) resendOTPForChannel(baseInput types.BasicInput[
 			} else {
 				return &gqlmodels.ResendOTPOutput{
 					Code:      1,
+					ID:        input.ID,
 					RateLimit: utils.Int32Ptr(60),
 					Message:   utils.StringPtr("OTP can only be sent once per minute. Please try again later"),
 				}, nil
@@ -274,18 +276,21 @@ func (s *UserInteractionService) resendOTPForChannel(baseInput types.BasicInput[
 
 		return &gqlmodels.ResendOTPOutput{
 			Code:       0,
+			ID:         input.ID,
 			Expiration: utils.Int32Ptr(3 * 60),
 		}, nil
 
 	case dbmodels.NotificationChannelTypeWebhook:
 		return &gqlmodels.ResendOTPOutput{
 			Code:    0,
+			ID:      input.ID,
 			Message: utils.StringPtr("this method do not need send OTP to verify"),
 		}, nil
 
 	default:
 		return &gqlmodels.ResendOTPOutput{
 			Code:    0,
+			ID:      input.ID,
 			Message: utils.StringPtr("do not support this notification channel"),
 		}, nil
 	}
