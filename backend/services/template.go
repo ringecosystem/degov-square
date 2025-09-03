@@ -160,15 +160,6 @@ func (s *TemplateService) GenerateTemplateByNotificationRecord(record *dbmodels.
 	degovIndexer := internal.NewDegovIndexer(daoConfig.Indexer.Endpoint)
 
 	var emailVote emailVoteInfo
-	if record.VoteID != nil {
-		voteIndexer, err := degovIndexer.QueryVote(*record.VoteID)
-
-		if err != nil {
-			return nil, fmt.Errorf("failed to get vote info: %w", err)
-		}
-
-		emailVote.VoteIndexer = voteIndexer
-	}
 
 	// Parse payload data
 	payloadData := s.parsePayload(record.Payload)
@@ -177,14 +168,27 @@ func (s *TemplateService) GenerateTemplateByNotificationRecord(record *dbmodels.
 		ProposalDb: proposal,
 	}
 
-	if record.Type == dbmodels.SubscribeFeatureProposalNew ||
-		record.Type == dbmodels.SubscribeFeatureVoteEnd ||
-		record.Type == dbmodels.SubscribeFeatureProposalStateChanged {
-		proposalIndexer, err := degovIndexer.InspectProposal(proposal.ProposalID)
+	proposalIndexer, err := degovIndexer.InspectProposal(proposal.ProposalID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to inspect full proposal: %w", err)
+	}
+	emailProposal.ProposalIndexer = proposalIndexer
+
+	if record.Type == dbmodels.SubscribeFeatureVoteEmitted {
+		voteIndexer, err := degovIndexer.QueryVote(*record.VoteID)
 		if err != nil {
-			return nil, fmt.Errorf("failed to inspect full proposal: %w", err)
+			return nil, fmt.Errorf("failed to get vote info: %w", err)
 		}
-		emailProposal.ProposalIndexer = proposalIndexer
+		emailVote.VoteIndexer = voteIndexer
+	}
+
+	if record.Type == dbmodels.SubscribeFeatureVoteEmitted {
+		voteIndexer, err := degovIndexer.QueryVoteByVoter(proposal.ProposalID, record.UserAddress)
+		if err != nil {
+			slog.Warn("failed to get vote for this user", "user_address", record.UserAddress, "error", err)
+		} else {
+			emailVote.VoteIndexer = voteIndexer
+		}
 	}
 
 	switch record.Type {

@@ -275,6 +275,41 @@ func (d *DegovIndexer) QueryVote(id string) (*VoteCast, error) {
 	return nil, fmt.Errorf("no vote found with id %s", id)
 }
 
+func (d *DegovIndexer) QueryVoteByVoter(proposalId string, voter string) (*VoteCast, error) {
+	query := `
+		query QueryVoteByVoter($proposalId: String!, $voter: String!) {
+			voteCasts(where: {proposalId_eq: $proposalId, voter_eq: $voter}) {
+				proposalId
+				reason
+				support
+				voter
+				weight
+				transactionHash
+				id
+				blockNumber
+				blockTimestamp
+			}
+		}
+	`
+
+	req := graphql.NewRequest(query)
+	req.Var("proposalId", proposalId)
+	req.Var("voter", voter)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	var response VoteCastsResponse
+	if err := d.client.Run(ctx, req, &response); err != nil {
+		return nil, fmt.Errorf("failed to execute QueryVoteByVoter: %w", err)
+	}
+	if len(response.VoteCasts) > 0 {
+		return &response.VoteCasts[0], nil
+	}
+
+	return nil, fmt.Errorf("no vote found for proposalId %s and voter %s", proposalId, voter)
+}
+
 func (d *DegovIndexer) QueryExpiringProposals() ([]Proposal, error) {
 	query := `
 	query QueryExpiringProposals($limit: Int!, $offset: Int!, $start: BigInt!, $end: BigInt!) {
