@@ -27,6 +27,7 @@ import (
 	"github.com/ringecosystem/degov-apps/internal/templates"
 	"github.com/ringecosystem/degov-apps/internal/utils"
 	"github.com/ringecosystem/degov-apps/types"
+	"github.com/vanng822/go-premailer/premailer"
 )
 
 type TemplateService struct {
@@ -343,7 +344,8 @@ func (s *TemplateService) renderTemplate(templateName string, data interface{}) 
 	var buf bytes.Buffer
 	var err error
 
-	if strings.HasSuffix(templateName, ".html") {
+	htmlMode := strings.HasSuffix(templateName, ".html")
+	if htmlMode {
 		tmpl, ok := s.htmlTemplates[templateName]
 		if !ok {
 			return "", fmt.Errorf("html template %s not found", templateName)
@@ -365,14 +367,30 @@ func (s *TemplateService) renderTemplate(templateName string, data interface{}) 
 		return "", fmt.Errorf("failed to execute template %s: %w", templateName, err)
 	}
 
-	renderedContent := buf.Bytes()
+	renderedBytes := buf.Bytes()
+	renderedText := string(renderedBytes)
+
+	if htmlMode {
+		options := premailer.NewOptions()
+		options.RemoveClasses = true
+		prem, err := premailer.NewPremailerFromString(renderedText, options)
+		if err != nil {
+			return "nil", fmt.Errorf("failed to create premailer from rich text: %w", err)
+		}
+		inlinesHtml, err := prem.Transform()
+		if err != nil {
+			return "nil", fmt.Errorf("failed to transform rich text: %w", err)
+		}
+		renderedText = inlinesHtml
+	}
+
 	if config.GetAppEnv().IsDevelopment() {
 		if outputBasePath := config.GetString("DEBUG_TEMPLATE_OUTPUT_PATH"); outputBasePath != "" {
-			go writeDebugTemplateFile(outputBasePath, templateName, renderedContent)
+			go writeDebugTemplateFile(outputBasePath, templateName, []byte(renderedText))
 		}
 	}
 
-	return string(renderedContent), nil
+	return renderedText, nil
 }
 
 func (s *TemplateService) GenerateTemplateOTP(input types.GenerateTemplateOTPInput) (*types.TemplateOutput, error) {
