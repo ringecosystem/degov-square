@@ -341,9 +341,10 @@ func GetEmailStyle() types.EmailStyle {
 }
 
 func GetDegovSiteConfig() types.DegovSiteConfig {
+	emailProposalIncludeDescription := GetStringWithDefault("DEGOV_SITE_EMAIL_PROPOSAL_INCLUDE_DESCRIPTION", "false")
 	return types.DegovSiteConfig{
 		EmailTheme:                      GetStringWithDefault("DEGOV_SITE_EMAIL_THEME", "dark"),
-		EmailProposalIncludeDescription: GetBool("DEGOV_SITE_EMAIL_PROPOSAL_INCLUDE_DESCRIPTION"),
+		EmailProposalIncludeDescription: emailProposalIncludeDescription == "true",
 		Logo:                            GetStringWithDefault("DEGOV_SITE_LOGO", "https://cdn.jsdelivr.net/gh/ringecosystem/degov-registry@main/assets/common/light-degov-4x.png"),
 		LogoLight:                       GetStringWithDefault("DEGOV_SITE_LOGO_LIGHT", "https://cdn.jsdelivr.net/gh/ringecosystem/degov-registry@main/assets/common/light-degov-4x.png"),
 		LogoDark:                        GetStringWithDefault("DEGOV_SITE_LOGO_DARK", "https://cdn.jsdelivr.net/gh/ringecosystem/degov-registry@main/assets/common/dark-degov-4x.png"),
