@@ -282,7 +282,7 @@ func writeDebugTemplateFile(outputBasePath, templateName string, content []byte)
 
 	var filePath string
 	for i := 1; i < 10000000; i++ {
-		fileName := fmt.Sprintf("%s_%07d%s", sanitizedBaseName, i, ext)
+		fileName := fmt.Sprintf("%s_%07d.local.%s", sanitizedBaseName, i, ext)
 		filePath = filepath.Join(outputBasePath, fileName)
 
 		if _, err := os.Stat(filePath); os.IsNotExist(err) {
