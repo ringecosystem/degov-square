@@ -208,7 +208,7 @@ func (s *NotificationService) UpdateRecordRetryTimes(input types.UpdateRecordRet
 	}
 
 	if input.TimesRetry > 3 {
-		updates["state"] = dbmodels.NotificationEventStateFailed
+		updates["state"] = dbmodels.NotificationRecordStateSentFail
 	}
 
 	return s.db.Model(&dbmodels.NotificationRecord{}).Where("id = ?", input.ID).Updates(updates).Error

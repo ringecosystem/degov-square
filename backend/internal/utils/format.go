@@ -193,41 +193,39 @@ func FormatDurationShort(d time.Duration) string {
 	return strings.Join(parts, ", ")
 }
 
-func FormatBigIntWithDecimals(amountStr string, decimals int) (string, error) {
-	// 1. Parse the input string into a big.Int
-	amountInt, ok := new(big.Int).SetString(amountStr, 10)
-	if !ok {
-		return "", fmt.Errorf("invalid bigint string: %s", amountStr)
+func FormatBigIntWithDecimals(amountStr *string, decimals int) (string, error) {
+	if amountStr == nil {
+		return "", nil
 	}
 
-	// Prevent negative decimals, which would cause a panic.
+	if *amountStr == "" {
+		return "", nil
+	}
+
+	amountInt, ok := new(big.Int).SetString(*amountStr, 10)
+	if !ok {
+		return "", fmt.Errorf("invalid bigint string: %s", *amountStr)
+	}
+
 	if decimals < 0 {
 		return "", fmt.Errorf("decimals cannot be negative: %d", decimals)
 	}
-	if decimals == 1 {
-		return amountStr, nil
+	if decimals == 0 || decimals == 1 {
+		return *amountStr, nil
 	}
 
-	// 2. Calculate the divisor: 10^decimals
 	divisor := new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(decimals)), nil)
 
-	// 3. Convert both the amount and the divisor to big.Float for precise division.
-	// We must set a precision for the floats to avoid losing data during conversion.
 	amountFloat := new(big.Float).SetPrec(256).SetInt(amountInt)
 	divisorFloat := new(big.Float).SetPrec(256).SetInt(divisor)
 
-	// 4. Perform the division.
 	resultFloat := new(big.Float).Quo(amountFloat, divisorFloat)
 
-	// 5. Format the float to a string with up to 'decimals' precision,
-	//    then clean it up by removing trailing zeros and decimal points.
-	//    For example: "1.500" -> "1.5", "2.000" -> "2"
 	formattedStr := resultFloat.Text('f', decimals)
 
-	// Trim trailing zeros only if a decimal point exists.
 	if strings.Contains(formattedStr, ".") {
 		formattedStr = strings.TrimRight(formattedStr, "0")
-		formattedStr = strings.TrimRight(formattedStr, ".") // Trim the dot if it's the last character
+		formattedStr = strings.TrimRight(formattedStr, ".")
 	}
 
 	return formattedStr, nil

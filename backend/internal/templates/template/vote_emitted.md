@@ -14,7 +14,7 @@ A new vote has been cast on the proposal "**{{$proposalDb.Title}}**" in {{$dao.N
 - **Proposal:** [{{$proposalDb.Title}}]({{$proposalDb.ProposalLink}})
 - **Voter:** {{if $payload.VoterEnsName}}{{$payload.VoterEnsName}}{{else}}{{$voteIndexer.Voter}}{{end}}
 - **Vote Direction:** {{if eq $voteIndexer.Support 1}}✅ For{{else if eq $voteIndexer.Support 0}}❌ Against{{else}}⚪️ Abstain{{end}}
-- **Voting Power:** {{(formatBigIntWithDecimals $voteIndexer.Weight $proposalIndexer.Decimals) | formatLargeNumber}}
+- **Voting Power:** {{(formatBigIntWithDecimals $voteIndexer.Weight $payload.DecimalsInt) | formatLargeNumber}}
 
 ---
 

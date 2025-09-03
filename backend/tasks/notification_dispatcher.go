@@ -1,6 +1,7 @@
 package tasks
 
 import (
+	"fmt"
 	"log/slog"
 
 	dbmodels "github.com/ringecosystem/degov-apps/database/models"
@@ -52,12 +53,22 @@ func (t *NotificationDispatcherTask) dispatcherNotificationRecord() error {
 				Verified: true,
 			},
 		})
+		timesRetry := record.TimesRetry + 1
+
 		if err != nil {
 			slog.Error("Failed to list user channels", "user_id", record.UserID, "error", err)
+
+			var message string
+			if record.Message != nil {
+				message = fmt.Sprintf("%s\n\n-------\n[%d] Failed to list user channels: %s", *record.Message, timesRetry, err.Error())
+			} else {
+				message = fmt.Sprintf("[%d] Failed to list user channels: %s", timesRetry, err.Error())
+			}
+
 			t.notificationService.UpdateRecordRetryTimes(types.UpdateRecordRetryTimes{
 				ID:         record.ID,
-				TimesRetry: record.TimesRetry + 1,
-				Message:    *record.Message + "\n\nFailed to list user channels: " + err.Error(),
+				TimesRetry: timesRetry,
+				Message:    message,
 			})
 			continue
 		}
@@ -65,11 +76,17 @@ func (t *NotificationDispatcherTask) dispatcherNotificationRecord() error {
 		if err := t.dispatchNotificationRecordByRecord(&record, channels); err != nil {
 			slog.Error("Failed to dispatch notification record", "record_id", record.ID, "error", err)
 
-			timesRetry := record.TimesRetry + 1
-			if err := t.notificationService.UpdateEventRetryTimes(types.UpdateEventRetryTimes{
+			var message string
+			if record.Message != nil {
+				message = fmt.Sprintf("%s\n\n-------\n[%d] Failed to build notification record: %s", *record.Message, timesRetry, err.Error())
+			} else {
+				message = fmt.Sprintf("[%d] Failed to build notification record: %s", timesRetry, err.Error())
+			}
+
+			if err := t.notificationService.UpdateRecordRetryTimes(types.UpdateRecordRetryTimes{
 				ID:         record.ID,
 				TimesRetry: timesRetry,
-				Message:    *record.Message + "\n\nFailed to build notification record: " + err.Error(),
+				Message:    message,
 			}); err != nil {
 				slog.Error("Failed to update record retry times", "record_id", record.ID, "error", err)
 			}

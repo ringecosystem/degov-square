@@ -81,10 +81,10 @@ func (s *UserService) GetENSName(address string) (*string, error) {
 
 	rpcURLs := []string{
 		"https://ethereum-rpc.publicnode.com",
-		"https://eth-mainnet.public.blastapi.io",
-		"https://ethereum.therpc.io",
-		"https://eth.api.onfinality.io/public",
-		"https://eth.nodeconnect.org",
+		// "https://eth-mainnet.public.blastapi.io",
+		// "https://ethereum.therpc.io",
+		// "https://eth.api.onfinality.io/public",
+		// "https://eth.nodeconnect.org",
 	}
 
 	envRPCs := os.Getenv("RPC_URL_1")

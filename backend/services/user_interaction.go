@@ -305,7 +305,7 @@ func (s UserInteractionService) ListChannel(baseInput types.BasicInput[types.Lis
 	}
 	var results []dbmodels.NotificationChannel
 	s.db.
-		Where("user_id = ? or user_address = ? and verified = ?", user.Id, user.Address, verified).
+		Where("user_id = ? and verified = ?", user.Id, verified).
 		Find(&results)
 	return results, nil
 }

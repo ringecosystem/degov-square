@@ -174,6 +174,14 @@ func (s *TemplateService) GenerateTemplateByNotificationRecord(record *dbmodels.
 	}
 	emailProposal.ProposalIndexer = proposalIndexer
 
+	decimalsInt, err := strconv.Atoi(proposalIndexer.Decimals)
+	if err != nil {
+		slog.Warn("failed to parse decimals to int", "decimals", proposalIndexer.Decimals, "error", err)
+		payloadData["DecimalsInt"] = 1
+	} else {
+		payloadData["DecimalsInt"] = decimalsInt
+	}
+
 	if record.Type == dbmodels.SubscribeFeatureVoteEmitted {
 		voteIndexer, err := degovIndexer.QueryVote(*record.VoteID)
 		if err != nil {
@@ -182,7 +190,7 @@ func (s *TemplateService) GenerateTemplateByNotificationRecord(record *dbmodels.
 		emailVote.VoteIndexer = voteIndexer
 	}
 
-	if record.Type == dbmodels.SubscribeFeatureVoteEmitted {
+	if record.Type == dbmodels.SubscribeFeatureVoteEnd {
 		voteIndexer, err := degovIndexer.QueryVoteByVoter(proposal.ProposalID, record.UserAddress)
 		if err != nil {
 			slog.Warn("failed to get vote for this user", "user_address", record.UserAddress, "error", err)
@@ -235,13 +243,6 @@ func (s *TemplateService) GenerateTemplateByNotificationRecord(record *dbmodels.
 			slog.Warn("failed to parse vote end timestamp", "timestamp", proposalIndexer.VoteEndTimestamp, "error", err)
 		} else {
 			payloadData["TimeRemaining"] = utils.FormatDurationShort(time.Until(voteEndTime))
-		}
-		decimalsInt, err := strconv.Atoi(proposalIndexer.Decimals)
-		if err != nil {
-			slog.Warn("failed to parse decimals to int", "decimals", proposalIndexer.Decimals, "error", err)
-			payloadData["DecimalsInt"] = 1
-		} else {
-			payloadData["DecimalsInt"] = decimalsInt
 		}
 	case dbmodels.SubscribeFeatureVoteEmitted:
 		title = fmt.Sprintf("[%s] Vote Emitted: %s", dao.Name, proposal.Title)
@@ -435,6 +436,7 @@ func calculateTotalVotePower(proposal *internal.Proposal) string {
 		proposal.MetricsVotesWeightAbstainSum,
 	}
 
+	fmt.Println("-----------------> Calculating total vote power", "for", proposal.MetricsVotesWeightForSum, "against", proposal.MetricsVotesWeightAgainstSum, "abstain", proposal.MetricsVotesWeightAbstainSum)
 	for _, fieldPtr := range fields {
 		if fieldPtr == nil || *fieldPtr == "" {
 			continue
@@ -449,6 +451,7 @@ func calculateTotalVotePower(proposal *internal.Proposal) string {
 		}
 
 		total.Add(total, currentVal)
+		fmt.Println("------------------------>  + adding", "value", currentVal.String(), "new_total", total.String())
 	}
 
 	return total.String()

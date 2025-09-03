@@ -51,7 +51,7 @@
     </tr>
     <tr>
       <td style="padding: 6px 0; vertical-align: top;"><strong>Voting Power:</strong></td>
-      <td style="padding: 6px 0;">{{(formatBigIntWithDecimals $voteIndexer.Weight $proposalIndexer.Decimals) | formatLargeNumber}}</td>
+      <td style="padding: 6px 0;">{{(formatBigIntWithDecimals $voteIndexer.Weight $payload.DecimalsInt) | formatLargeNumber}}</td>
     </tr>
   </table>
 
