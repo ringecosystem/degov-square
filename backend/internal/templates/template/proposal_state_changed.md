@@ -4,7 +4,9 @@
 {{$proposalDb := .Proposal.ProposalDb}}
 {{$proposalIndexer := .Proposal.ProposalIndexer}}
 {{$dao := .Dao}}
+{{$daoConfig := .DaoConfig}}
 {{$payload := .PayloadData}}
+{{$config := .DegovSiteConfig}}
 
 Hello {{if .EnsName}}{{.EnsName}}{{else}}{{.UserAddress}}{{end}},
 
@@ -27,5 +29,5 @@ The status of the proposal "**{{$proposalDb.Title}}**" you're following in {{$da
 Thank you for staying engaged with {{$dao.Name}} onchain governance!
 
 Best regards,
-The {{.Degov.AI Team}}
+The {{$config.Name}} Team
 {{end}}
