@@ -1,0 +1,51 @@
+{{template "layout.html" .}}
+
+{{define "title"}} An Important Notification {{end}}
+
+{{define "header"}}
+  {{$theme := "dark"}}
+  {{if eq .DegovSiteConfig.EmailTheme "light"}}
+    {{$theme = "light"}}
+  {{end}}
+
+  {{if eq $theme "dark"}}
+  <style></style>
+  {{else}}
+  <style></style>
+  {{end}}
+{{end}}
+
+
+{{define "content"}}
+  <p style="margin: 0 0 20px; font-size: 16px; line-height: 1.6;">
+    Hello,
+  </p>
+
+  <p style="margin: 0 0 20px; font-size: 16px; line-height: 1.6;">
+    We're writing to inform you that an event has occurred related to your subscriptions on <strong>DeGov.AI</strong>.
+  </p>
+  <p style="margin: 0 0 25px; font-size: 16px; line-height: 1.6;">
+    We are unable to display the specific details for this particular notification at this moment. This may be due to a system processing delay or an uncategorized event.
+  </p>
+
+  <p style="margin: 0 0 20px; font-size: 16px; line-height: 1.6;">
+    For the most up-to-date information and to review any recent activities, please visit your dashboard directly.
+  </p>
+  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-bottom: 25px;">
+    <tr>
+      <td>
+        <a href="https://app.degov.ai" target="_blank" style="display: inline-block; padding: 14px 28px; font-size: 16px; font-weight: 600; color: #ffffff; background-color: #55acee; border-radius: 8px; text-decoration: none;">
+          Go to My Dashboard
+        </a>
+      </td>
+    </tr>
+  </table>
+
+  <p style="margin: 0 0 25px; font-size: 16px; line-height: 1.6;">
+    We apologize for any inconvenience.
+  </p>
+  <p style="margin: 0; font-size: 16px; line-height: 1.6;">
+    Best regards,<br />
+    The DeGov.AI Team
+  </p>
+{{end}}
