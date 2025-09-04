@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/ringecosystem/degov-apps/types"
 	"github.com/spf13/viper"
 	"go.uber.org/zap/zapcore"
 	"gorm.io/gorm/logger"
@@ -104,10 +105,20 @@ func setDefaults(v *viper.Viper) {
 	// Task defaults
 	v.SetDefault("TASK_DAO_SYNC_ENABLED", true)
 	v.SetDefault("TASK_DAO_SYNC_INTERVAL", "5m")
-	v.SetDefault("TASK_NOTIFICATION_CLEANUP_ENABLED", true)
-	v.SetDefault("TASK_NOTIFICATION_CLEANUP_INTERVAL", "30m")
+	v.SetDefault("TASK_VOTE_TRACKING_ENABLED", false)
+	v.SetDefault("TASK_VOTE_TRACKING_INTERVAL", "3m")
+	v.SetDefault("TASK_VOTE_END_TRACKING_ENABLED", true)
+	v.SetDefault("TASK_VOTE_END_TRACKING_INTERVAL", "4m")
 	v.SetDefault("TASK_PROPOSAL_TRACKING_ENABLED", true)
 	v.SetDefault("TASK_PROPOSAL_TRACKING_INTERVAL", "3m")
+	v.SetDefault("TASK_NOTIFICATION_EVENT_ENABLED", true)
+	v.SetDefault("TASK_NOTIFICATION_EVENT_INTERVAL", "10s")
+	v.SetDefault("TASK_NOTIFICATION_DISPATCHER_ENABLED", true)
+	v.SetDefault("TASK_NOTIFICATION_DISPATCHER_INTERVAL", "5s")
+
+	// sendgrid
+	v.SetDefault("SENDGRID_FROM_USER", "DeGov Notifications")
+	v.SetDefault("SENDGRID_FROM_EMAIL", "notifications@degov.ai")
 }
 
 // Server configuration methods
@@ -195,12 +206,20 @@ func (c *Config) GetTaskDAOSyncInterval() time.Duration {
 	return c.viper.GetDuration("TASK_DAO_SYNC_INTERVAL")
 }
 
-func (c *Config) GetTaskNotificationCleanupEnabled() bool {
-	return c.viper.GetBool("TASK_NOTIFICATION_CLEANUP_ENABLED")
+func (c *Config) GetTaskVoteTrackingEnabled() bool {
+	return c.viper.GetBool("TASK_VOTE_TRACKING_ENABLED")
 }
 
-func (c *Config) GetTaskNotificationCleanupInterval() time.Duration {
-	return c.viper.GetDuration("TASK_NOTIFICATION_CLEANUP_INTERVAL")
+func (c *Config) GetTaskVoteTrackingInterval() time.Duration {
+	return c.viper.GetDuration("TASK_VOTE_TRACKING_INTERVAL")
+}
+
+func (c *Config) GetTaskVoteEndTrackingEnabled() bool {
+	return c.viper.GetBool("TASK_VOTE_END_TRACKING_ENABLED")
+}
+
+func (c *Config) GetTaskVoteEndTrackingInterval() time.Duration {
+	return c.viper.GetDuration("TASK_VOTE_END_TRACKING_INTERVAL")
 }
 
 func (c *Config) GetTaskProposalTrackingEnabled() bool {
@@ -209,6 +228,22 @@ func (c *Config) GetTaskProposalTrackingEnabled() bool {
 
 func (c *Config) GetTaskProposalTrackingInterval() time.Duration {
 	return c.viper.GetDuration("TASK_PROPOSAL_TRACKING_INTERVAL")
+}
+
+func (c *Config) GetTaskNotificationEventEnabled() bool {
+	return c.viper.GetBool("TASK_NOTIFICATION_EVENT_ENABLED")
+}
+
+func (c *Config) GetTaskNotificationEventInterval() time.Duration {
+	return c.viper.GetDuration("TASK_NOTIFICATION_EVENT_INTERVAL")
+}
+
+func (c *Config) GetTaskNotificationDispatcherEnabled() bool {
+	return c.viper.GetBool("TASK_NOTIFICATION_DISPATCHER_ENABLED")
+}
+
+func (c *Config) GetTaskNotificationDispatcherInterval() time.Duration {
+	return c.viper.GetDuration("TASK_NOTIFICATION_DISPATCHER_INTERVAL")
 }
 
 // Generic configuration methods
@@ -297,4 +332,48 @@ func GetInt(key string) int {
 
 func GetDuration(key string) time.Duration {
 	return GetConfig().GetDuration(key)
+}
+
+func GetEmailStyle() types.EmailStyle {
+	return types.EmailStyle{
+		ContainerMaxWidth: "600px",
+	}
+}
+
+func GetDegovSiteConfig() types.DegovSiteConfig {
+	emailProposalIncludeDescription := GetStringWithDefault("DEGOV_SITE_EMAIL_PROPOSAL_INCLUDE_DESCRIPTION", "false")
+	return types.DegovSiteConfig{
+		EmailTheme:                      GetStringWithDefault("DEGOV_SITE_EMAIL_THEME", "dark"),
+		EmailProposalIncludeDescription: emailProposalIncludeDescription == "true",
+		Logo:                            GetStringWithDefault("DEGOV_SITE_LOGO", "https://cdn.jsdelivr.net/gh/ringecosystem/degov-registry@main/assets/common/light-degov-4x.png"),
+		LogoLight:                       GetStringWithDefault("DEGOV_SITE_LOGO_LIGHT", "https://cdn.jsdelivr.net/gh/ringecosystem/degov-registry@main/assets/common/light-degov-4x.png"),
+		LogoDark:                        GetStringWithDefault("DEGOV_SITE_LOGO_DARK", "https://cdn.jsdelivr.net/gh/ringecosystem/degov-registry@main/assets/common/dark-degov-4x.png"),
+		Name:                            GetStringWithDefault("DEGOV_SITE_NAME", "DeGov.AI"),
+		Home:                            GetStringWithDefault("DEGOV_SITE_HOME", "https://degov.ai"),
+		Apps:                            GetStringWithDefault("DEGOV_SITE_APPS", "https://apps.degov.ai"),
+		Docs:                            GetStringWithDefault("DEGOV_SITE_DOCS", "https://docs.degov.ai"),
+		Socials: []types.DegovSiteConfigSocial{
+			{
+				Name:      "Twitter",
+				Icon:      "https://cdn.jsdelivr.net/gh/ringecosystem/degov-registry@main/assets/common/light-x-4x.png",
+				IconLight: "https://cdn.jsdelivr.net/gh/ringecosystem/degov-registry@main/assets/common/light-x-4x.png",
+				IconDark:  "https://cdn.jsdelivr.net/gh/ringecosystem/degov-registry@main/assets/common/dark-x-4x.png",
+				Link:      "https://x.com/ai_degov",
+			},
+			{
+				Name:      "Telegram",
+				Icon:      "https://cdn.jsdelivr.net/gh/ringecosystem/degov-registry@main/assets/common/light-telegram-4x.png",
+				IconLight: "https://cdn.jsdelivr.net/gh/ringecosystem/degov-registry@main/assets/common/light-telegram-4x.png",
+				IconDark:  "https://cdn.jsdelivr.net/gh/ringecosystem/degov-registry@main/assets/common/dark-telegram-4x.png",
+				Link:      "https://t.me/RingDAO_Hub",
+			},
+			{
+				Name:      "GitHub",
+				Icon:      "https://cdn.jsdelivr.net/gh/ringecosystem/degov-registry@main/assets/common/light-github-4x.png",
+				IconLight: "https://cdn.jsdelivr.net/gh/ringecosystem/degov-registry@main/assets/common/light-github-4x.png",
+				IconDark:  "https://cdn.jsdelivr.net/gh/ringecosystem/degov-registry@main/assets/common/dark-github-4x.png",
+				Link:      "https://github.com/ringecosystem/degov",
+			},
+		},
+	}
 }

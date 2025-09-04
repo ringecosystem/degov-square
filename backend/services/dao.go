@@ -3,6 +3,7 @@ package services
 import (
 	"encoding/json"
 	"errors"
+	"log/slog"
 	"strings"
 	"time"
 
@@ -119,6 +120,7 @@ func (s *DaoService) ListDaos(baseInput types.BasicInput[*types.ListDaosInput]) 
 		lp.id as lp_id,
 		lp.dao_code as lp_dao_code,
 		lp.chain_id as lp_chain_id,
+		lp.title as lp_title,
 		lp.proposal_link as lp_proposal_link,
 		lp.proposal_id as lp_proposal_id,
 		lp.state as lp_state,
@@ -161,6 +163,7 @@ func (s *DaoService) ListDaos(baseInput types.BasicInput[*types.ListDaosInput]) 
 		dbmodels.Dao
 		Liked               *int    // Pointer to int
 		LpID                *string // Pointer to string
+		LpTitle             *string
 		LpDaoCode           *string
 		LpChainID           *int64
 		LpProposalLink      *string
@@ -229,6 +232,9 @@ func (s *DaoService) ListDaos(baseInput types.BasicInput[*types.ListDaosInput]) 
 			if row.LpProposalLink != nil {
 				proposal.ProposalLink = *row.LpProposalLink
 			}
+			if row.LpTitle != nil {
+				proposal.Title = *row.LpTitle
+			}
 			if row.LpProposalID != nil {
 				proposal.ProposalID = *row.LpProposalID
 			}
@@ -266,19 +272,19 @@ func (s *DaoService) RefreshDaoAndConfig(input types.RefreshDaoAndConfigInput) e
 	if result.Error == gorm.ErrRecordNotFound {
 		// Insert new DAO
 		dao := &dbmodels.Dao{
-			ID:                utils.NextIDString(),
-			ChainID:           input.Config.Chain.ID,
-			ChainName:         input.Config.Chain.Name,
-			ChainLogo:         input.Config.Chain.Logo,
-			Name:              input.Config.Name,
-			Code:              input.Code,
-			Logo:              input.Config.Logo,
-			Endpoint:          input.Config.SiteURL,
-			State:             input.State,
-			Tags:              tagsJson,
-			ConfigLink:        input.ConfigLink,
-			TimeSyncd:         utils.TimePtrNow(),
-			LastTrackingBlock: 0, // Default to 0 for new DAOs
+			ID:                  utils.NextIDString(),
+			ChainID:             input.Config.Chain.ID,
+			ChainName:           input.Config.Chain.Name,
+			ChainLogo:           input.Config.Chain.Logo,
+			Name:                input.Config.Name,
+			Code:                input.Code,
+			Logo:                input.Config.Logo,
+			Endpoint:            input.Config.SiteURL,
+			State:               input.State,
+			Tags:                tagsJson,
+			ConfigLink:          input.ConfigLink,
+			TimeSyncd:           utils.TimePtrNow(),
+			OffsetTrackingBlock: 0, // Default to 0 for new DAOs
 		}
 
 		// Set metrics fields if they are provided (not nil)
@@ -370,10 +376,10 @@ func (s *DaoService) MarkInactiveDAOs(activeCodes map[string]bool) error {
 }
 
 // UpdateDaoLastTrackingBlock updates the last tracking block for a DAO
-func (s *DaoService) UpdateDaoLastTrackingBlock(daoCode string, blockNumber int) error {
+func (s *DaoService) UpdateDaoOffsetTrackingProposal(daoCode string, offset int) error {
 	return s.db.Model(&dbmodels.Dao{}).
 		Where("code = ?", daoCode).
-		Update("last_tracking_block", blockNumber).Error
+		Update("offset_tracking_proposal", offset).Error
 }
 
 // getMapKeys extracts keys from a map[string]bool
@@ -405,6 +411,20 @@ func (s *DaoConfigService) Inspect(daoCode string) (*dbmodels.DgvDaoConfig, erro
 		return nil, err
 	}
 	return &config, nil
+}
+
+func (s *DaoConfigService) StandardConfig(daoCode string) (*types.DaoConfig, error) {
+	rawDaoConfig, err := s.Inspect(daoCode)
+	if err != nil {
+		return nil, err
+	}
+
+	var daoConfig types.DaoConfig
+	if err := yaml.Unmarshal([]byte(rawDaoConfig.Config), &daoConfig); err != nil {
+		slog.Error("failed to parse daoconfig", "err", err)
+		return nil, err
+	}
+	return &daoConfig, nil
 }
 
 func (s *DaoConfigService) RawConfig(input gqlmodels.GetDaoConfigInput) (string, error) {
@@ -469,50 +489,6 @@ func (s *UserLikedDaoService) LikedDaos(baseInput types.BasicInput[*string]) ([]
 	}
 
 	// If no liked DAOs found, return empty array
-	if len(daoCodes) == 0 {
-		return []*gqlmodels.Dao{}, nil
-	}
-
-	// Use existing ListDaos method to get the DAOs with all their data
-	return s.daoService.ListDaos(types.BasicInput[*types.ListDaosInput]{
-		Input: &types.ListDaosInput{
-			Codes: &daoCodes,
-		},
-		User: baseInput.User,
-	})
-}
-
-type UserSubscribedDaoService struct {
-	db         *gorm.DB
-	daoService *DaoService
-}
-
-func NewUserSubscribedDaoService() *UserSubscribedDaoService {
-	return &UserSubscribedDaoService{
-		db:         database.GetDB(),
-		daoService: NewDaoService(),
-	}
-}
-
-func (s *UserSubscribedDaoService) SubscribedDaos(baseInput types.BasicInput[*string]) ([]*gqlmodels.Dao, error) {
-	if baseInput.User == nil {
-		return []*gqlmodels.Dao{}, nil
-	}
-
-	// First get subscribed dao codes by joining with dgv_dao to ensure only ACTIVE DAOs
-	var daoCodes []string
-	err := s.db.Table("dgv_user_subscribed_dao").
-		Select("dgv_user_subscribed_dao.dao_code").
-		Joins("INNER JOIN dgv_dao ON dgv_user_subscribed_dao.dao_code = dgv_dao.code").
-		Where("dgv_user_subscribed_dao.user_id = ? AND dgv_user_subscribed_dao.state = ? AND dgv_dao.state = ?",
-			baseInput.User.Id, "SUBSCRIBED", "ACTIVE").
-		Pluck("dao_code", &daoCodes).Error
-
-	if err != nil {
-		return nil, err
-	}
-
-	// If no subscribed DAOs found, return empty array
 	if len(daoCodes) == 0 {
 		return []*gqlmodels.Dao{}, nil
 	}

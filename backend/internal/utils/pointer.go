@@ -23,6 +23,11 @@ func IntPtr(i int) *int {
 	return &i
 }
 
+// Int32Ptr returns a pointer to the given int32 value.
+func Int32Ptr(i int32) *int32 {
+	return &i
+}
+
 // Int64Ptr returns a pointer to the given int64 value.
 func Int64Ptr(i int64) *int64 {
 	return &i
@@ -36,4 +41,14 @@ func BoolPtr(b bool) *bool {
 // Float64Ptr returns a pointer to the given float64 value.
 func Float64Ptr(f float64) *float64 {
 	return &f
+}
+
+func SafeBoolString(b *bool) string {
+	if b == nil {
+		return "false"
+	}
+	if *b {
+		return "true"
+	}
+	return "false"
 }

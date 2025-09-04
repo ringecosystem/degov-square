@@ -9,6 +9,7 @@ import (
 type ProposalTrackingInput struct {
 	DaoCode           string
 	ChainId           int
+	Title             string
 	ProposalLink      string
 	ProposalID        string
 	ProposalCreatedAt *time.Time
@@ -16,8 +17,9 @@ type ProposalTrackingInput struct {
 }
 
 type TrackingStateProposalsInput struct {
-	DaoCode string
-	States  []dbmodels.ProposalState
+	DaoCode    string
+	TimesTrack *int
+	States     []dbmodels.ProposalState
 }
 
 // ProposalStateCountResult represents the result of proposal state count query
@@ -25,4 +27,9 @@ type ProposalStateCountResult struct {
 	DaoCode string                 `json:"dao_code"`
 	State   dbmodels.ProposalState `json:"state"`
 	Total   int64                  `json:"total"`
+}
+
+type InspectProposalInput struct {
+	DaoCode    string
+	ProposalID string
 }

@@ -48,3 +48,28 @@ type BasicInput[T any] struct {
 	User  *UserSessInfo
 	Input T
 }
+
+type DegovSiteConfig struct {
+	EmailTheme                      string
+	EmailProposalIncludeDescription bool
+	Logo                            string
+	LogoLight                       string
+	LogoDark                        string
+	Name                            string
+	Home                            string
+	Apps                            string
+	Docs                            string
+	Socials                         []DegovSiteConfigSocial
+}
+
+type DegovSiteConfigSocial struct {
+	Name      string
+	Icon      string
+	IconLight string
+	IconDark  string
+	Link      string
+}
+
+type EmailStyle struct {
+	ContainerMaxWidth string
+}

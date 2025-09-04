@@ -48,3 +48,5 @@ dist
 target
 bin
 .data
+*.local.*
+_tmp

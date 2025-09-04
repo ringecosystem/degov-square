@@ -34,21 +34,44 @@ func GetTaskDefinitions() []TaskDefinition {
 		},
 		{
 			Config: TaskConfig{
-				Name:     "notification-cleanup",
-				Interval: cfg.GetTaskNotificationCleanupInterval(),
-				Enabled:  cfg.GetTaskNotificationCleanupEnabled(),
+				Name:     "tracking-vote",
+				Interval: cfg.GetTaskVoteTrackingInterval(),
+				Enabled:  cfg.GetTaskVoteTrackingEnabled(),
 			},
-			Constructor: func() Task { return NewNotificationTask() },
+			Constructor: func() Task { return NewTrackingVoteTask() },
 		},
 		{
 			Config: TaskConfig{
-				Name:     "proposal-tracking-sync",
+				Name:     "tracking-proposal",
 				Interval: cfg.GetTaskProposalTrackingInterval(),
 				Enabled:  cfg.GetTaskProposalTrackingEnabled(),
 			},
-			Constructor: func() Task { return NewProposalTrackingTask() },
+			Constructor: func() Task { return NewTrackingProposalTask() },
 		},
-		// Add more task definitions here
+		{
+			Config: TaskConfig{
+				Name:     "tracking-vote-end",
+				Interval: cfg.GetTaskVoteEndTrackingInterval(),
+				Enabled:  cfg.GetTaskVoteEndTrackingEnabled(),
+			},
+			Constructor: func() Task { return NewTrackingVoteEndTask() },
+		},
+		{
+			Config: TaskConfig{
+				Name:     "notification-event",
+				Interval: cfg.GetTaskNotificationEventInterval(),
+				Enabled:  cfg.GetTaskNotificationEventEnabled(),
+			},
+			Constructor: func() Task { return NewNotificationEventTask() },
+		},
+		{
+			Config: TaskConfig{
+				Name:     "notification-dispatcher",
+				Interval: cfg.GetTaskNotificationDispatcherInterval(),
+				Enabled:  cfg.GetTaskNotificationDispatcherEnabled(),
+			},
+			Constructor: func() Task { return NewNotificationDispatcherTask() },
+		},
 	}
 }
 

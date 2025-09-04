@@ -1,6 +1,9 @@
 package utils
 
 import (
+	"crypto/rand"
+	"fmt"
+	"math/big"
 	"sync"
 
 	"github.com/bwmarrin/snowflake"
@@ -10,6 +13,8 @@ var (
 	node *snowflake.Node
 	once sync.Once
 )
+
+const otpLength = 6
 
 // nodeId is used to identify the node in a distributed system, ensuring that IDs generated from different nodes do not collide.
 func InitIDGenerator(nodeID int64) error {
@@ -35,4 +40,19 @@ func NextIDString() string {
 		_ = InitIDGenerator(1)
 	}
 	return node.Generate().String()
+}
+
+func NextOTPCode() (string, error) {
+	max := new(big.Int)
+	max.Exp(big.NewInt(10), big.NewInt(int64(otpLength)), nil)
+
+	n, err := rand.Int(rand.Reader, max)
+	if err != nil {
+		return "", fmt.Errorf("error generating OTP code: %w", err)
+	}
+
+	format := fmt.Sprintf("%%0%dd", otpLength)
+	otpCode := fmt.Sprintf(format, n)
+
+	return otpCode, nil
 }

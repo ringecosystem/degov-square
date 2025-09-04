@@ -44,6 +44,18 @@ enum AbiType {
   IMPLEMENTATION
 }
 
+enum FeatureName {
+  PROPOSAL_NEW
+  PROPOSAL_STATE_CHANGED
+  VOTE_END
+  VOTE_EMITTED
+}
+
+enum NotificationChannelType {
+  EMAIL
+  WEBHOOK
+}
+
 ### ==== entities
 
 type User {
@@ -75,7 +87,7 @@ type Dao {
   metricsCountMembers: Int!
   metricsSumPower: String!
   metricsCountVote: Int!
-  lastTrackingBlock: Int!
+  offsetTrackingProposal: Int!
   ctime: Time!
   utime: Time
   liked: Boolean
@@ -103,6 +115,7 @@ type EvmAbiOutput {
 
 type Proposal {
   id: ID!
+  title: String!
   daoCode: String!
   chainId: Int!
   proposalLink: String!
@@ -117,6 +130,21 @@ type Proposal {
   utime: Time
 }
 
+type SubscribedDao {
+  dao: Dao!
+  features: [SubscribedFeature!]!
+}
+
+type SubscribedProposal {
+  dao: Dao!
+  proposal: Proposal!
+  features: [SubscribedFeature!]!
+}
+
+type SubscribedFeature {
+  name: String!
+  strategy: String!
+}
 
 ### === outputs
 
@@ -128,6 +156,29 @@ type LoginOutput {
   token: String!
 }
 
+type SubscribedDaoOutput {
+  daoCode: String!
+  state: String!
+}
+
+type SubscribedProposalOutput {
+  daoCode: String!
+  proposalId: String!
+  state: String!
+}
+
+type VerifyNotificationChannelOutput {
+  code: Int!
+  message: String
+}
+
+type ResendOTPOutput {
+  code: Int!
+  id: String!
+  message: String
+  expiration: Int
+  rateLimit: Int
+}
 
 ### === inputs
 
@@ -145,16 +196,54 @@ input GetDaoConfigInput {
   format: ConfigFormat
 }
 
-
 input ModifyLikeDaoInput {
   daoCode: String!
   action: LikeAction!
 }
 
-
 input EvmAbiInput {
   chain: Int!
   contract: String!
+}
+
+input BindNotificationChannelInput {
+  type: NotificationChannelType!
+  value: String!
+}
+
+input VerifyNotificationChannelInput {
+  id: String!
+  otpCode: String!
+}
+
+input resendOTPInput {
+  type: NotificationChannelType!
+  value: String!
+}
+
+input FeatureSettingsInput {
+  name: FeatureName!
+  strategy: String
+}
+
+input SubscribeDaoInput {
+  daoCode: String!
+  features: [FeatureSettingsInput!]
+}
+
+input SubscribeProposalInput {
+  daoCode: String!
+  proposalId: String!
+  features: [FeatureSettingsInput!]
+}
+
+input UnsubscribeDaoInput {
+  daoCode: String!
+}
+
+input UnsubscribeProposalInput {
+  daoCode: String!
+  proposalId: String!
 }
 
 ### ==== graphql
@@ -166,15 +255,14 @@ type Query {
   # DAO queries (no authentication required, but auth info affects result)
   daos: [Dao!]! @auth(required: false)
   likedDaos: [Dao!]! @auth(required: false)
-  subscribedDaos: [Dao!]! @auth(required: false)
   daoConfig(input: GetDaoConfigInput): String! @auth(required: false)
-
-  # # User interactions (require authentication)
-  # userLikedDaos(userId: String!): [UserLikedDao!]! @auth @authorize(rule: OWNER_ONLY)
-  # userFollowedDaos(userId: String!): [UserFollowedDao!]! @auth @authorize(rule: OWNER_ONLY)
 
   # Tool queries
   evmAbi(input: EvmAbiInput!): [EvmAbiOutput!] @auth(required: false)
+
+  # subscribe
+  subscribedDaos: [SubscribedDao!]! @auth
+  subscribedProposals: [SubscribedProposal!]! @auth
 }
 
 type Mutation {
@@ -183,8 +271,20 @@ type Mutation {
 
   # User interactions
   modifyLikeDao(input: ModifyLikeDaoInput!): Boolean! @auth
-  # followDao(input: FollowDaoInput!): UserFollowedDao! @auth @authorize(rule: OWNER_ONLY)
-  # unfollowDao(userId: String!, daoCode: String!): Boolean! @auth @authorize(rule: OWNER_ONLY)
+  bindNotificationChannel(input: BindNotificationChannelInput!): ResendOTPOutput! @auth
+  verifyNotificationChannel(
+    input: VerifyNotificationChannelInput!
+  ): VerifyNotificationChannelOutput! @auth
+  resendOTP(input: resendOTPInput!): ResendOTPOutput! @auth
+
+  # subscribe
+  subscribeDao(input: SubscribeDaoInput!): SubscribedDaoOutput! @auth
+  subscribeProposal(input: SubscribeProposalInput!): SubscribedProposalOutput!
+    @auth
+  unsubscribeDao(input: UnsubscribeDaoInput!): SubscribedDaoOutput! @auth
+  unsubscribeProposal(
+    input: UnsubscribeProposalInput!
+  ): SubscribedProposalOutput! @auth
 }
 
 # type Subscription {

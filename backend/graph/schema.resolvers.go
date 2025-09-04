@@ -33,6 +33,71 @@ func (r *mutationResolver) ModifyLikeDao(ctx context.Context, input gqlmodels.Mo
 	return result, err
 }
 
+// BindNotificationChannel is the resolver for the bindNotificationChannel field.
+func (r *mutationResolver) BindNotificationChannel(ctx context.Context, input gqlmodels.BindNotificationChannelInput) (*gqlmodels.ResendOTPOutput, error) {
+	user, _ := r.authUtils.GetUser(ctx)
+	return r.userInteractionService.BindNotificationChannel(types.BasicInput[gqlmodels.BindNotificationChannelInput]{
+		User:  user,
+		Input: input,
+	})
+}
+
+// VerifyNotificationChannel is the resolver for the verifyNotificationChannel field.
+func (r *mutationResolver) VerifyNotificationChannel(ctx context.Context, input gqlmodels.VerifyNotificationChannelInput) (*gqlmodels.VerifyNotificationChannelOutput, error) {
+	user, _ := r.authUtils.GetUser(ctx)
+	return r.userInteractionService.VerifyNotificationChannel(types.BasicInput[gqlmodels.VerifyNotificationChannelInput]{
+		User:  user,
+		Input: input,
+	})
+}
+
+// ResendOtp is the resolver for the resendOTP field.
+func (r *mutationResolver) ResendOtp(ctx context.Context, input gqlmodels.ResendOTPInput) (*gqlmodels.ResendOTPOutput, error) {
+	user, _ := r.authUtils.GetUser(ctx)
+	return r.userInteractionService.ResendOTP(types.BasicInput[gqlmodels.ResendOTPInput]{
+		User:  user,
+		Input: input,
+	})
+}
+
+// SubscribeDao is the resolver for the subscribeDao field.
+func (r *mutationResolver) SubscribeDao(ctx context.Context, input gqlmodels.SubscribeDaoInput) (*gqlmodels.SubscribedDaoOutput, error) {
+	user, _ := r.authUtils.GetUser(ctx)
+	result, err := r.subscribeService.SubscribeDao(types.BasicInput[gqlmodels.SubscribeDaoInput]{
+		User:  user,
+		Input: input,
+	})
+	return result, err
+}
+
+// SubscribeProposal is the resolver for the subscribeProposal field.
+func (r *mutationResolver) SubscribeProposal(ctx context.Context, input gqlmodels.SubscribeProposalInput) (*gqlmodels.SubscribedProposalOutput, error) {
+	user, _ := r.authUtils.GetUser(ctx)
+	result, err := r.subscribeService.SubscribeProposal(types.BasicInput[gqlmodels.SubscribeProposalInput]{
+		User:  user,
+		Input: input,
+	})
+	return result, err
+}
+
+// UnsubscribeDao is the resolver for the unsubscribeDao field.
+func (r *mutationResolver) UnsubscribeDao(ctx context.Context, input gqlmodels.UnsubscribeDaoInput) (*gqlmodels.SubscribedDaoOutput, error) {
+	user, _ := r.authUtils.GetUser(ctx)
+	return r.subscribeService.UnsubscribeDao(types.BasicInput[gqlmodels.UnsubscribeDaoInput]{
+		User:  user,
+		Input: input,
+	})
+}
+
+// UnsubscribeProposal is the resolver for the unsubscribeProposal field.
+func (r *mutationResolver) UnsubscribeProposal(ctx context.Context, input gqlmodels.UnsubscribeProposalInput) (*gqlmodels.SubscribedProposalOutput, error) {
+	user, _ := r.authUtils.GetUser(ctx)
+	return r.subscribeService.UnsubscribeProposal(types.BasicInput[gqlmodels.UnsubscribeProposalInput]{
+		User:  user,
+		Input: input,
+	})
+}
+
 // Nonce is the resolver for the nonce field.
 func (r *queryResolver) Nonce(ctx context.Context, input gqlmodels.GetNonceInput) (string, error) {
 	nonce, err := r.authService.Nonce(input)
@@ -68,15 +133,6 @@ func (r *queryResolver) LikedDaos(ctx context.Context) ([]*gqlmodels.Dao, error)
 	})
 }
 
-// SubscribedDaos is the resolver for the subscribedDaos field.
-func (r *queryResolver) SubscribedDaos(ctx context.Context) ([]*gqlmodels.Dao, error) {
-	user, _ := r.authUtils.GetUser(ctx)
-	return r.userSubscribedService.SubscribedDaos(types.BasicInput[*string]{
-		User:  user,
-		Input: nil,
-	})
-}
-
 // DaoConfig is the resolver for the daoConfig field.
 func (r *queryResolver) DaoConfig(ctx context.Context, input *gqlmodels.GetDaoConfigInput) (string, error) {
 	return r.daoConfigService.RawConfig(gqlmodels.GetDaoConfigInput{
@@ -89,6 +145,24 @@ func (r *queryResolver) DaoConfig(ctx context.Context, input *gqlmodels.GetDaoCo
 func (r *queryResolver) EvmAbi(ctx context.Context, input gqlmodels.EvmAbiInput) ([]*gqlmodels.EvmAbiOutput, error) {
 	// panic(fmt.Errorf("not implemented: EvmAbi - evmAbi"))
 	return r.evmChainService.GetAbi(input)
+}
+
+// SubscribedDaos is the resolver for the subscribedDaos field.
+func (r *queryResolver) SubscribedDaos(ctx context.Context) ([]*gqlmodels.SubscribedDao, error) {
+	user, _ := r.authUtils.GetUser(ctx)
+	return r.userSubscribedService.SubscribedDaos(types.BasicInput[*string]{
+		User:  user,
+		Input: nil,
+	})
+}
+
+// SubscribedProposals is the resolver for the subscribedProposals field.
+func (r *queryResolver) SubscribedProposals(ctx context.Context) ([]*gqlmodels.SubscribedProposal, error) {
+	user, _ := r.authUtils.GetUser(ctx)
+	return r.userSubscribedService.SubscribedProposals(types.BasicInput[*string]{
+		User:  user,
+		Input: nil,
+	})
 }
 
 // Mutation returns MutationResolver implementation.

@@ -59,6 +59,7 @@ func (tm *TaskManager) RegisterTask(task Task, interval time.Duration) error {
 			},
 		),
 		gocron.WithName(task.Name()),
+		gocron.WithSingletonMode(gocron.LimitModeReschedule),
 	)
 
 	if err != nil {

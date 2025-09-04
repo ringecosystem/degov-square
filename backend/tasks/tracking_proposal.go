@@ -7,8 +7,6 @@ import (
 	"strconv"
 	"time"
 
-	"gopkg.in/yaml.v3"
-
 	dbmodels "github.com/ringecosystem/degov-apps/database/models"
 	gqlmodels "github.com/ringecosystem/degov-apps/graph/models"
 	"github.com/ringecosystem/degov-apps/internal"
@@ -16,34 +14,36 @@ import (
 	"github.com/ringecosystem/degov-apps/types"
 )
 
-type ProposalTrackingTask struct {
-	daoService       *services.DaoService
-	daoConfigService *services.DaoConfigService
-	proposalService  *services.ProposalService
-	chipService      *services.DaoChipService
+type TrackingProposalTask struct {
+	daoService          *services.DaoService
+	daoConfigService    *services.DaoConfigService
+	proposalService     *services.ProposalService
+	chipService         *services.DaoChipService
+	notificationService *services.NotificationService
 }
 
-func NewProposalTrackingTask() *ProposalTrackingTask {
-	return &ProposalTrackingTask{
-		daoService:       services.NewDaoService(),
-		daoConfigService: services.NewDaoConfigService(),
-		proposalService:  services.NewProposalService(),
-		chipService:      services.NewDaoChipService(),
+func NewTrackingProposalTask() *TrackingProposalTask {
+	return &TrackingProposalTask{
+		daoService:          services.NewDaoService(),
+		daoConfigService:    services.NewDaoConfigService(),
+		proposalService:     services.NewProposalService(),
+		chipService:         services.NewDaoChipService(),
+		notificationService: services.NewNotificationService(),
 	}
 }
 
 // Name returns the task name
-func (t *ProposalTrackingTask) Name() string {
-	return "proposal-tracking-sync"
+func (t *TrackingProposalTask) Name() string {
+	return "tracking-proposal"
 }
 
 // Execute performs the DAO synchronization
-func (t *ProposalTrackingTask) Execute() error {
-	return t.TrackingProposal()
+func (t *TrackingProposalTask) Execute() error {
+	return t.trackingProposal()
 }
 
 // TrackingProposal tracks proposals for DAOs
-func (t *ProposalTrackingTask) TrackingProposal() error {
+func (t *TrackingProposalTask) trackingProposal() error {
 	// Get all DAOs from DaoService.ListDaos
 	daos, err := t.daoService.ListDaos(types.BasicInput[*types.ListDaosInput]{})
 	if err != nil {
@@ -55,24 +55,18 @@ func (t *ProposalTrackingTask) TrackingProposal() error {
 
 	// Iterate through each DAO and get its config from DaoConfigService
 	for _, dao := range daos {
-		// Get DAO config from DaoConfigService by DaoCode
-		daoConfigRaw, err := t.daoConfigService.Inspect(dao.Code)
+		daoConfig, err := t.daoConfigService.StandardConfig(dao.Code)
 		if err != nil {
 			slog.Error("Failed to get DAO config", "dao_code", dao.Code, "error", err)
 			continue
 		}
 
-		// Convert YAML string to types.DaoConfig
-		var daoConfig types.DaoConfig
-		if err := yaml.Unmarshal([]byte(daoConfigRaw.Config), &daoConfig); err != nil {
-			slog.Error("Failed to parse DAO config YAML", "dao_code", dao.Code, "error", err)
-			continue
-		}
-
-		slog.Info("Processing DAO",
+		slog.Info(
+			"Processing DAO",
 			"dao_code", dao.Code,
 			"dao_name", daoConfig.Name,
-			"indexer_endpoint", daoConfig.Indexer.Endpoint)
+			"indexer_endpoint", daoConfig.Indexer.Endpoint,
+		)
 
 		if err := t.storeProposals(dao, daoConfig); err != nil {
 			slog.Error("Failed to process proposal tracking", "dao_code", dao.Code, "error", err)
@@ -91,25 +85,21 @@ func (t *ProposalTrackingTask) TrackingProposal() error {
 	return nil
 }
 
-func (t *ProposalTrackingTask) storeProposals(dao *gqlmodels.Dao, daoConfig types.DaoConfig) error {
+func (t *TrackingProposalTask) storeProposals(dao *gqlmodels.Dao, daoConfig *types.DaoConfig) error {
 	indexer := internal.NewDegovIndexer(daoConfig.Indexer.Endpoint)
 
-	lastBlockNumber := int(dao.LastTrackingBlock)
+	offsetTrackingProposal := int(dao.OffsetTrackingProposal)
 
-	limit := 20
-	maxBlockNumber := lastBlockNumber
+	lastOffsetTrackingProposal := offsetTrackingProposal
 
 	slog.Info("Starting proposal tracking",
 		"dao_code", dao.Code,
-		"start_block", lastBlockNumber,
-		"limit", limit)
+		"start_block", lastOffsetTrackingProposal)
 
 	for {
-		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 
 		// Query proposals after the last tracked block (correct parameter order)
-		proposals, err := indexer.QueryProposalsAfterBlock(ctx, lastBlockNumber, limit)
-		cancel()
+		proposals, err := indexer.QueryProposalsOffset(lastOffsetTrackingProposal)
 
 		if err != nil {
 			return fmt.Errorf("failed to query proposals: %w", err)
@@ -152,6 +142,7 @@ func (t *ProposalTrackingTask) storeProposals(dao *gqlmodels.Dao, daoConfig type
 			input := types.ProposalTrackingInput{
 				DaoCode:           dao.Code,
 				ChainId:           daoConfig.Chain.ID,
+				Title:             proposal.Title,
 				ProposalLink:      proposalLink,
 				ProposalID:        proposal.ProposalID,
 				ProposalCreatedAt: proposalCreatedAt,
@@ -180,36 +171,26 @@ func (t *ProposalTrackingTask) storeProposals(dao *gqlmodels.Dao, daoConfig type
 					"proposal_id", proposal.ProposalID)
 			}
 
-			// Update max block number
-			if blockNumber > maxBlockNumber {
-				maxBlockNumber = blockNumber
-			}
+			// Update offset tracking proposal
+			lastOffsetTrackingProposal += 1
 		}
 
-		// If we got less than the limit, we've reached the end
-		if len(proposals) < limit {
-			slog.Info("Reached end of proposals", "dao_code", dao.Code, "final_count", len(proposals))
-			break
-		}
-
-		// Update DAO's LastTrackingBlock if we found new proposals using DaoService
-		if maxBlockNumber > lastBlockNumber {
-			if err := t.daoService.UpdateDaoLastTrackingBlock(dao.Code, maxBlockNumber); err != nil {
+		if lastOffsetTrackingProposal != offsetTrackingProposal {
+			if err := t.daoService.UpdateDaoOffsetTrackingProposal(dao.Code, lastOffsetTrackingProposal); err != nil {
 				return fmt.Errorf("failed to update last tracking block: %w", err)
 			}
 
-			slog.Info("Updated last tracking block",
+			slog.Info("Updated last tracking offset",
 				"dao_code", dao.Code,
-				"old_block", lastBlockNumber,
-				"new_block", maxBlockNumber)
-			lastBlockNumber = maxBlockNumber
+				"old_offset", offsetTrackingProposal,
+				"new_offset", lastOffsetTrackingProposal)
 		}
 	}
 
 	return nil
 }
 
-func (t *ProposalTrackingTask) updateProposalsStates(dao *gqlmodels.Dao, daoConfig types.DaoConfig) error {
+func (t *TrackingProposalTask) updateProposalsStates(dao *gqlmodels.Dao, daoConfig *types.DaoConfig) error {
 	proposals, err := t.proposalService.TrackingStateProposals(types.TrackingStateProposalsInput{
 		DaoCode: dao.Code,
 		States: []dbmodels.ProposalState{
@@ -264,21 +245,21 @@ func (t *ProposalTrackingTask) updateProposalsStates(dao *gqlmodels.Dao, daoConf
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 
 		// Get proposal state from contract
-		newState, err := governorContract.GetProposalState(ctx, governorAddress, proposal.ProposalId)
+		newState, err := governorContract.GetProposalState(ctx, governorAddress, proposal.ProposalID)
 		cancel()
 
 		if err != nil {
 			// Update tracking info with error
-			if updateErr := t.proposalService.UpdateProposalTrackingError(proposal.ProposalId, dao.Code, err.Error()); updateErr != nil {
+			if updateErr := t.proposalService.UpdateProposalTrackingError(proposal.ProposalID, dao.Code, err.Error()); updateErr != nil {
 				slog.Error("Failed to update proposal tracking error",
 					"dao_code", dao.Code,
-					"proposal_id", proposal.ProposalId,
+					"proposal_id", proposal.ProposalID,
 					"original_error", err,
 					"update_error", updateErr)
 			} else {
 				slog.Warn("Updated proposal tracking with error",
 					"dao_code", dao.Code,
-					"proposal_id", proposal.ProposalId,
+					"proposal_id", proposal.ProposalID,
 					"error", err)
 			}
 			continue
@@ -287,21 +268,41 @@ func (t *ProposalTrackingTask) updateProposalsStates(dao *gqlmodels.Dao, daoConf
 		// Check if state has changed
 		if newState != proposal.State {
 			// Update proposal state in database
-			if err := t.proposalService.UpdateProposalState(proposal.ProposalId, dao.Code, newState); err != nil {
+			if err := t.proposalService.UpdateProposalState(proposal.ProposalID, dao.Code, newState); err != nil {
 				// Update tracking info with error
-				if updateErr := t.proposalService.UpdateProposalTrackingError(proposal.ProposalId, dao.Code, err.Error()); updateErr != nil {
+				if updateErr := t.proposalService.UpdateProposalTrackingError(proposal.ProposalID, dao.Code, err.Error()); updateErr != nil {
 					slog.Error("Failed to update proposal tracking error after state update failure",
 						"dao_code", dao.Code,
-						"proposal_id", proposal.ProposalId,
+						"proposal_id", proposal.ProposalID,
 						"original_error", err,
 						"update_error", updateErr)
 				}
 				continue
 			}
 
+			payload := "{\"old_state\": \"" + string(proposal.State) + "\", \"new_state\": \"" + string(newState) + "\"}"
+			if proposal.State == dbmodels.ProposalStateUnknown {
+				payload = "{\"new_state\": \"" + string(newState) + "\"}"
+			}
+			if err := t.notificationService.SaveEvent(dbmodels.NotificationEvent{
+				ChainID:    proposal.ChainId,
+				DaoCode:    proposal.DaoCode,
+				Type:       dbmodels.SubscribeFeatureProposalStateChanged,
+				ProposalID: proposal.ProposalID,
+				TimeEvent:  proposal.CTime,
+				Payload:    &payload,
+			}); err != nil {
+				slog.Error("Failed to save state change notification event",
+					"dao_code", dao.Code,
+					"proposal_id", proposal.ProposalID,
+					"error", err,
+				)
+				continue
+			}
+
 			slog.Info("Updated proposal state",
 				"dao_code", dao.Code,
-				"proposal_id", proposal.ProposalId,
+				"proposal_id", proposal.ProposalID,
 				"old_state", proposal.State,
 				"new_state", newState)
 		}
@@ -310,7 +311,7 @@ func (t *ProposalTrackingTask) updateProposalsStates(dao *gqlmodels.Dao, daoConf
 	return nil
 }
 
-func (t *ProposalTrackingTask) updateDaoChips() error {
+func (t *TrackingProposalTask) updateDaoChips() error {
 	// Get proposal state counts for all active DAOs
 	counts, err := t.proposalService.ProposalStateCount()
 	if err != nil {

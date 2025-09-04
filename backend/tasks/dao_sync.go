@@ -66,11 +66,11 @@ func (t *DaoSyncTask) Name() string {
 
 // Execute performs the DAO synchronization
 func (t *DaoSyncTask) Execute() error {
-	return t.SyncDaos()
+	return t.syncDaos()
 }
 
 // SyncDaos fetches the latest DAO configuration and syncs it with the database
-func (t *DaoSyncTask) SyncDaos() error {
+func (t *DaoSyncTask) syncDaos() error {
 	startTime := time.Now()
 	slog.Info("Starting DAO synchronization", "timestamp", startTime.Format(time.RFC3339))
 
@@ -149,10 +149,6 @@ func (t *DaoSyncTask) processSingleDao(remoteLink GithubConfigLink, daoInfo DaoR
 
 	indexer := internal.NewDegovIndexer(daoConfig.Config.Indexer.Endpoint)
 
-	// Query data metrics from the indexer with timeout
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-
 	var state = dbmodels.DaoStateActive
 	if daoInfo.State != "" {
 		state = daoInfo.State
@@ -169,7 +165,7 @@ func (t *DaoSyncTask) processSingleDao(remoteLink GithubConfigLink, daoInfo DaoR
 	}
 
 	// Try to get metrics data
-	metrics, err := indexer.QueryGlobalDataMetrics(ctx)
+	metrics, err := indexer.QueryGlobalDataMetrics()
 	if err != nil {
 		slog.Warn("Failed to query data metrics", "dao", daoConfig.Config.Code, "error", err)
 		// Metrics fields will be nil, indicating no update needed
