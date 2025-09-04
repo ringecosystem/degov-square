@@ -179,7 +179,7 @@ func (s *ProposalService) ProposalStateCount() ([]types.ProposalStateCountResult
 	return results, nil
 }
 
-func (s *ProposalService) InspectProposal(input types.InpspectProposalInput) (*dbmodels.ProposalTracking, error) {
+func (s *ProposalService) InspectProposal(input types.InspectProposalInput) (*dbmodels.ProposalTracking, error) {
 	var proposal dbmodels.ProposalTracking
 	err := s.db.Table("dgv_proposal_tracking").
 		Where("dao_code = ? AND proposal_id = ?", input.DaoCode, input.ProposalID).

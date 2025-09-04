@@ -94,7 +94,7 @@ func (s *SubscribeService) buildFeatures(
 			continue
 		}
 
-		if featureSetting.Strategy != nil || *featureSetting.Strategy == "" {
+		if featureSetting.Strategy != nil && *featureSetting.Strategy != "" {
 			strategy = *featureSetting.Strategy
 		} else {
 			strategy = "true"
@@ -403,9 +403,8 @@ LIMIT ? OFFSET ?
 
 func (s *SubscribeService) resetDaoFeatures(input resetDaoFeaturesInput) error {
 	if err := s.db.Where(
-		"dao_code = ? and (user_id =? or user_address = ?)",
+		"dao_code = ? and user_id =?",
 		input.DaoCode,
-		input.UserID,
 		input.UserID,
 	).
 		Delete(&dbmodels.SubscribeFeature{}).Error; err != nil {
@@ -579,7 +578,7 @@ func (s *UserSubscribedDaoService) SubscribedProposals(baseInput types.BasicInpu
 		if err != nil {
 			return nil, err
 		}
-		proposal, err := s.proposalService.InspectProposal(types.InpspectProposalInput{
+		proposal, err := s.proposalService.InspectProposal(types.InspectProposalInput{
 			DaoCode:    spd.DaoCode,
 			ProposalID: spd.ProposalID,
 		})

@@ -29,7 +29,7 @@ type ProposalStateCountResult struct {
 	Total   int64                  `json:"total"`
 }
 
-type InpspectProposalInput struct {
+type InspectProposalInput struct {
 	DaoCode    string
 	ProposalID string
 }

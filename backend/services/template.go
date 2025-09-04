@@ -174,7 +174,7 @@ func (s *TemplateService) GenerateTemplateByNotificationRecord(record *dbmodels.
 	}
 
 	// Get proposal information
-	proposal, err := s.proposalService.InspectProposal(types.InpspectProposalInput{
+	proposal, err := s.proposalService.InspectProposal(types.InspectProposalInput{
 		DaoCode:    record.DaoCode,
 		ProposalID: record.ProposalID,
 	})
@@ -316,7 +316,7 @@ func (s *TemplateService) GenerateTemplateByNotificationRecord(record *dbmodels.
 	if err != nil {
 		return nil, fmt.Errorf("failed to render rich text template %s: %w", richTemplateFileName, err)
 	}
-	palinText, err := s.renderTemplate(plainTemplateFileName, templateData)
+	plainText, err := s.renderTemplate(plainTemplateFileName, templateData)
 	if err != nil {
 		return nil, fmt.Errorf("failed to render plain text template %s: %w", plainTemplateFileName, err)
 	}
@@ -324,7 +324,7 @@ func (s *TemplateService) GenerateTemplateByNotificationRecord(record *dbmodels.
 	return &types.TemplateOutput{
 		Title:            utils.TruncateText(title, 80),
 		RichTextContent:  richText,
-		PlainTextContent: palinText,
+		PlainTextContent: plainText,
 	}, nil
 }
 
