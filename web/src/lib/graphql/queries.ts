@@ -67,8 +67,8 @@ export const QUERY_DAOS = gql`
         timesTrack
       }
     }
-    subscribedDaos {
-      code
-    }
+    #subscribedDaos {
+      # code
+    #}
   }
 `;
