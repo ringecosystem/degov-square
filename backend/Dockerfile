@@ -13,7 +13,8 @@ RUN go mod download
 COPY . .
 
 # Build the application
-RUN go generate ./... \
+RUN go get github.com/99designs/gqlgen \
+  && go generate ./... \
   && go build -ldflags="-X main.Version=${APP_VERSION}" -o bin/degov-server cmd/main.go
 
 # Final stage
