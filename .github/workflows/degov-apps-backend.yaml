@@ -11,7 +11,7 @@ on:
       - '*'
   workflow_dispatch:
   pull_request:
-    type: [opened]
+    type: [opened, synchronize, reopened]
   
 env:
   TZ: 'Asia/Shanghai'
@@ -59,12 +59,20 @@ jobs:
           echo "BUILD_URL=${BUILD_URL}" >> $GITHUB_ENV
 
           # 设置镜像版本（强制保证非空）
-          if [[ "${{ github.ref_type }}" == "tag" ]]; then
+          # 专门为 pull_request 事件设置镜像版本
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            # 对于PR事件，使用PR编号和短SHA，避免使用包含斜杠的ref
+            PR_NUMBER="${{ github.event.pull_request.number }}"
+            SHORT_SHA=$(git rev-parse --short=8 HEAD)
+            DOCKER_IMAGE_VERSION="pr-${PR_NUMBER}-${SHORT_SHA}"
+          elif [[ "${{ github.ref_type }}" == "tag" ]]; then
             DOCKER_IMAGE_VERSION="${GITHUB_REF#refs/tags/}"
           else
             BRANCH_NAME="${GITHUB_REF#refs/heads/}"
-            SHORT_SHA=$(git rev-parse --short=8 HEAD 2>/dev/null || echo "unknown")
-            DOCKER_IMAGE_VERSION="${BRANCH_NAME}-${SHORT_SHA}-${{ github.run_number }}"
+            # 清理分支名称中的非法字符，例如将斜杠替换为破折号
+            SAFE_BRANCH_NAME=$(echo "$BRANCH_NAME" | sed 's|/|-|g')
+            SHORT_SHA=$(git rev-parse --short=8 HEAD)
+            DOCKER_IMAGE_VERSION="${SAFE_BRANCH_NAME}-${SHORT_SHA}-${{ github.run_number }}"
           fi
 
           # 设置默认值（双重保障）
