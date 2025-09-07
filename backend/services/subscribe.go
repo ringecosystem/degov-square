@@ -442,19 +442,18 @@ func (s *SubscribeService) ListFeatures(baseInput types.BasicInput[types.ListFea
 		return nil, fmt.Errorf("not logged in")
 	}
 
-	var features []dbmodels.SubscribeFeature
-	query := s.db.Table("dgv_subscribed_feature").
-		Select("dgv_subscribed_feature.*").
-		Where("dgv_subscribed_feature.dao_code = ?", baseInput.Input.DaoCode)
+	query := s.db.Model(&dbmodels.SubscribeFeature{}).
+		Where("user_id = ?", baseInput.User.Id).
+		Where("dao_code = ?", baseInput.Input.DaoCode)
 
 	if baseInput.Input.ProposalID != nil && *baseInput.Input.ProposalID != "" {
-		query = query.Where("dgv_subscribed_feature.proposal_id = ?", *baseInput.Input.ProposalID)
+		query = query.Where("proposal_id = ?", *baseInput.Input.ProposalID)
 	} else {
-		query = query.Where("dgv_subscribed_feature.proposal_id IS NULL OR dgv_subscribed_feature.proposal_id = ''")
+		query = query.Where("proposal_id IS NULL OR proposal_id = ''")
 	}
 
-	err := query.Scan(&features).Error
-	if err != nil {
+	var features []dbmodels.SubscribeFeature
+	if err := query.Find(&features).Error; err != nil {
 		return nil, err
 	}
 

@@ -172,7 +172,7 @@ type NotificationChannel {
   id: String!
   channelType: NotificationChannelType!
   channelValue: String!
-  verified: Boolean!
+  verified: Int!
   payload: String
   ctime: Time!
 }
