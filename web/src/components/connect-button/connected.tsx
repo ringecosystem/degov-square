@@ -83,7 +83,11 @@ export const Connected = ({ address }: ConnectedProps) => {
         </div>
         <DropdownMenuSeparator className="my-[20px]" />
         <div className="flex flex-col justify-center gap-[20px]">
-          {/* <Button asChild className="h-[40px] w-full gap-[5px] rounded-[100px]" variant="outline">
+          <Button
+            asChild
+            className="h-[40px] w-full gap-[5px] rounded-[100px] lg:hidden"
+            variant="outline"
+          >
             <Link href="/notification">
               <Image
                 src="/bell.svg"
@@ -94,7 +98,7 @@ export const Connected = ({ address }: ConnectedProps) => {
               />
               <span className="text-[14px]">Notification</span>
             </Link>
-          </Button> */}
+          </Button>
           <Button
             onClick={handleDisconnect}
             className="h-[40px] w-full gap-[5px] rounded-[100px]"

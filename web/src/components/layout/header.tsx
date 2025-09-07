@@ -5,6 +5,8 @@ import Link from 'next/link';
 
 import { ConnectButton } from '@/components/connect-button';
 
+import { NotificationButton } from '../notification-button';
+
 // import { ThemeButton } from '../theme-button';
 
 export function Header() {
@@ -29,6 +31,7 @@ export function Header() {
         </Link>
         <div className="flex items-center gap-[5px] md:gap-[10px]">
           <ConnectButton />
+          <NotificationButton />
           {/* <ThemeButton /> */}
         </div>
       </div>
