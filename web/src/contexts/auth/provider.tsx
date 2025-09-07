@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from 'react';
 
-import { AuthContext } from './context';
 import { tokenManager } from '@/lib/auth/token-manager';
+
+import { AuthContext } from './context';
 
 import type { ReactNode } from 'react';
 

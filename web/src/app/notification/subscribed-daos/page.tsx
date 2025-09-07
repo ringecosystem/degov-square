@@ -3,6 +3,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { useCallback, useMemo } from 'react';
+import { toast } from 'react-toastify';
 
 import { useIsMobileAndSubSection } from '@/app/notification/_hooks/isMobileAndSubSection';
 import { CustomTable } from '@/components/custom-table';
@@ -12,7 +13,6 @@ import { useSubscribedDaos, useUnsubscribeDao, useQueryDaos } from '@/lib/graphq
 import type { SubscribedDaoItem, Dao } from '@/lib/graphql/types';
 
 import { Item } from './_components/item';
-import { toast } from 'react-toastify';
 
 type EnhancedSubscribedDaoItem = SubscribedDaoItem &
   Record<string, unknown> & {

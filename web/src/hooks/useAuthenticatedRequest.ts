@@ -1,8 +1,10 @@
 'use client';
 
 import { useCallback } from 'react';
+
 import { useAuth } from '@/contexts/auth';
 import { getToken } from '@/lib/auth/token-manager';
+
 import { useSiweAuth } from './useSiweAuth';
 
 export const useAuthenticatedRequest = () => {

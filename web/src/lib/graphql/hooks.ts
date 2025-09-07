@@ -1,8 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { useAuth } from '@/contexts/auth';
-import { getToken } from '@/lib/auth/token-manager';
 import { useAuthenticatedRequest } from '@/hooks/useAuthenticatedRequest';
+import { getToken } from '@/lib/auth/token-manager';
 
 import { createAuthorizedClient, createPublicClient } from './client';
 import { 
