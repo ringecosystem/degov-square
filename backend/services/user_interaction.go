@@ -114,6 +114,12 @@ func (s *UserInteractionService) BindNotificationChannel(baseInput types.BasicIn
 			return nil, errors.New("channel type already exists for this user")
 		}
 
+		slog.Info(
+			"Channel type already exists but not verified, resend OTP",
+			"user_id", user.Id,
+			"channel_type", input.Type,
+			"verified", existingChannel.Verified,
+		)
 		return s.resendOTPForChannel(types.BasicInput[*dbmodels.NotificationChannel]{
 			User:  user,
 			Input: &existingChannel,
