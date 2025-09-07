@@ -88,7 +88,7 @@ export const Connected = ({ address }: ConnectedProps) => {
             className="h-[40px] w-full gap-[5px] rounded-[100px] lg:hidden"
             variant="outline"
           >
-            <Link href="/notification">
+            <Link href="/notification/subscription">
               <Image
                 src="/bell.svg"
                 alt="bell"

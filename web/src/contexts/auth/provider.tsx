@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 
 import { AuthContext } from './context';
+import { tokenManager } from '@/lib/auth/token-manager';
 
 import type { ReactNode } from 'react';
 
@@ -19,11 +20,11 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   // Initialize token from localStorage on mount
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const storedToken = localStorage.getItem(AUTH_TOKEN_KEY);
+      const storedToken = tokenManager.getCurrentToken();
       setTokenState(storedToken);
       setIsInitialized(true);
 
-      // Listen for auth token changes (from SIWE adapter)
+      // Listen for auth token changes (from token manager)
       const handleTokenChange = (e: Event) => {
         const customEvent = e as CustomEvent<{ token: string | null }>;
         setTokenState(customEvent.detail.token);
@@ -36,14 +37,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   const setToken = (newToken: string | null) => {
     setTokenState(newToken);
-    
-    if (typeof window !== 'undefined') {
-      if (newToken) {
-        localStorage.setItem(AUTH_TOKEN_KEY, newToken);
-      } else {
-        localStorage.removeItem(AUTH_TOKEN_KEY);
-      }
-    }
+    tokenManager.setToken(newToken);
   };
 
   const isAuthenticated = Boolean(token);

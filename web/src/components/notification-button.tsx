@@ -1,13 +1,14 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
+
 import { NotificationIcon } from './icons/notification-icon';
 import { Button } from './ui/button';
-import { useRouter } from 'next/navigation';
 export function NotificationButton() {
   const router = useRouter();
 
   const handleClick = () => {
-    router.push('/notification');
+    router.push('/notification/subscription');
   };
 
   return (

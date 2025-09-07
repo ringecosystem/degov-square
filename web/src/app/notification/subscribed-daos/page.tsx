@@ -2,85 +2,58 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { useState } from 'react';
 import { useCallback } from 'react';
 
 import { useIsMobileAndSubSection } from '@/app/notification/_hooks/isMobileAndSubSection';
 import { CustomTable } from '@/components/custom-table';
 import type { ColumnType } from '@/components/custom-table';
 import { useConfirm } from '@/contexts/confirm-context';
+import { useSubscribedDaos, useUnsubscribeDao } from '@/lib/graphql/hooks';
+import type { SubscribedDaoItem } from '@/lib/graphql/types';
 
 import { Item } from './_components/item';
-// Mock data for subscribed DAOs
-const daoSubscriptions = [
-  {
-    id: 1,
-    name: 'DAO Name 1',
-    logo: '/example/dao1.svg',
-    network: 'Ethereum',
-    networkLogo: '/example/network1.svg'
-  },
-  {
-    id: 2,
-    name: 'DAO Name 2',
-    logo: '/example/dao2.svg',
-    network: 'Ethereum',
-    networkLogo: '/example/network1.svg'
-  },
-  {
-    id: 3,
-    name: 'DAO Name 3',
-    logo: '/example/dao3.svg',
-    network: 'Ethereum',
-    networkLogo: '/example/network1.svg'
-  }
-];
 
 type ColumnProps = {
-  onRemove: (id: number) => void;
+  onRemove: (daoCode: string) => void;
 };
 
 const columns = ({
   onRemove
-}: ColumnProps): ColumnType<{
-  id: number;
-  name: string;
-  logo: string;
-  network: string;
-  networkLogo: string;
-}>[] => [
+}: ColumnProps): ColumnType<SubscribedDaoItem>[] => [
   {
     title: 'Name',
-    key: 'name',
+    key: 'dao',
     width: 375,
     render: (value) => (
       <div className="flex items-center gap-2">
         <div className="bg-background flex h-8 w-8 items-center justify-center rounded-full">
           <Image
-            src={value.logo || '/example/dao-placeholder.svg'}
-            alt={value.name}
+            src={value.dao?.logo || '/example/dao-placeholder.svg'}
+            alt={value.dao?.name || 'DAO'}
             width={24}
             height={24}
           />
         </div>
-        <span>{value.name}</span>
+        <span>{value.dao?.name || 'Unknown DAO'}</span>
       </div>
     )
   },
   {
     title: 'Network',
-    key: 'network',
+    key: 'dao',
     width: 375,
     className: 'text-center',
     render(value) {
       return (
-        <Link
-          href={`/setting/safes/${value?.id}`}
-          className="flex items-center justify-center gap-[10px]"
-        >
-          <Image src={value?.networkLogo} alt="safe" width={16} height={17} />
-          <span className="text-[16px]">{value?.network}</span>
-        </Link>
+        <div className="flex items-center justify-center gap-[10px]">
+          <Image 
+            src={value.dao?.chainLogo || '/example/network-placeholder.svg'} 
+            alt={value.dao?.chainName || 'Network'} 
+            width={16} 
+            height={17} 
+          />
+          <span className="text-[16px]">{value.dao?.chainName || 'Unknown Network'}</span>
+        </div>
       );
     }
   },
@@ -93,7 +66,7 @@ const columns = ({
       return (
         <button
           className="cursor-pointer transition-opacity hover:opacity-80"
-          onClick={() => onRemove(value.id)}
+          onClick={() => onRemove(value.dao?.code || '')}
         >
           <Image
             src="/unsubscribed.svg"
@@ -109,22 +82,33 @@ const columns = ({
 ];
 
 export default function SubscribedDAOsPage() {
-  const [subscriptions, setSubscriptions] = useState(daoSubscriptions);
+  const { data: subscriptions, isLoading, refetch } = useSubscribedDaos();
+  const unsubscribeMutation = useUnsubscribeDao();
   const { confirm } = useConfirm();
   const isMobileAndSubSection = useIsMobileAndSubSection();
+  
   const handleUnsubscribe = useCallback(
-    (id: number) => {
+    (daoCode: string) => {
+      if (!daoCode) return;
+      
       confirm({
         title: 'Unsubscribe',
-        description: 'Are you sure you want to unsubscribe notification?',
+        description: 'Are you sure you want to unsubscribe from this DAO?',
         cancelText: 'Cancel',
         confirmText: 'Confirm',
         onConfirm: () => {
-          setSubscriptions((prev) => prev.filter((sub) => sub.id !== id));
+          unsubscribeMutation.mutate(
+            { daoCode },
+            {
+              onSuccess: () => {
+                refetch();
+              }
+            }
+          );
         }
       });
     },
-    [confirm]
+    [confirm, unsubscribeMutation, refetch]
   );
 
   return (
@@ -143,18 +127,22 @@ export default function SubscribedDAOsPage() {
       )}
       <CustomTable
         columns={columns({ onRemove: handleUnsubscribe })}
-        dataSource={subscriptions}
-        isLoading={false}
-        rowKey="id"
+        dataSource={subscriptions || []}
+        isLoading={isLoading}
+        rowKey={(record) => record.dao?.code || ''}
         className="hidden md:block"
       />
 
       <div className="mt-[15px] flex flex-col gap-[15px] md:hidden">
-        {subscriptions.map((subscription) => (
+        {(subscriptions || []).map((subscription) => (
           <Item
-            key={subscription.id}
-            {...subscription}
-            onRemove={() => handleUnsubscribe(subscription.id)}
+            key={subscription.dao?.code}
+            id={subscription.dao?.code || ''}
+            name={subscription.dao?.name || 'Unknown DAO'}
+            logo={subscription.dao?.logo || '/example/dao-placeholder.svg'}
+            network={subscription.dao?.chainName || 'Unknown Network'}
+            networkLogo={subscription.dao?.chainLogo || '/example/network-placeholder.svg'}
+            onRemove={() => handleUnsubscribe(subscription.dao?.code || '')}
           />
         ))}
       </div>

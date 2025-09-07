@@ -95,3 +95,154 @@ export interface LoginVariables {
 export interface ModifyLikeDaoVariables {
   input: ModifyLikeDaoInput;
 }
+
+// Notification Types
+export type NotificationChannelType = 'EMAIL';
+
+export interface NotificationChannel {
+  id: string;
+  channelType: NotificationChannelType;
+  channelValue: string;
+  verified: boolean;
+  payload?: string;
+  ctime: string;
+}
+
+export interface ListNotificationChannelsResponse {
+  listNotificationChannels: NotificationChannel[];
+}
+
+export interface BindNotificationChannelInput {
+  type: NotificationChannelType;
+  value: string;
+}
+
+export interface BindNotificationChannelResponse {
+  id: string;
+  code: number;
+  expiration: number;
+  message?: string;
+  rateLimit: number;
+}
+
+export interface VerifyNotificationChannelInput {
+  id: string;
+  otpCode: string;
+}
+
+export interface VerifyNotificationChannelResponse {
+  code: number;
+  message?: string;
+}
+
+export interface SubscriptionFeatureInput {
+  type: string;
+  enabled: boolean;
+}
+
+export interface ProposalSubscriptionInput {
+  daoCode: string;
+  proposalId: string;
+  features?: SubscriptionFeatureInput[];
+}
+
+export interface ProposalSubscriptionResponse {
+  state: string;
+  proposalId: string;
+  daoCode: string;
+}
+
+export interface SubscribedFeature {
+  name: string;
+  strategy: string;
+}
+
+export interface SubscribedDaoItem {
+  dao: Dao;
+  features: SubscribedFeature[];
+}
+
+export interface SubscribedDaosResponse {
+  subscribedDaos: SubscribedDaoItem[];
+}
+
+export interface SubscribedProposal {
+  proposalId: string;
+  daoCode: string;
+  state: string;
+  title: string;
+  description?: string;
+  createdAt: string;
+}
+
+export interface SubscribedProposalItem {
+  proposal: SubscribedProposal;
+  dao: Dao;
+  features: SubscribedFeature[];
+}
+
+export interface SubscribedProposalsResponse {
+  subscribedProposals: SubscribedProposalItem[];
+}
+
+export interface DaoSubscriptionInput {
+  daoCode?: string;
+  features?: SubscriptionFeatureInput[];
+}
+
+export interface DaoSubscriptionResponse {
+  daoCode: string;
+  state: string;
+}
+
+// Notification Variables Types
+export interface BindNotificationChannelVariables {
+  type: NotificationChannelType;
+  value: string;
+}
+
+export interface VerifyNotificationChannelVariables {
+  id: string;
+  otpCode: string;
+}
+
+export interface SubscribeProposalVariables {
+  daoCode: string;
+  proposalId: string;
+  features?: SubscriptionFeatureInput[];
+}
+
+export interface UnsubscribeProposalVariables {
+  daoCode: string;
+  proposalId: string;
+}
+
+export interface SubscribeDaoVariables {
+  daoCode: string;
+  features?: SubscriptionFeatureInput[];
+}
+
+export interface UnsubscribeDaoVariables {
+  daoCode: string;
+}
+
+export interface UnSubscribeChannelVariables {
+  daoCode: string;
+  features: SubscriptionFeatureInput[];
+}
+
+export interface UnSubscribeChannelResponse {
+  subscribeDao: DaoSubscriptionResponse;
+  unsubscribeDao: DaoSubscriptionResponse;
+}
+
+export interface UnSubscribeProposalVariables {
+  daoCode: string;
+  proposalId: string;
+  features: SubscriptionFeatureInput[];
+}
+
+export interface UnSubscribeProposalResponse {
+  subscribeProposal: ProposalSubscriptionResponse;
+  unsubscribeProposal: ProposalSubscriptionResponse;
+}

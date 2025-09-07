@@ -10,11 +10,11 @@ import type { ProposalState} from '@/components/proposal-status';
 import { ProposalStatus } from '@/components/proposal-status';
 
 type ItemProps = {
-  id: number;
+  id: string;
   name: string;
   daoName: string;
   daoLogo: string;
-  status: ProposalState;
+  status: string | ProposalState;
   onRemove: () => void;
 };
 
