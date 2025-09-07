@@ -212,7 +212,7 @@ export default function SubscriptionPage() {
       )}
       <Form {...form}>
         <form onSubmit={form.handleSubmit(handleVerify)} className="space-y-[20px]">
-          <div className="space-y-[20px] rounded-lg p-[20px]">
+          <div className="space-y-[20px] rounded-lg">
             {/* Email Field */}
             <FormField
               control={form.control}
@@ -223,7 +223,7 @@ export default function SubscriptionPage() {
                   <FormControl>
                     <div className="flex items-center gap-[10px]">
                       <Input
-                        className="h-[39px] flex-1 rounded-lg border-gray-600 bg-gray-700 text-white placeholder:text-gray-400"
+                        className="h-[39px] max-w-[335px] flex-1 rounded-[100px] border-gray-600 bg-gray-700 text-white placeholder:text-gray-400"
                         placeholder="yourname@example.com"
                         value={formState.email}
                         onChange={(e) => {
@@ -235,7 +235,7 @@ export default function SubscriptionPage() {
                         type="button"
                         onClick={handleSendCode}
                         variant="default"
-                        className="h-[39px] w-[100px] rounded-lg bg-white text-black hover:bg-gray-200"
+                        className="bg-foreground min-w-[120px] rounded-[100px] p-[10px] text-black hover:opacity-80"
                         isLoading={sendingLoading}
                         disabled={!formState.email || !isEmailValid || countdown.active}
                       >
@@ -268,7 +268,7 @@ export default function SubscriptionPage() {
                   <FormControl>
                     <div className="flex items-center gap-[10px]">
                       <Input
-                        className="h-[39px] flex-1 rounded-lg border-gray-600 bg-gray-700 text-white placeholder:text-gray-400"
+                        className="h-[39px] max-w-[335px] flex-1 rounded-[100px] border-gray-600 bg-gray-700 text-white placeholder:text-gray-400"
                         placeholder="e.g., 123456"
                         disabled={!formState.channelId}
                         value={formState.verificationCode}
@@ -280,7 +280,7 @@ export default function SubscriptionPage() {
                       <LoadedButton
                         type="submit"
                         variant="default"
-                        className="h-[39px] w-[100px] rounded-lg bg-white text-black hover:bg-gray-200"
+                        className="bg-foreground text-background min-w-[120px] rounded-[100px] p-[10px] hover:opacity-80"
                         isLoading={verifyLoading}
                         disabled={
                           !formState.channelId || !formState.verificationCode || verifyLoading
@@ -297,12 +297,6 @@ export default function SubscriptionPage() {
           </div>
         </form>
       </Form>
-
-      <p className="text-[12px] md:text-[14px]">
-        Please set up your email to receive the notification from the DAOs you are interested in or
-        the proposals you are interested in. This will help you to keep track of the latest updates
-        and news from the DAOs and proposals you care about.
-      </p>
     </div>
   );
 }
