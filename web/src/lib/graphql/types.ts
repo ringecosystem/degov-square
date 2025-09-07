@@ -157,8 +157,11 @@ export interface SubscribedFeature {
   strategy: string;
 }
 
-export interface SubscribedDaoItem {
-  dao: Dao;
+export interface SubscribedDaoItem extends Record<string, unknown> {
+  dao: {
+    code: string;
+    name: string;
+  };
   features: SubscribedFeature[];
 }
 
@@ -171,13 +174,18 @@ export interface SubscribedProposal {
   daoCode: string;
   state: string;
   title: string;
-  description?: string;
-  createdAt: string;
+  proposalCreatedAt: string;
 }
 
-export interface SubscribedProposalItem {
+export interface SubscribedProposalItem extends Record<string, unknown> {
   proposal: SubscribedProposal;
-  dao: Dao;
+  dao: {
+    code: string;
+    name: string;
+    logo: string;
+    chainName: string;
+    chainLogo: string;
+  };
   features: SubscribedFeature[];
 }
 

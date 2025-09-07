@@ -107,8 +107,7 @@ export const SUBSCRIBED_PROPOSALS = gql`
         daoCode
         state
         title
-        description
-        createdAt
+        proposalCreatedAt
       }
       dao {
         code
