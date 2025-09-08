@@ -227,9 +227,8 @@ func (s *SubscribeService) InspectSubscribeProposal(baseInput types.BasicInput[I
 	var subscribedProposal dbmodels.UserSubscribedProposal
 	err := s.db.
 		Where(
-			"(user_id = ? or user_address= ?) AND dao_code = ? AND proposal_id = ?",
+			"user_id = ? AND dao_code = ? AND proposal_id = ?",
 			user.Id,
-			user.Address,
 			input.DaoCode,
 			input.ProposalID,
 		).
@@ -325,8 +324,9 @@ func (s *SubscribeService) UnsubscribeProposal(baseInput types.BasicInput[gqlmod
 
 	if err := s.db.
 		Table("dgv_user_subscribed_proposal").
+		Where("id = ?", existingSubscribedProposal.ID).
 		Update("state", dbmodels.SubscribeStateInactive).
-		Where("id = ?", existingSubscribedProposal.ID).Error; err != nil {
+		Error; err != nil {
 		return nil, fmt.Errorf("failed to unsubscribe proposal: %w", err)
 	}
 
