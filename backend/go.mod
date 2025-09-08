@@ -9,7 +9,7 @@ require (
 	github.com/ethereum/go-ethereum v1.16.2
 	github.com/go-co-op/gocron/v2 v2.16.3
 	github.com/golang-jwt/jwt/v5 v5.3.0
-	github.com/golang-migrate/migrate/v4 v4.18.3
+	github.com/golang-migrate/migrate/v4 v4.19.0
 	github.com/gomarkdown/markdown v0.0.0-20250810172220-2e2c11897d1a
 	github.com/jinzhu/copier v0.4.0
 	github.com/joho/godotenv v1.5.1
@@ -20,6 +20,7 @@ require (
 	github.com/sendgrid/sendgrid-go v3.16.1+incompatible
 	github.com/spf13/viper v1.20.1
 	github.com/spruceid/siwe-go v0.2.1
+	github.com/vanng822/go-premailer v1.25.0
 	github.com/vektah/gqlparser/v2 v2.5.30
 	github.com/wealdtech/go-ens/v3 v3.6.0
 	go.uber.org/zap v1.27.0
@@ -92,9 +93,7 @@ require (
 	github.com/tklauser/go-sysconf v0.3.12 // indirect
 	github.com/tklauser/numcpus v0.6.1 // indirect
 	github.com/vanng822/css v1.0.1 // indirect
-	github.com/vanng822/go-premailer v1.25.0 // indirect
 	github.com/wealdtech/go-multicodec v1.4.0 // indirect
-	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.10.0 // indirect
 	golang.org/x/crypto v0.41.0 // indirect
 	golang.org/x/net v0.43.0 // indirect
