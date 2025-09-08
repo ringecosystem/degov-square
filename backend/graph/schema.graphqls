@@ -162,7 +162,7 @@ type VerifyNotificationChannelOutput {
 
 type ResendOTPOutput {
   code: Int!
-  id: String!
+  # id: String!
   message: String
   expiration: Int
   rateLimit: Int
@@ -204,20 +204,21 @@ input EvmAbiInput {
   contract: String!
 }
 
-input BindNotificationChannelInput {
+input BaseNotificationChannelInput {
   type: NotificationChannelType!
   value: String!
 }
 
 input VerifyNotificationChannelInput {
-  id: String!
+  type: NotificationChannelType!
+  value: String!
   otpCode: String!
 }
 
-input resendOTPInput {
-  type: NotificationChannelType!
-  value: String!
-}
+# input resendOTPInput {
+#   type: NotificationChannelType!
+#   value: String!
+# }
 
 input FeatureSettingsInput {
   name: FeatureName!
@@ -272,11 +273,11 @@ type Mutation {
 
   # User interactions
   modifyLikeDao(input: ModifyLikeDaoInput!): Boolean! @auth
-  bindNotificationChannel(input: BindNotificationChannelInput!): ResendOTPOutput! @auth
+  # bindNotificationChannel(input: BindNotificationChannelInput!): ResendOTPOutput! @auth
   verifyNotificationChannel(
     input: VerifyNotificationChannelInput!
   ): VerifyNotificationChannelOutput! @auth
-  resendOTP(input: resendOTPInput!): ResendOTPOutput! @auth
+  resendOTP(input: BaseNotificationChannelInput!): ResendOTPOutput! @auth
 
   # subscribe
   subscribeDao(input: SubscribeDaoInput!): SubscribedDaoOutput! @auth
