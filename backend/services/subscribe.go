@@ -88,7 +88,6 @@ func (s *SubscribeService) buildFeatures(
 			dbFeatureName = dbmodels.SubscribeFeatureProposalStateChanged
 		case gqlmodels.FeatureNameProposalNew:
 			dbFeatureName = dbmodels.SubscribeFeatureProposalNew
-			continue
 		default:
 			// skip unsupported feature
 			continue
