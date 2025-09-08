@@ -113,13 +113,6 @@ func (s *UserInteractionService) BindNotificationChannel(baseInput types.BasicIn
 		if existingChannel.Verified == 1 {
 			return nil, errors.New("channel type already exists for this user")
 		}
-
-		slog.Info(
-			"Channel type already exists but not verified, resend OTP",
-			"user_id", user.Id,
-			"channel_type", input.Type,
-			"verified", existingChannel.Verified,
-		)
 		return s.resendOTPForChannel(types.BasicInput[*dbmodels.NotificationChannel]{
 			User:  user,
 			Input: &existingChannel,
@@ -203,9 +196,15 @@ func (s *UserInteractionService) ResendOTP(baseInput types.BasicInput[gqlmodels.
 	input := baseInput.Input
 
 	var existingChannel dbmodels.NotificationChannel
-	err := s.db.Where("user_id = ? AND channel_type = ? and channel_value = ?", user.Id, input.Type, input.Value).First(&existingChannel).Error
+	err := s.db.
+		Where("user_id = ? AND channel_type = ? and channel_value = ?", user.Id, input.Type, input.Value).
+		First(&existingChannel).
+		Error
 	if err != nil {
 		return nil, fmt.Errorf("error checking existing channel: %w", err)
+	}
+	if existingChannel.Verified == 1 {
+		return nil, errors.New("channel already verified")
 	}
 	return s.resendOTPForChannel(types.BasicInput[*dbmodels.NotificationChannel]{
 		User:  user,
