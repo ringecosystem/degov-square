@@ -187,7 +187,10 @@ func (s *SubscribeService) UnsubscribeDao(baseInput types.BasicInput[gqlmodels.U
 		return nil, fmt.Errorf("failed to inspect existing subscribed DAO: %w", err)
 	}
 
-	if err := s.db.Update("state", dbmodels.SubscribeStateInactive).Where("id = ?", existingSubscribedDao.ID).Error; err != nil {
+	if err := s.db.
+		Table("dgv_user_subscribed_dao").
+		Update("state", dbmodels.SubscribeStateInactive).
+		Where("id = ?", existingSubscribedDao.ID).Error; err != nil {
 		return nil, fmt.Errorf("failed to unsusbscribe dao %w", err)
 	}
 
@@ -320,7 +323,10 @@ func (s *SubscribeService) UnsubscribeProposal(baseInput types.BasicInput[gqlmod
 		return nil, fmt.Errorf("failed to inspect existing subscribed proposal: %w", err)
 	}
 
-	if err := s.db.Update("state", dbmodels.SubscribeStateInactive).Where("id = ?", existingSubscribedProposal.ID).Error; err != nil {
+	if err := s.db.
+		Table("dgv_user_subscribed_proposal").
+		Update("state", dbmodels.SubscribeStateInactive).
+		Where("id = ?", existingSubscribedProposal.ID).Error; err != nil {
 		return nil, fmt.Errorf("failed to unsubscribe proposal: %w", err)
 	}
 
