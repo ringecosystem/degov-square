@@ -5,10 +5,10 @@ import { useAuthenticatedRequest } from '@/hooks/useAuthenticatedRequest';
 import { getToken } from '@/lib/auth/token-manager';
 
 import { createAuthorizedClient, createPublicClient } from './client';
-import { 
-  QUERY_NONCE, 
-  LOGIN_MUTATION, 
-  MODIFY_LIKE_DAO_MUTATION, 
+import {
+  QUERY_NONCE,
+  LOGIN_MUTATION,
+  MODIFY_LIKE_DAO_MUTATION,
   QUERY_DAOS,
   LIST_NOTIFICATION_CHANNELS,
   SUBSCRIBED_DAOS,
@@ -83,7 +83,7 @@ export const useLogin = () => {
     },
     onSuccess: (token) => {
       setToken(token);
-      queryClient.invalidateQueries({ 
+      queryClient.invalidateQueries({
         predicate: (query) => query.queryKey[0] === 'daos'
       });
     },
@@ -153,7 +153,7 @@ export const useModifyLikeDao = () => {
       // Update function to apply the optimistic update
       const updateData = (old: DaosResponse | undefined) => {
         if (!old) return old;
-        
+
         // Update the liked field in the corresponding DAO object
         const updatedDaos = old.daos.map((dao) => {
           if (dao.code === variables.input.daoCode) {
@@ -182,12 +182,12 @@ export const useModifyLikeDao = () => {
       if (context?.previousPublicData) {
         queryClient.setQueryData(['daos-public'], context.previousPublicData);
       }
-      
+
       console.error('Failed to modify DAO like status:', error);
     },
     onSettled: () => {
       // Always refetch after error or success
-      queryClient.invalidateQueries({ 
+      queryClient.invalidateQueries({
         predicate: (query) => query.queryKey[0] === 'daos' || query.queryKey[0] === 'daos-public'
       });
     }
@@ -225,7 +225,9 @@ export const useListNotificationChannels = () => {
     queryFn: async () => {
       if (!token) throw new Error('No authentication token available');
       const client = createAuthorizedClient(token);
-      const data = await client.request<ListNotificationChannelsResponse>(LIST_NOTIFICATION_CHANNELS);
+      const data = await client.request<ListNotificationChannelsResponse>(
+        LIST_NOTIFICATION_CHANNELS
+      );
       return data.listNotificationChannels;
     },
     enabled: !!token,
@@ -246,6 +248,7 @@ export const useSubscribedDaos = () => {
       return data.subscribedDaos;
     },
     enabled: !!token,
+    retry: 1,
     staleTime: 1000 * 60 * 5
   });
 };
@@ -263,6 +266,7 @@ export const useSubscribedProposals = () => {
       return data.subscribedProposals;
     },
     enabled: !!token,
+    retry: 1,
     staleTime: 1000 * 60 * 5
   });
 };
@@ -277,10 +281,9 @@ export const useBindNotificationChannel = () => {
     mutationFn: async (variables: BindNotificationChannelVariables) => {
       return await executeWithAuth(async (authToken) => {
         const client = createAuthorizedClient(authToken);
-        const data = await client.request<{ bindNotificationChannel: BindNotificationChannelResponse }>(
-          BIND_NOTIFICATION_CHANNEL,
-          variables
-        );
+        const data = await client.request<{
+          bindNotificationChannel: BindNotificationChannelResponse;
+        }>(BIND_NOTIFICATION_CHANNEL, variables);
         return data.bindNotificationChannel;
       });
     },
@@ -294,8 +297,6 @@ export const useBindNotificationChannel = () => {
 };
 
 export const useResendOTP = () => {
-  const { token: contextToken, setToken } = useAuth();
-  const token = getToken() || contextToken;
   const { executeWithAuth } = useAuthenticatedRequest();
 
   return useMutation({
@@ -325,10 +326,9 @@ export const useVerifyNotificationChannel = () => {
     mutationFn: async (variables: VerifyNotificationChannelVariables) => {
       return await executeWithAuth(async (authToken) => {
         const client = createAuthorizedClient(authToken);
-        const data = await client.request<{ verifyNotificationChannel: VerifyNotificationChannelResponse }>(
-          VERIFY_NOTIFICATION_CHANNEL,
-          variables
-        );
+        const data = await client.request<{
+          verifyNotificationChannel: VerifyNotificationChannelResponse;
+        }>(VERIFY_NOTIFICATION_CHANNEL, variables);
         return data.verifyNotificationChannel;
       });
     },

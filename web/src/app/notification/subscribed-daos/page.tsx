@@ -45,7 +45,7 @@ const columns = ({ onRemove }: ColumnProps): ColumnType<EnhancedSubscribedDaoIte
   },
   {
     title: 'Network',
-    key: 'dao',
+    key: 'network',
     width: 375,
     className: 'text-center',
     render(value) {
@@ -149,7 +149,7 @@ export default function SubscribedDAOsPage() {
       )}
       <CustomTable<EnhancedSubscribedDaoItem>
         columns={columns({ onRemove: handleUnsubscribe })}
-        dataSource={enhancedSubscriptions as EnhancedSubscribedDaoItem[]}
+        dataSource={(enhancedSubscriptions as EnhancedSubscribedDaoItem[]) ?? []}
         isLoading={isLoading || isDaosLoading}
         rowKey={(record) => record.dao?.code || ''}
         className="hidden md:block"

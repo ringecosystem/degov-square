@@ -20,11 +20,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { LoadedButton } from '@/components/ui/loaded-button';
-import {
-  useBindNotificationChannel,
-  useResendOTP,
-  useVerifyNotificationChannel
-} from '@/hooks/useNotification';
+import { useResendOTP, useVerifyNotificationChannel } from '@/hooks/useNotification';
 
 // Schema for validation
 const subscriptionSchema = z.object({
@@ -37,13 +33,11 @@ type SubscriptionFormValues = z.infer<typeof subscriptionSchema>;
 interface FormState {
   email: string;
   verificationCode: string;
-  channelId: string | null;
 }
 
 type FormAction =
   | { type: 'SET_EMAIL'; payload: string }
   | { type: 'SET_VERIFICATION_CODE'; payload: string }
-  | { type: 'SET_CHANNEL_ID'; payload: string }
   | { type: 'RESET_VERIFICATION' };
 
 interface CountdownState {
@@ -59,18 +53,14 @@ const formReducer = (state: FormState, action: FormAction): FormState => {
         ...state,
         email: action.payload,
         ...(action.payload !== state.email && {
-          channelId: null,
           verificationCode: ''
         })
       };
     case 'SET_VERIFICATION_CODE':
       return { ...state, verificationCode: action.payload };
-    case 'SET_CHANNEL_ID':
-      return { ...state, channelId: action.payload };
     case 'RESET_VERIFICATION':
       return {
         ...state,
-        channelId: null,
         verificationCode: ''
       };
     default:
@@ -82,15 +72,13 @@ export default function SubscriptionPage() {
   const isMobileAndSubSection = useIsMobileAndSubSection();
 
   // API hooks
-  const bindEmailMutation = useBindNotificationChannel();
   const resendOTPMutation = useResendOTP();
   const verifyEmailMutation = useVerifyNotificationChannel();
 
   // State management
   const [formState, dispatch] = useReducer(formReducer, {
     email: '',
-    verificationCode: '',
-    channelId: null
+    verificationCode: ''
   });
 
   const [countdown, setCountdown] = useState<CountdownState>({
@@ -113,74 +101,60 @@ export default function SubscriptionPage() {
   const isEmailValid = emailSchema.safeParse(formState.email).success;
 
   // Loading states
-  const sendingLoading = bindEmailMutation.isPending || resendOTPMutation.isPending;
+  const sendingLoading = resendOTPMutation.isPending;
   const verifyLoading = verifyEmailMutation.isPending;
 
   const handleSendCode = useCallback(async () => {
     if (!formState.email || !isEmailValid || sendingLoading) return;
 
-    const mutation = formState.channelId ? resendOTPMutation : bindEmailMutation;
-    const mutationParams = { type: 'EMAIL' as const, value: formState.email };
-
-    mutation.mutate(mutationParams, {
-      onSuccess: (data) => {
-        if (data.code === 0) {
-          const rate = data.rateLimit || 60;
-          if (!formState.channelId) {
-            dispatch({ type: 'SET_CHANNEL_ID', payload: data.id });
+    resendOTPMutation.mutate(
+      { type: 'EMAIL' as const, value: formState.email },
+      {
+        onSuccess: (data) => {
+          if (data.code === 0) {
+            const rate = data.rateLimit || 60;
+            setCountdown({
+              active: true,
+              duration: rate,
+              key: Math.random()
+            });
+            toast.success('Verification code sent successfully!');
+          } else {
+            toast.error(data.message || 'Failed to send verification code');
           }
-          // Start countdown
-          setCountdown({
-            active: true,
-            duration: rate,
-            key: Math.random()
-          });
-          toast.success('Verification code sent successfully!');
-        } else {
-          toast.error(data.message || 'Failed to send verification code');
+        },
+        onError: (error: any) => {
+          const graphqlError = error.response?.errors?.[0]?.message;
+          const errorMessage = graphqlError || error.message || 'Failed to send verification code';
+          toast.error(errorMessage);
         }
-      },
-      onError: (error: any) => {
-        const graphqlError = error.response?.errors?.[0]?.message;
-        const errorMessage = graphqlError || error.message || 'Failed to send verification code';
-        toast.error(errorMessage);
       }
-    });
-  }, [
-    formState.email,
-    formState.channelId,
-    isEmailValid,
-    sendingLoading,
-    resendOTPMutation,
-    bindEmailMutation
-  ]);
+    );
+  }, [formState.email, isEmailValid, sendingLoading, resendOTPMutation]);
 
-  const handleVerify = useCallback(
-    async (values: SubscriptionFormValues) => {
-      if (!formState.verificationCode || !formState.channelId || verifyLoading) return;
+  const handleVerify = useCallback(async () => {
+    if (!formState.verificationCode || verifyLoading) return;
 
-      verifyEmailMutation.mutate(
-        { id: formState.channelId, otpCode: formState.verificationCode },
-        {
-          onSuccess: (data) => {
-            if (data.code === 0) {
-              toast.success('Email verified successfully!');
-              // Reset form state
-              dispatch({ type: 'RESET_VERIFICATION' });
-              form.reset();
-              setCountdown({ active: false, duration: 60, key: 0 });
-            } else {
-              toast.error(data.message || 'Verification failed');
-            }
-          },
-          onError: (error: Error) => {
-            toast.error(error.message || 'Verification failed');
+    verifyEmailMutation.mutate(
+      { id: formState.email, otpCode: formState.verificationCode },
+      {
+        onSuccess: (data) => {
+          if (data.code === 0) {
+            toast.success('Email verified successfully!');
+            // Reset form state
+            dispatch({ type: 'RESET_VERIFICATION' });
+            form.reset();
+            setCountdown({ active: false, duration: 60, key: 0 });
+          } else {
+            toast.error(data.message || 'Verification failed');
           }
+        },
+        onError: (error: Error) => {
+          toast.error(error.message || 'Verification failed');
         }
-      );
-    },
-    [formState.verificationCode, formState.channelId, verifyEmailMutation, verifyLoading, form]
-  );
+      }
+    );
+  }, [formState.verificationCode, formState.email, verifyEmailMutation, verifyLoading, form]);
 
   const handleCountdownEnd = useCallback(() => {
     setCountdown((prev) => ({
@@ -270,7 +244,7 @@ export default function SubscriptionPage() {
                       <Input
                         className="h-[39px] max-w-[335px] flex-1 rounded-[100px] border-gray-600 bg-gray-700 text-white placeholder:text-gray-400"
                         placeholder="e.g., 123456"
-                        disabled={!formState.channelId}
+                        disabled={!formState.email || !isEmailValid}
                         value={formState.verificationCode}
                         onChange={(e) => {
                           dispatch({ type: 'SET_VERIFICATION_CODE', payload: e.target.value });
@@ -283,7 +257,10 @@ export default function SubscriptionPage() {
                         className="bg-foreground text-background min-w-[120px] rounded-[100px] p-[10px] hover:opacity-80"
                         isLoading={verifyLoading}
                         disabled={
-                          !formState.channelId || !formState.verificationCode || verifyLoading
+                          !formState.email ||
+                          !isEmailValid ||
+                          !formState.verificationCode ||
+                          verifyLoading
                         }
                       >
                         Verify

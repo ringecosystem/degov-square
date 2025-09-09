@@ -84,7 +84,6 @@ const columns = ({ onRemove }: ColumnProps): ColumnType<SubscribedProposalItem>[
 export default function SubscribedProposalsPage() {
   const isMobileAndSubSection = useIsMobileAndSubSection();
   const { data: subscriptions, isLoading, refetch } = useSubscribedProposals();
-  console.log('subscriptions', subscriptions);
 
   const unsubscribeProposalMutation = useUnsubscribeProposal();
   const { confirm } = useConfirm();
@@ -134,7 +133,7 @@ export default function SubscribedProposalsPage() {
       )}
       <CustomTable<SubscribedProposalItem>
         columns={columns({ onRemove: handleUnsubscribe })}
-        dataSource={subscriptions as SubscribedProposalItem[]}
+        dataSource={(subscriptions as SubscribedProposalItem[]) ?? []}
         isLoading={isLoading}
         rowKey={(record) => `${record.proposal?.daoCode}-${record.proposal?.proposalId}` || ''}
         className="hidden md:block"

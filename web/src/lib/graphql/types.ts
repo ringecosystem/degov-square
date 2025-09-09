@@ -118,7 +118,6 @@ export interface BindNotificationChannelInput {
 }
 
 export interface BindNotificationChannelResponse {
-  id: string;
   code: number;
   expiration: number;
   message?: string;

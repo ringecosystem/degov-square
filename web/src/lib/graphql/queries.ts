@@ -140,7 +140,6 @@ export const BIND_NOTIFICATION_CHANNEL = gql`
 export const RESEND_OTP = gql`
   mutation ResendOTP($type: NotificationChannelType!, $value: String!) {
     resendOTP(input: { type: $type, value: $value }) {
-      id
       expiration
       code
       message
@@ -219,9 +218,7 @@ export const UN_SUBSCRIBE_PROPOSAL = gql`
     $proposalId: String!
     $features: [SubscriptionFeatureInput!]
   ) {
-    subscribeProposal(
-      input: { daoCode: $daoCode, proposalId: $proposalId, features: $features }
-    ) {
+    subscribeProposal(input: { daoCode: $daoCode, proposalId: $proposalId, features: $features }) {
       state
       proposalId
       daoCode
