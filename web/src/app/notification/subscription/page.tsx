@@ -20,7 +20,9 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { LoadedButton } from '@/components/ui/loaded-button';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useResendOTP, useVerifyNotificationChannel } from '@/hooks/useNotification';
+import { useListNotificationChannels } from '@/lib/graphql/hooks';
 
 // Schema for validation
 const subscriptionSchema = z.object({
@@ -74,6 +76,7 @@ export default function SubscriptionPage() {
   // API hooks
   const resendOTPMutation = useResendOTP();
   const verifyEmailMutation = useVerifyNotificationChannel();
+  const { data: notificationChannels, isLoading: channelsLoading } = useListNotificationChannels();
 
   // State management
   const [formState, dispatch] = useReducer(formReducer, {
@@ -87,6 +90,8 @@ export default function SubscriptionPage() {
     key: 0
   });
 
+  const [isChangingEmail, setIsChangingEmail] = useState(false);
+
   const form = useForm<SubscriptionFormValues>({
     resolver: zodResolver(subscriptionSchema),
     defaultValues: {
@@ -99,6 +104,12 @@ export default function SubscriptionPage() {
   // Email validation
   const emailSchema = z.string().email();
   const isEmailValid = emailSchema.safeParse(formState.email).success;
+
+  // Check for verified email channel
+  const verifiedEmailChannel = notificationChannels?.find(
+    (channel) => channel.channelType === 'EMAIL' && channel.verified
+  );
+  const hasVerifiedEmail = !!verifiedEmailChannel && !isChangingEmail;
 
   // Loading states
   const sendingLoading = resendOTPMutation.isPending;
@@ -145,6 +156,7 @@ export default function SubscriptionPage() {
             dispatch({ type: 'RESET_VERIFICATION' });
             form.reset();
             setCountdown({ active: false, duration: 60, key: 0 });
+            setIsChangingEmail(false);
           } else {
             toast.error(data.message || 'Verification failed');
           }
@@ -170,6 +182,17 @@ export default function SubscriptionPage() {
     }));
   }, []);
 
+  const handleChangeEmail = useCallback(() => {
+    setIsChangingEmail(true);
+    // Pre-fill with current verified email
+    const currentEmail = verifiedEmailChannel?.channelValue || '';
+    dispatch({ type: 'SET_EMAIL', payload: currentEmail });
+    dispatch({ type: 'RESET_VERIFICATION' });
+    form.setValue('email', currentEmail);
+    form.setValue('verificationCode', '');
+    setCountdown({ active: false, duration: 60, key: 0 });
+  }, [form, verifiedEmailChannel?.channelValue]);
+
   return (
     <div className="md:bg-card h-[calc(100vh-300px)] space-y-[15px] md:space-y-[20px] md:rounded-[14px] md:p-[20px]">
       {isMobileAndSubSection && (
@@ -184,96 +207,132 @@ export default function SubscriptionPage() {
           <h1 className="text-[18px] font-semibold">Subscription</h1>
         </Link>
       )}
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(handleVerify)} className="space-y-[20px]">
-          <div className="space-y-[20px] rounded-lg">
-            {/* Email Field */}
-            <FormField
-              control={form.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem className="space-y-[8px]">
-                  <FormLabel className="text-[14px] text-white">Your Email</FormLabel>
-                  <FormControl>
-                    <div className="flex items-center gap-[10px]">
-                      <Input
-                        className="h-[39px] max-w-[335px] flex-1 rounded-[100px] border-gray-600 bg-gray-700 text-white placeholder:text-gray-400"
-                        placeholder="yourname@example.com"
-                        value={formState.email}
-                        onChange={(e) => {
-                          dispatch({ type: 'SET_EMAIL', payload: e.target.value });
-                          field.onChange(e.target.value);
-                        }}
-                      />
-                      <LoadedButton
-                        type="button"
-                        onClick={handleSendCode}
-                        variant="default"
-                        className="bg-foreground min-w-[120px] rounded-[100px] p-[10px] text-black hover:opacity-80"
-                        isLoading={sendingLoading}
-                        disabled={!formState.email || !isEmailValid || countdown.active}
-                      >
-                        {countdown.active ? (
-                          <Countdown
-                            key={countdown.key}
-                            start={countdown.duration}
-                            autoStart
-                            onEnd={handleCountdownEnd}
-                            onTick={handleCountdownTick}
-                          />
-                        ) : (
-                          'Send Code'
-                        )}
-                      </LoadedButton>
-                    </div>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {/* Verification Code Field */}
-            <FormField
-              control={form.control}
-              name="verificationCode"
-              render={({ field }) => (
-                <FormItem className="space-y-[8px]">
-                  <FormLabel className="text-[14px] text-white">Verification Code</FormLabel>
-                  <FormControl>
-                    <div className="flex items-center gap-[10px]">
-                      <Input
-                        className="h-[39px] max-w-[335px] flex-1 rounded-[100px] border-gray-600 bg-gray-700 text-white placeholder:text-gray-400"
-                        placeholder="e.g., 123456"
-                        disabled={!formState.email || !isEmailValid}
-                        value={formState.verificationCode}
-                        onChange={(e) => {
-                          dispatch({ type: 'SET_VERIFICATION_CODE', payload: e.target.value });
-                          field.onChange(e.target.value);
-                        }}
-                      />
-                      <LoadedButton
-                        type="submit"
-                        variant="default"
-                        className="bg-foreground text-background min-w-[120px] rounded-[100px] p-[10px] hover:opacity-80"
-                        isLoading={verifyLoading}
-                        disabled={
-                          !formState.email ||
-                          !isEmailValid ||
-                          !formState.verificationCode ||
-                          verifyLoading
-                        }
-                      >
-                        Verify
-                      </LoadedButton>
-                    </div>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+      {channelsLoading ? (
+        // Show loading state
+        <div className="space-y-[20px] rounded-lg">
+          <div className="space-y-[8px]">
+            <label className="text-[14px] text-white">Your Email</label>
+            <div className="flex items-center gap-[10px]">
+              <Skeleton className="h-[39px] max-w-[335px] flex-1 rounded-[100px]" />
+              <Skeleton className="h-[39px] min-w-[120px] rounded-[100px]" />
+            </div>
           </div>
-        </form>
-      </Form>
+        </div>
+      ) : hasVerifiedEmail ? (
+        // Show verified email with Change button
+        <div className="space-y-[20px] rounded-lg">
+          <div className="space-y-[8px]">
+            <label className="text-[14px] text-white">Your Email</label>
+            <div className="flex items-center gap-[10px]">
+              <Input
+                className="h-[39px] max-w-[335px] flex-1 rounded-[100px] border-gray-600 bg-gray-700 text-white placeholder:text-gray-400"
+                value={verifiedEmailChannel?.channelValue || ''}
+                readOnly
+              />
+              <LoadedButton
+                type="button"
+                onClick={handleChangeEmail}
+                variant="default"
+                className="bg-foreground min-w-[120px] rounded-[100px] p-[10px] text-black hover:opacity-80"
+              >
+                Change
+              </LoadedButton>
+            </div>
+          </div>
+        </div>
+      ) : (
+        // Show send/verify flow
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(handleVerify)} className="space-y-[20px]">
+            <div className="space-y-[20px] rounded-lg">
+              {/* Email Field */}
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem className="space-y-[8px]">
+                    <FormLabel className="text-[14px] text-white">Your Email</FormLabel>
+                    <FormControl>
+                      <div className="flex items-center gap-[10px]">
+                        <Input
+                          className="h-[39px] max-w-[335px] flex-1 rounded-[100px] border-gray-600 bg-gray-700 text-white placeholder:text-gray-400"
+                          placeholder="yourname@example.com"
+                          value={formState.email}
+                          onChange={(e) => {
+                            dispatch({ type: 'SET_EMAIL', payload: e.target.value });
+                            field.onChange(e.target.value);
+                          }}
+                        />
+                        <LoadedButton
+                          type="button"
+                          onClick={handleSendCode}
+                          variant="default"
+                          className="bg-foreground min-w-[120px] rounded-[100px] p-[10px] text-black hover:opacity-80"
+                          isLoading={sendingLoading}
+                          disabled={!formState.email || !isEmailValid || countdown.active}
+                        >
+                          {countdown.active ? (
+                            <Countdown
+                              key={countdown.key}
+                              start={countdown.duration}
+                              autoStart
+                              onEnd={handleCountdownEnd}
+                              onTick={handleCountdownTick}
+                            />
+                          ) : (
+                            'Send Code'
+                          )}
+                        </LoadedButton>
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Verification Code Field */}
+              <FormField
+                control={form.control}
+                name="verificationCode"
+                render={({ field }) => (
+                  <FormItem className="space-y-[8px]">
+                    <FormLabel className="text-[14px] text-white">Verification Code</FormLabel>
+                    <FormControl>
+                      <div className="flex items-center gap-[10px]">
+                        <Input
+                          className="h-[39px] max-w-[335px] flex-1 rounded-[100px] border-gray-600 bg-gray-700 text-white placeholder:text-gray-400"
+                          placeholder="e.g., 123456"
+                          disabled={!formState.email || !isEmailValid}
+                          value={formState.verificationCode}
+                          onChange={(e) => {
+                            dispatch({ type: 'SET_VERIFICATION_CODE', payload: e.target.value });
+                            field.onChange(e.target.value);
+                          }}
+                        />
+                        <LoadedButton
+                          type="submit"
+                          variant="default"
+                          className="bg-foreground text-background min-w-[120px] rounded-[100px] p-[10px] hover:opacity-80"
+                          isLoading={verifyLoading}
+                          disabled={
+                            !formState.email ||
+                            !isEmailValid ||
+                            !formState.verificationCode ||
+                            verifyLoading
+                          }
+                        >
+                          Verify
+                        </LoadedButton>
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+          </form>
+        </Form>
+      )}
     </div>
   );
 }
