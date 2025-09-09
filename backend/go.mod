@@ -6,10 +6,10 @@ require (
 	github.com/99designs/gqlgen v0.17.78
 	github.com/JohannesKaufmann/html-to-markdown/v2 v2.4.0
 	github.com/bwmarrin/snowflake v0.3.0
-	github.com/ethereum/go-ethereum v1.16.2
-	github.com/go-co-op/gocron/v2 v2.16.3
+	github.com/ethereum/go-ethereum v1.16.3
+	github.com/go-co-op/gocron/v2 v2.16.5
 	github.com/golang-jwt/jwt/v5 v5.3.0
-	github.com/golang-migrate/migrate/v4 v4.18.3
+	github.com/golang-migrate/migrate/v4 v4.19.0
 	github.com/gomarkdown/markdown v0.0.0-20250810172220-2e2c11897d1a
 	github.com/jinzhu/copier v0.4.0
 	github.com/joho/godotenv v1.5.1
@@ -27,7 +27,7 @@ require (
 	go.uber.org/zap/exp v0.3.0
 	gopkg.in/yaml.v3 v3.0.1
 	gorm.io/driver/postgres v1.6.0
-	gorm.io/gorm v1.30.1
+	gorm.io/gorm v1.30.3
 )
 
 require (
@@ -94,7 +94,6 @@ require (
 	github.com/tklauser/numcpus v0.6.1 // indirect
 	github.com/vanng822/css v1.0.1 // indirect
 	github.com/wealdtech/go-multicodec v1.4.0 // indirect
-	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.10.0 // indirect
 	golang.org/x/crypto v0.41.0 // indirect
 	golang.org/x/net v0.43.0 // indirect
