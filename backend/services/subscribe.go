@@ -189,8 +189,9 @@ func (s *SubscribeService) UnsubscribeDao(baseInput types.BasicInput[gqlmodels.U
 
 	if err := s.db.
 		Table("dgv_user_subscribed_dao").
+		Where("id = ?", existingSubscribedDao.ID).
 		Update("state", dbmodels.SubscribeStateInactive).
-		Where("id = ?", existingSubscribedDao.ID).Error; err != nil {
+		Error; err != nil {
 		return nil, fmt.Errorf("failed to unsusbscribe dao %w", err)
 	}
 
