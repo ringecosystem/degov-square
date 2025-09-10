@@ -98,48 +98,6 @@ func (s *UserInteractionService) ModifyLikeDao(baseInput types.BasicInput[gqlmod
 	return true, nil
 }
 
-// func (s *UserInteractionService) BindNotificationChannel(baseInput types.BasicInput[gqlmodels.BindNotificationChannelInput]) (*gqlmodels.ResendOTPOutput, error) {
-// 	user := baseInput.User
-// 	input := baseInput.Input
-
-// 	var existingChannel dbmodels.NotificationChannel
-// 	err := s.db.Where("user_id = ? AND channel_type = ?", user.Id, input.Type).First(&existingChannel).Error
-// 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-// 		return nil, fmt.Errorf("error checking existing channel: %w", err)
-// 	}
-
-// 	if err == nil {
-// 		if existingChannel.Verified == 1 {
-// 			return nil, errors.New("channel type already exists for this user")
-// 		}
-// 		return s.resendOTPForChannel(types.BasicInput[*dbmodels.NotificationChannel]{
-// 			User:  user,
-// 			Input: &existingChannel,
-// 		})
-// 	}
-
-// 	channelID := utils.NextIDString()
-
-// 	channel := &dbmodels.NotificationChannel{
-// 		ID:           channelID,
-// 		UserID:       user.Id,
-// 		UserAddress:  user.Address,
-// 		Verified:     0,
-// 		ChannelType:  dbmodels.NotificationChannelType(input.Type),
-// 		ChannelValue: input.Value,
-// 		CTime:        time.Now(),
-// 	}
-
-// 	if err := s.db.Create(channel).Error; err != nil {
-// 		return nil, fmt.Errorf("error creating notification channel: %w", err)
-// 	}
-
-// 	return s.resendOTPForChannel(types.BasicInput[*dbmodels.NotificationChannel]{
-// 		User:  user,
-// 		Input: channel,
-// 	})
-// }
-
 func (s *UserInteractionService) VerifyNotificationChannel(baseInput types.BasicInput[gqlmodels.VerifyNotificationChannelInput]) (*gqlmodels.VerifyNotificationChannelOutput, error) {
 	user := baseInput.User
 	input := baseInput.Input
@@ -196,21 +154,6 @@ func (s *UserInteractionService) ResendOTP(baseInput types.BasicInput[gqlmodels.
 	user := baseInput.User
 	input := baseInput.Input
 
-	// var existingChannel dbmodels.NotificationChannel
-	// err := s.db.
-	// 	Where("user_id = ? AND channel_type = ? and channel_value = ?", user.Id, input.Type, input.Value).
-	// 	First(&existingChannel).
-	// 	Error
-	// if err != nil {
-	// 	slog.Info("No existing channel found", "user_id", user.Id, "channel_type", input.Type, "channel_value", input.Value)
-	// }
-	// if existingChannel.Verified == 1 {
-	// 	output := gqlmodels.ResendOTPOutput{
-	// 		Code:    2,
-	// 		Message: utils.StringPtr("This notification channel has already been verified"),
-	// 	}
-	// 	return &output, nil
-	// }
 	return s.resendOTPForChannel(types.BasicInput[*gqlmodels.BaseNotificationChannelInput]{
 		User:  user,
 		Input: &input,
@@ -251,7 +194,6 @@ func (s *UserInteractionService) resendOTPForChannel(baseInput types.BasicInput[
 	ensName, err := s.userService.GetENSName(user.Address)
 	if err != nil {
 		slog.Warn("Failed to get ENS name", "address", user.Address, "err", err)
-		// ensName = utils.StringPtr("")
 	}
 
 	switch input.Type {
