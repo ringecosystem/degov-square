@@ -118,8 +118,15 @@ export interface BindNotificationChannelInput {
 }
 
 export interface BindNotificationChannelResponse {
+  id: string;
   code: number;
   expiration: number;
+  message?: string;
+  rateLimit: number;
+}
+
+export interface ResendOTPResponse {
+  code: number;
   message?: string;
   rateLimit: number;
 }
@@ -146,9 +153,8 @@ export interface ProposalSubscriptionInput {
 }
 
 export interface ProposalSubscriptionResponse {
-  state: string;
-  proposalId: string;
-  daoCode: string;
+  code: number;
+  message?: string;
 }
 
 export interface SubscribedFeature {
@@ -198,8 +204,8 @@ export interface DaoSubscriptionInput {
 }
 
 export interface DaoSubscriptionResponse {
-  daoCode: string;
-  state: string;
+  code: number;
+  message?: string;
 }
 
 // Notification Variables Types

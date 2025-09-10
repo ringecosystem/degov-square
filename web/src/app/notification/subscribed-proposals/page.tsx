@@ -10,7 +10,8 @@ import { CustomTable } from '@/components/custom-table';
 import type { ColumnType } from '@/components/custom-table';
 import { ProposalStatus } from '@/components/proposal-status';
 import { useConfirm } from '@/contexts/confirm-context';
-import { useSubscribedProposals, useUnsubscribeProposal } from '@/lib/graphql/hooks';
+import { extractErrorMessage } from '@/utils/graphql-error-handler';
+import { useSubscribedProposals, useUnsubscribeProposal } from '@/hooks/useNotification';
 import type { SubscribedProposalItem } from '@/lib/graphql/types';
 
 import { Item } from './_components/item';
@@ -105,9 +106,8 @@ export default function SubscribedProposalsPage() {
                 refetch();
               },
               onError: (error: any) => {
-                toast.error(
-                  error?.response?.errors?.[0]?.message || 'Failed to unsubscribe proposal'
-                );
+                const errorMessage = extractErrorMessage(error) || 'Failed to unsubscribe proposal';
+                toast.error(errorMessage);
               }
             }
           );
@@ -118,7 +118,7 @@ export default function SubscribedProposalsPage() {
   );
 
   return (
-    <div className="md:bg-card space-y-[15px] md:min-h-[calc(100vh-300px)] md:space-y-0 md:rounded-[14px]">
+    <>
       {isMobileAndSubSection && (
         <Link href={`/notification`} className="flex items-center gap-[5px] md:gap-[10px]">
           <Image
@@ -157,6 +157,6 @@ export default function SubscribedProposalsPage() {
           />
         ))}
       </div>
-    </div>
+    </>
   );
 }

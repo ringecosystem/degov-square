@@ -9,6 +9,7 @@ import { toast } from 'react-toastify';
 import { z } from 'zod';
 
 import { useIsMobileAndSubSection } from '@/app/notification/_hooks/isMobileAndSubSection';
+import { extractErrorMessage } from '@/utils/graphql-error-handler';
 import { Countdown } from '@/components/countdown';
 import {
   Form,
@@ -21,8 +22,11 @@ import {
 import { Input } from '@/components/ui/input';
 import { LoadedButton } from '@/components/ui/loaded-button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useResendOTP, useVerifyNotificationChannel } from '@/hooks/useNotification';
-import { useListNotificationChannels } from '@/lib/graphql/hooks';
+import {
+  useResendOTP,
+  useVerifyNotificationChannel,
+  useNotificationChannels
+} from '@/hooks/useNotification';
 
 // Schema for validation
 const subscriptionSchema = z.object({
@@ -76,7 +80,7 @@ export default function SubscriptionPage() {
   // API hooks
   const resendOTPMutation = useResendOTP();
   const verifyEmailMutation = useVerifyNotificationChannel();
-  const { data: notificationChannels, isLoading: channelsLoading } = useListNotificationChannels();
+  const { data: notificationChannels, isLoading: channelsLoading } = useNotificationChannels();
 
   // State management
   const [formState, dispatch] = useReducer(formReducer, {
@@ -105,11 +109,7 @@ export default function SubscriptionPage() {
   const emailSchema = z.string().email();
   const isEmailValid = emailSchema.safeParse(formState.email).success;
 
-  // Check for verified email channel
-  const verifiedEmailChannel = notificationChannels?.find(
-    (channel) => channel.channelType === 'EMAIL' && channel.verified
-  );
-  const hasVerifiedEmail = !!verifiedEmailChannel && !isChangingEmail;
+  const hasVerifiedEmail = notificationChannels?.isEmailBound && !isChangingEmail;
 
   // Loading states
   const sendingLoading = resendOTPMutation.isPending;
@@ -135,8 +135,8 @@ export default function SubscriptionPage() {
           }
         },
         onError: (error: any) => {
-          const graphqlError = error.response?.errors?.[0]?.message;
-          const errorMessage = graphqlError || error.message || 'Failed to send verification code';
+          const errorMessage =
+            extractErrorMessage(error) || error.message || 'Failed to send verification code';
           toast.error(errorMessage);
         }
       }
@@ -147,7 +147,7 @@ export default function SubscriptionPage() {
     if (!formState.verificationCode || verifyLoading) return;
 
     verifyEmailMutation.mutate(
-      { id: formState.email, otpCode: formState.verificationCode },
+      { type: 'EMAIL' as const, value: formState.email, otpCode: formState.verificationCode },
       {
         onSuccess: (data) => {
           if (data.code === 0) {
@@ -161,8 +161,9 @@ export default function SubscriptionPage() {
             toast.error(data.message || 'Verification failed');
           }
         },
-        onError: (error: Error) => {
-          toast.error(error.message || 'Verification failed');
+        onError: (error: any) => {
+          const errorMessage = extractErrorMessage(error) || error.message || 'Verification failed';
+          toast.error(errorMessage);
         }
       }
     );
@@ -185,16 +186,16 @@ export default function SubscriptionPage() {
   const handleChangeEmail = useCallback(() => {
     setIsChangingEmail(true);
     // Pre-fill with current verified email
-    const currentEmail = verifiedEmailChannel?.channelValue || '';
+    const currentEmail = notificationChannels?.emailAddress || '';
     dispatch({ type: 'SET_EMAIL', payload: currentEmail });
     dispatch({ type: 'RESET_VERIFICATION' });
     form.setValue('email', currentEmail);
     form.setValue('verificationCode', '');
     setCountdown({ active: false, duration: 60, key: 0 });
-  }, [form, verifiedEmailChannel?.channelValue]);
+  }, [form, notificationChannels?.emailAddress]);
 
   return (
-    <div className="md:bg-card h-[calc(100vh-300px)] space-y-[15px] md:space-y-[20px] md:rounded-[14px] md:p-[20px]">
+    <>
       {isMobileAndSubSection && (
         <Link href={`/notification`} className="flex items-center gap-[5px] md:gap-[10px]">
           <Image
@@ -226,7 +227,7 @@ export default function SubscriptionPage() {
             <div className="flex items-center gap-[10px]">
               <Input
                 className="h-[39px] max-w-[335px] flex-1 rounded-[100px] border-gray-600 bg-gray-700 text-white placeholder:text-gray-400"
-                value={verifiedEmailChannel?.channelValue || ''}
+                value={notificationChannels?.emailAddress || ''}
                 readOnly
               />
               <LoadedButton
@@ -333,6 +334,6 @@ export default function SubscriptionPage() {
           </form>
         </Form>
       )}
-    </div>
+    </>
   );
 }

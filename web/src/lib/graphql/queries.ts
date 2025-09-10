@@ -138,9 +138,8 @@ export const BIND_NOTIFICATION_CHANNEL = gql`
 `;
 
 export const RESEND_OTP = gql`
-  mutation ResendOTP($type: NotificationChannelType!, $value: String!) {
-    resendOTP(input: { type: $type, value: $value }) {
-      expiration
+  mutation ResendOTP($input: BaseNotificationChannelInput!) {
+    resendOTP(input: $input) {
       code
       message
       rateLimit
@@ -149,8 +148,8 @@ export const RESEND_OTP = gql`
 `;
 
 export const VERIFY_NOTIFICATION_CHANNEL = gql`
-  mutation VerifyNotificationChannel($id: String!, $otpCode: String!) {
-    verifyNotificationChannel(input: { id: $id, otpCode: $otpCode }) {
+  mutation VerifyNotificationChannel($input: VerifyNotificationChannelInput!) {
+    verifyNotificationChannel(input: $input) {
       code
       message
     }
@@ -158,15 +157,10 @@ export const VERIFY_NOTIFICATION_CHANNEL = gql`
 `;
 
 export const SUBSCRIBE_PROPOSAL = gql`
-  mutation SubscribeProposal(
-    $daoCode: String!
-    $proposalId: String!
-    $features: [SubscriptionFeatureInput!]
-  ) {
-    subscribeProposal(input: { daoCode: $daoCode, proposalId: $proposalId, features: $features }) {
-      state
-      proposalId
-      daoCode
+  mutation SubscribeProposal($input: SubscribeProposalInput!) {
+    subscribeProposal(input: $input) {
+      code
+      message
     }
   }
 `;
@@ -174,18 +168,18 @@ export const SUBSCRIBE_PROPOSAL = gql`
 export const UNSUBSCRIBE_PROPOSAL = gql`
   mutation UnsubscribeProposal($daoCode: String!, $proposalId: String!) {
     unsubscribeProposal(input: { daoCode: $daoCode, proposalId: $proposalId }) {
-      state
-      proposalId
       daoCode
+      proposalId
+      state
     }
   }
 `;
 
 export const SUBSCRIBE_DAO = gql`
-  mutation SubscribeDao($daoCode: String!, $features: [SubscriptionFeatureInput!]) {
-    subscribeDao(input: { daoCode: $daoCode, features: $features }) {
-      daoCode
-      state
+  mutation SubscribeDao($input: SubscribeDaoInput!) {
+    subscribeDao(input: $input) {
+      code
+      message
     }
   }
 `;

@@ -9,7 +9,9 @@ import { useIsMobileAndSubSection } from '@/app/notification/_hooks/isMobileAndS
 import { CustomTable } from '@/components/custom-table';
 import type { ColumnType } from '@/components/custom-table';
 import { useConfirm } from '@/contexts/confirm-context';
-import { useSubscribedDaos, useUnsubscribeDao, useQueryDaos } from '@/lib/graphql/hooks';
+import { extractErrorMessage } from '@/utils/graphql-error-handler';
+import { useSubscribedDaos, useUnsubscribeDao } from '@/hooks/useNotification';
+import { useQueryDaos } from '@/lib/graphql/hooks';
 import type { SubscribedDaoItem, Dao } from '@/lib/graphql/types';
 
 import { Item } from './_components/item';
@@ -116,17 +118,15 @@ export default function SubscribedDAOsPage() {
         cancelText: 'Cancel',
         confirmText: 'Confirm',
         onConfirm: () => {
-          return unsubscribeMutation.mutateAsync(
-            { daoCode },
-            {
-              onSuccess: () => {
-                refetch();
-              },
-              onError: (error: any) => {
-                toast.error(error?.response?.errors?.[0]?.message || 'Failed to unsubscribe DAO');
-              }
+          return unsubscribeMutation.mutateAsync(daoCode, {
+            onSuccess: () => {
+              refetch();
+            },
+            onError: (error: any) => {
+              const errorMessage = extractErrorMessage(error) || 'Failed to unsubscribe DAO';
+              toast.error(errorMessage);
             }
-          );
+          });
         }
       });
     },
@@ -134,7 +134,7 @@ export default function SubscribedDAOsPage() {
   );
 
   return (
-    <div className="md:bg-card md:h-[calc(100vh-300px)] md:rounded-[14px]">
+    <>
       {isMobileAndSubSection && (
         <Link href={`/notification`} className="flex items-center gap-[5px] md:gap-[10px]">
           <Image
@@ -168,6 +168,6 @@ export default function SubscribedDAOsPage() {
           />
         ))}
       </div>
-    </div>
+    </>
   );
 }
