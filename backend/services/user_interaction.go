@@ -132,7 +132,7 @@ func (s *UserInteractionService) VerifyNotificationChannel(baseInput types.Basic
 		slog.Warn("error deleting existing unverified channel", "user_id", user.Id, "channel_type", input.Type, "err", err)
 	}
 
-	notivicationChannel := dbmodels.NotificationChannel{
+	notificationChannel := dbmodels.NotificationChannel{
 		ID:           utils.NextIDString(),
 		UserID:       user.Id,
 		UserAddress:  user.Address,
@@ -141,7 +141,7 @@ func (s *UserInteractionService) VerifyNotificationChannel(baseInput types.Basic
 		ChannelValue: input.Value,
 		CTime:        time.Now(),
 	}
-	if err := s.db.Create(&notivicationChannel).Error; err != nil {
+	if err := s.db.Create(&notificationChannel).Error; err != nil {
 		return nil, err
 	}
 

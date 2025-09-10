@@ -2,6 +2,7 @@ package services
 
 import (
 	"fmt"
+	"log/slog"
 	"strings"
 	"time"
 
@@ -90,6 +91,7 @@ func (s *SubscribeService) buildFeatures(
 			dbFeatureName = dbmodels.SubscribeFeatureProposalNew
 		default:
 			// skip unsupported feature
+			slog.Warn("skip unsupported feature", "feature", featureSetting.Name)
 			continue
 		}
 
