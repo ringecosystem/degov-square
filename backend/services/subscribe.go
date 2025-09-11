@@ -137,6 +137,7 @@ func (s *SubscribeService) SubscribeDao(baseInput types.BasicInput[gqlmodels.Sub
 
 	if err1 == nil {
 		existingSubscribedDao.UTime = time.Now()
+		existingSubscribedDao.State = dbmodels.SubscribeStateActive
 		if err := s.db.Save(existingSubscribedDao).Error; err != nil {
 			return nil, err
 		}
@@ -266,6 +267,7 @@ func (s *SubscribeService) SubscribeProposal(baseInput types.BasicInput[gqlmodel
 	})
 	if err1 == nil {
 		existingSubscribedProposal.UTime = time.Now()
+		existingSubscribedProposal.State = dbmodels.SubscribeStateActive
 		if err := s.db.Save(existingSubscribedProposal).Error; err != nil {
 			return nil, err
 		}
