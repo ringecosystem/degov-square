@@ -60,8 +60,13 @@ export const useNotificationChannels = (enabled = true) => {
   }, [query.data]);
 
   return {
-    ...query,
-    data: enhancedData
+    data: enhancedData,
+    isLoading: query.isLoading,
+    isError: query.isError,
+    error: query.error,
+    refetch: query.refetch,
+    isSuccess: query.isSuccess,
+    isFetching: query.isFetching
   };
 };
 

@@ -9,7 +9,6 @@ import { toast } from 'react-toastify';
 import { z } from 'zod';
 
 import { useIsMobileAndSubSection } from '@/app/notification/_hooks/isMobileAndSubSection';
-import { extractErrorMessage } from '@/utils/graphql-error-handler';
 import { Countdown } from '@/components/countdown';
 import {
   Form,
@@ -27,6 +26,7 @@ import {
   useVerifyNotificationChannel,
   useNotificationChannels
 } from '@/hooks/useNotification';
+import { extractErrorMessage } from '@/utils/graphql-error-handler';
 
 // Schema for validation
 const subscriptionSchema = z.object({

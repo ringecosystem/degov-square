@@ -6,8 +6,8 @@ import { usePathname } from 'next/navigation';
 
 import { cn } from '@/lib/utils';
 
-import { useIsMobileAndSubSection } from './_hooks/isMobileAndSubSection';
 import { AuthGuard } from './_components';
+import { useIsMobileAndSubSection } from './_hooks/isMobileAndSubSection';
 
 const NAVS = [
   { label: 'Subscription', value: 'subscription' },

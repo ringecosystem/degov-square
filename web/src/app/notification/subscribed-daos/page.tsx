@@ -9,10 +9,10 @@ import { useIsMobileAndSubSection } from '@/app/notification/_hooks/isMobileAndS
 import { CustomTable } from '@/components/custom-table';
 import type { ColumnType } from '@/components/custom-table';
 import { useConfirm } from '@/contexts/confirm-context';
-import { extractErrorMessage } from '@/utils/graphql-error-handler';
 import { useSubscribedDaos, useUnsubscribeDao } from '@/hooks/useNotification';
 import { useQueryDaos } from '@/lib/graphql/hooks';
 import type { SubscribedDaoItem, Dao } from '@/lib/graphql/types';
+import { extractErrorMessage } from '@/utils/graphql-error-handler';
 
 import { Item } from './_components/item';
 

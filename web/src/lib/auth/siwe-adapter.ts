@@ -6,6 +6,7 @@ import { createSiweMessage } from 'viem/siwe';
 import { createPublicClient } from '@/lib/graphql/client';
 import { QUERY_NONCE, LOGIN_MUTATION } from '@/lib/graphql/queries';
 import type { NonceVariables, LoginVariables } from '@/lib/graphql/types';
+
 import { tokenManager } from './token-manager';
 
 /**
@@ -53,6 +54,7 @@ export const authenticationAdapter = createAuthenticationAdapter({
   },
 
   signOut: async () => {
-    tokenManager.clearToken();
+    tokenManager.setToken(null);
+    tokenManager.setAddress(null);
   }
 });

@@ -4,7 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 
 import { ConnectButton } from '@/components/connect-button';
-import { useAccount } from 'wagmi';
+import { useAccount } from '@/hooks/useAccount';
 
 import { NotificationButton } from '../notification-button';
 export function Header() {

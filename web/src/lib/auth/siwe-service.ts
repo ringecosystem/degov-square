@@ -1,14 +1,16 @@
 'use client';
 
 import { createSiweMessage } from 'viem/siwe';
-import type { SignMessageParameters } from 'wagmi/actions';
+
 
 import { createPublicClient } from '@/lib/graphql/client';
 import { QUERY_NONCE, LOGIN_MUTATION } from '@/lib/graphql/queries';
 import type { NonceVariables, LoginVariables } from '@/lib/graphql/types';
+
 import { tokenManager } from './token-manager';
 
 import type { AuthResult } from './global-auth-manager';
+import type { SignMessageParameters } from 'wagmi/actions';
 
 interface AuthenticateWithWalletParams {
   address: `0x${string}`;
@@ -98,8 +100,9 @@ class SiweService {
 
   async signOut(): Promise<void> {
     try {
-      // Clear token
-      tokenManager.clearToken();
+      // Clear both token and address
+      tokenManager.setToken(null);
+      tokenManager.setAddress(null);
     } catch (error) {
       console.error('Sign out failed:', error);
       throw error;

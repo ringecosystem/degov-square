@@ -10,9 +10,9 @@ import { CustomTable } from '@/components/custom-table';
 import type { ColumnType } from '@/components/custom-table';
 import { ProposalStatus } from '@/components/proposal-status';
 import { useConfirm } from '@/contexts/confirm-context';
-import { extractErrorMessage } from '@/utils/graphql-error-handler';
 import { useSubscribedProposals, useUnsubscribeProposal } from '@/hooks/useNotification';
 import type { SubscribedProposalItem } from '@/lib/graphql/types';
+import { extractErrorMessage } from '@/utils/graphql-error-handler';
 
 import { Item } from './_components/item';
 

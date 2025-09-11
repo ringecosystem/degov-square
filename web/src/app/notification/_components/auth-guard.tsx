@@ -1,9 +1,9 @@
 'use client';
 
-import { useAccount } from 'wagmi';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 
 import { NotFoundIcon } from '@/components/icons/not-found-icon';
+import { useAccount } from '@/hooks/useAccount';
 
 interface AuthGuardProps {
   children: React.ReactNode;
