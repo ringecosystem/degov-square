@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"strings"
 	"time"
 
 	"github.com/patrickmn/go-cache"
@@ -99,54 +98,11 @@ func (s *UserInteractionService) ModifyLikeDao(baseInput types.BasicInput[gqlmod
 	return true, nil
 }
 
-func (s *UserInteractionService) BindNotificationChannel(baseInput types.BasicInput[gqlmodels.BindNotificationChannelInput]) (*gqlmodels.ResendOTPOutput, error) {
-	user := baseInput.User
-	input := baseInput.Input
-
-	var existingChannel dbmodels.NotificationChannel
-	err := s.db.Where("user_id = ? AND channel_type = ?", user.Id, input.Type).First(&existingChannel).Error
-	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-		return nil, fmt.Errorf("error checking existing channel: %w", err)
-	}
-
-	if err == nil {
-		if existingChannel.Verified == 1 {
-			return nil, errors.New("channel type already exists for this user")
-		}
-
-		return s.resendOTPForChannel(types.BasicInput[*dbmodels.NotificationChannel]{
-			User:  user,
-			Input: &existingChannel,
-		})
-	}
-
-	channelID := utils.NextIDString()
-
-	channel := &dbmodels.NotificationChannel{
-		ID:           channelID,
-		UserID:       user.Id,
-		UserAddress:  user.Address,
-		Verified:     0,
-		ChannelType:  dbmodels.NotificationChannelType(input.Type),
-		ChannelValue: input.Value,
-		CTime:        time.Now(),
-	}
-
-	if err := s.db.Create(channel).Error; err != nil {
-		return nil, fmt.Errorf("error creating notification channel: %w", err)
-	}
-
-	return s.resendOTPForChannel(types.BasicInput[*dbmodels.NotificationChannel]{
-		User:  user,
-		Input: channel,
-	})
-}
-
 func (s *UserInteractionService) VerifyNotificationChannel(baseInput types.BasicInput[gqlmodels.VerifyNotificationChannelInput]) (*gqlmodels.VerifyNotificationChannelOutput, error) {
 	user := baseInput.User
 	input := baseInput.Input
 
-	cachedOTP, found := s.otpCache.Get(input.ID)
+	cachedOTP, found := s.otpCache.Get(user.Id)
 	if !found {
 		return &gqlmodels.VerifyNotificationChannelOutput{
 			Code:    1,
@@ -169,22 +125,24 @@ func (s *UserInteractionService) VerifyNotificationChannel(baseInput types.Basic
 		}, nil
 	}
 
-	s.otpCache.Delete(input.ID)
+	s.otpCache.Delete(user.Id)
 
-	var channel dbmodels.NotificationChannel
-	err := s.db.Where("id = ? AND user_id = ?", input.ID, user.Id).First(&channel).Error
+	err := s.db.Delete(&dbmodels.NotificationChannel{}, "user_id = ? AND channel_type = ?", user.Id, input.Type).Error
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return &gqlmodels.VerifyNotificationChannelOutput{
-				Code:    1,
-				Message: utils.StringPtr("Notification channel not found"),
-			}, nil
-		}
-		return nil, fmt.Errorf("error finding notification channel: %w", err)
+		slog.Warn("error deleting existing unverified channel", "user_id", user.Id, "channel_type", input.Type, "err", err)
 	}
 
-	if err := s.db.Model(&channel).Update("verified", 1).Error; err != nil {
-		return nil, fmt.Errorf("error updating channel verification status: %w", err)
+	notificationChannel := dbmodels.NotificationChannel{
+		ID:           utils.NextIDString(),
+		UserID:       user.Id,
+		UserAddress:  user.Address,
+		Verified:     1,
+		ChannelType:  dbmodels.NotificationChannelType(input.Type),
+		ChannelValue: input.Value,
+		CTime:        time.Now(),
+	}
+	if err := s.db.Create(&notificationChannel).Error; err != nil {
+		return nil, err
 	}
 
 	return &gqlmodels.VerifyNotificationChannelOutput{
@@ -192,29 +150,22 @@ func (s *UserInteractionService) VerifyNotificationChannel(baseInput types.Basic
 	}, nil
 }
 
-func (s *UserInteractionService) ResendOTP(baseInput types.BasicInput[gqlmodels.ResendOTPInput]) (*gqlmodels.ResendOTPOutput, error) {
+func (s *UserInteractionService) ResendOTP(baseInput types.BasicInput[gqlmodels.BaseNotificationChannelInput]) (*gqlmodels.ResendOTPOutput, error) {
 	user := baseInput.User
 	input := baseInput.Input
 
-	var existingChannel dbmodels.NotificationChannel
-	err := s.db.Where("user_id = ? AND channel_type = ? and channel_value = ?", user.Id, input.Type, input.Value).First(&existingChannel).Error
-	if err != nil {
-		return nil, fmt.Errorf("error checking existing channel: %w", err)
-	}
-	return s.resendOTPForChannel(types.BasicInput[*dbmodels.NotificationChannel]{
+	return s.resendOTPForChannel(types.BasicInput[*gqlmodels.BaseNotificationChannelInput]{
 		User:  user,
-		Input: &existingChannel,
+		Input: &input,
 	})
 }
 
-func (s *UserInteractionService) resendOTPForChannel(baseInput types.BasicInput[*dbmodels.NotificationChannel]) (*gqlmodels.ResendOTPOutput, error) {
+func (s *UserInteractionService) resendOTPForChannel(baseInput types.BasicInput[*gqlmodels.BaseNotificationChannelInput]) (*gqlmodels.ResendOTPOutput, error) {
 	user := baseInput.User
 	input := baseInput.Input
 
 	if !config.GetAppEnv().IsDevelopment() {
-		replacer := strings.NewReplacer(" ", "", "\n", "", "\r", "")
-		stdValue := strings.ToLower(replacer.Replace(input.ChannelValue))
-		rateLimitKey := fmt.Sprintf("otp_rate_limit_%s_%s_%s", user.Id, input.ChannelType, stdValue)
+		rateLimitKey := fmt.Sprintf("otp_rate_limit_%s", user.Id)
 
 		if cachedTime, found := s.rateLimitCache.Get(rateLimitKey); found {
 			if lastSentTime, ok := cachedTime.(time.Time); ok {
@@ -224,7 +175,6 @@ func (s *UserInteractionService) resendOTPForChannel(baseInput types.BasicInput[
 					remainingSeconds := int32(remaining.Seconds())
 					return &gqlmodels.ResendOTPOutput{
 						Code:      1,
-						ID:        input.ID,
 						RateLimit: &remainingSeconds,
 						Message:   utils.StringPtr(fmt.Sprintf("OTP can only be sent once per minute. Please try again in %d seconds", remainingSeconds)),
 					}, nil
@@ -232,7 +182,6 @@ func (s *UserInteractionService) resendOTPForChannel(baseInput types.BasicInput[
 			} else {
 				return &gqlmodels.ResendOTPOutput{
 					Code:      1,
-					ID:        input.ID,
 					RateLimit: utils.Int32Ptr(60),
 					Message:   utils.StringPtr("OTP can only be sent once per minute. Please try again later"),
 				}, nil
@@ -245,16 +194,15 @@ func (s *UserInteractionService) resendOTPForChannel(baseInput types.BasicInput[
 	ensName, err := s.userService.GetENSName(user.Address)
 	if err != nil {
 		slog.Warn("Failed to get ENS name", "address", user.Address, "err", err)
-		// ensName = utils.StringPtr("")
 	}
 
-	switch input.ChannelType {
-	case dbmodels.NotificationChannelTypeEmail:
+	switch input.Type {
+	case gqlmodels.NotificationChannelTypeEmail:
 		otpCode, err := utils.NextOTPCode()
 		if err != nil {
 			return nil, fmt.Errorf("error generating OTP code: %w", err)
 		}
-		s.otpCache.Set(input.ID, otpCode, 3*time.Minute)
+		s.otpCache.Set(user.Id, otpCode, 3*time.Minute)
 
 		templateOutput, err := s.templateService.GenerateTemplateOTP(types.GenerateTemplateOTPInput{
 			DegovSiteConfig: config.GetDegovSiteConfig(),
@@ -268,7 +216,7 @@ func (s *UserInteractionService) resendOTPForChannel(baseInput types.BasicInput[
 		}
 		if err := s.notifierService.Notify(types.NotifyInput{
 			Type:     dbmodels.NotificationChannelTypeEmail,
-			To:       input.ChannelValue,
+			To:       input.Value,
 			Template: templateOutput,
 		}); err != nil {
 			slog.Warn("Failed to notify", "err", err)
@@ -276,36 +224,42 @@ func (s *UserInteractionService) resendOTPForChannel(baseInput types.BasicInput[
 
 		return &gqlmodels.ResendOTPOutput{
 			Code:       0,
-			ID:         input.ID,
 			Expiration: utils.Int32Ptr(3 * 60),
 		}, nil
 
-	case dbmodels.NotificationChannelTypeWebhook:
+	case gqlmodels.NotificationChannelTypeWebhook:
 		return &gqlmodels.ResendOTPOutput{
 			Code:    0,
-			ID:      input.ID,
 			Message: utils.StringPtr("this method do not need send OTP to verify"),
 		}, nil
 
 	default:
 		return &gqlmodels.ResendOTPOutput{
 			Code:    0,
-			ID:      input.ID,
 			Message: utils.StringPtr("do not support this notification channel"),
 		}, nil
 	}
 
 }
 
-func (s UserInteractionService) ListChannel(baseInput types.BasicInput[types.ListChannelInput]) ([]dbmodels.NotificationChannel, error) {
+func (s UserInteractionService) ListChannel(
+	baseInput types.BasicInput[types.ListChannelInput],
+) ([]dbmodels.NotificationChannel, error) {
 	user := baseInput.User
-	verified := 0
-	if baseInput.Input.Verified {
-		verified = 1
-	}
 	var results []dbmodels.NotificationChannel
-	s.db.
-		Where("user_id = ? and verified = ?", user.Id, verified).
-		Find(&results)
+
+	query := s.db.Where("user_id = ?", user.Id)
+
+	if baseInput.Input.Verified != nil {
+		verified := 0
+		if *baseInput.Input.Verified {
+			verified = 1
+		}
+		query = query.Where("verified = ?", verified)
+	}
+
+	if err := query.Find(&results).Error; err != nil {
+		return nil, err
+	}
 	return results, nil
 }

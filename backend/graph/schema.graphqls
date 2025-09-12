@@ -58,18 +58,6 @@ enum NotificationChannelType {
 
 ### ==== entities
 
-type User {
-  id: ID!
-  address: String!
-  email: String
-  # likedDaos: [UserLikedDao!]!
-  # followedDaos: [UserFollowedDao!]!
-  # channels: [UserChannel!]!
-  # notificationRecords: [NotificationRecord!]!
-  ctime: Time!
-  utime: Time
-}
-
 type Dao {
   id: ID!
   chainId: Int!
@@ -174,11 +162,21 @@ type VerifyNotificationChannelOutput {
 
 type ResendOTPOutput {
   code: Int!
-  id: String!
+  # id: String!
   message: String
   expiration: Int
   rateLimit: Int
 }
+
+type NotificationChannel {
+  id: String!
+  channelType: NotificationChannelType!
+  channelValue: String!
+  verified: Int!
+  payload: String
+  ctime: Time!
+}
+
 
 ### === inputs
 
@@ -206,20 +204,21 @@ input EvmAbiInput {
   contract: String!
 }
 
-input BindNotificationChannelInput {
+input BaseNotificationChannelInput {
   type: NotificationChannelType!
   value: String!
 }
 
 input VerifyNotificationChannelInput {
-  id: String!
+  type: NotificationChannelType!
+  value: String!
   otpCode: String!
 }
 
-input resendOTPInput {
-  type: NotificationChannelType!
-  value: String!
-}
+# input resendOTPInput {
+#   type: NotificationChannelType!
+#   value: String!
+# }
 
 input FeatureSettingsInput {
   name: FeatureName!
@@ -260,6 +259,9 @@ type Query {
   # Tool queries
   evmAbi(input: EvmAbiInput!): [EvmAbiOutput!] @auth(required: false)
 
+  # notifications
+  listNotificationChannels: [NotificationChannel!] @auth
+
   # subscribe
   subscribedDaos: [SubscribedDao!]! @auth
   subscribedProposals: [SubscribedProposal!]! @auth
@@ -271,11 +273,11 @@ type Mutation {
 
   # User interactions
   modifyLikeDao(input: ModifyLikeDaoInput!): Boolean! @auth
-  bindNotificationChannel(input: BindNotificationChannelInput!): ResendOTPOutput! @auth
+  # bindNotificationChannel(input: BindNotificationChannelInput!): ResendOTPOutput! @auth
   verifyNotificationChannel(
     input: VerifyNotificationChannelInput!
   ): VerifyNotificationChannelOutput! @auth
-  resendOTP(input: resendOTPInput!): ResendOTPOutput! @auth
+  resendOTP(input: BaseNotificationChannelInput!): ResendOTPOutput! @auth
 
   # subscribe
   subscribeDao(input: SubscribeDaoInput!): SubscribedDaoOutput! @auth
