@@ -2,6 +2,7 @@ package services
 
 import (
 	"fmt"
+	"log/slog"
 	"strings"
 	"time"
 
@@ -88,9 +89,9 @@ func (s *SubscribeService) buildFeatures(
 			dbFeatureName = dbmodels.SubscribeFeatureProposalStateChanged
 		case gqlmodels.FeatureNameProposalNew:
 			dbFeatureName = dbmodels.SubscribeFeatureProposalNew
-			continue
 		default:
 			// skip unsupported feature
+			slog.Warn("skip unsupported feature", "feature", featureSetting.Name)
 			continue
 		}
 
@@ -136,6 +137,7 @@ func (s *SubscribeService) SubscribeDao(baseInput types.BasicInput[gqlmodels.Sub
 
 	if err1 == nil {
 		existingSubscribedDao.UTime = time.Now()
+		existingSubscribedDao.State = dbmodels.SubscribeStateActive
 		if err := s.db.Save(existingSubscribedDao).Error; err != nil {
 			return nil, err
 		}
@@ -188,7 +190,11 @@ func (s *SubscribeService) UnsubscribeDao(baseInput types.BasicInput[gqlmodels.U
 		return nil, fmt.Errorf("failed to inspect existing subscribed DAO: %w", err)
 	}
 
-	if err := s.db.Update("state", dbmodels.SubscribeStateInactive).Where("id = ?", existingSubscribedDao.ID).Error; err != nil {
+	if err := s.db.
+		Table("dgv_user_subscribed_dao").
+		Where("id = ?", existingSubscribedDao.ID).
+		Update("state", dbmodels.SubscribeStateInactive).
+		Error; err != nil {
 		return nil, fmt.Errorf("failed to unsusbscribe dao %w", err)
 	}
 
@@ -225,9 +231,8 @@ func (s *SubscribeService) InspectSubscribeProposal(baseInput types.BasicInput[I
 	var subscribedProposal dbmodels.UserSubscribedProposal
 	err := s.db.
 		Where(
-			"(user_id = ? or user_address= ?) AND dao_code = ? AND proposal_id = ?",
+			"user_id = ? AND dao_code = ? AND proposal_id = ?",
 			user.Id,
-			user.Address,
 			input.DaoCode,
 			input.ProposalID,
 		).
@@ -262,6 +267,7 @@ func (s *SubscribeService) SubscribeProposal(baseInput types.BasicInput[gqlmodel
 	})
 	if err1 == nil {
 		existingSubscribedProposal.UTime = time.Now()
+		existingSubscribedProposal.State = dbmodels.SubscribeStateActive
 		if err := s.db.Save(existingSubscribedProposal).Error; err != nil {
 			return nil, err
 		}
@@ -321,7 +327,11 @@ func (s *SubscribeService) UnsubscribeProposal(baseInput types.BasicInput[gqlmod
 		return nil, fmt.Errorf("failed to inspect existing subscribed proposal: %w", err)
 	}
 
-	if err := s.db.Update("state", dbmodels.SubscribeStateInactive).Where("id = ?", existingSubscribedProposal.ID).Error; err != nil {
+	if err := s.db.
+		Table("dgv_user_subscribed_proposal").
+		Where("id = ?", existingSubscribedProposal.ID).
+		Update("state", dbmodels.SubscribeStateInactive).
+		Error; err != nil {
 		return nil, fmt.Errorf("failed to unsubscribe proposal: %w", err)
 	}
 
@@ -442,19 +452,18 @@ func (s *SubscribeService) ListFeatures(baseInput types.BasicInput[types.ListFea
 		return nil, fmt.Errorf("not logged in")
 	}
 
-	var features []dbmodels.SubscribeFeature
-	query := s.db.Table("dgv_subscribed_feature").
-		Select("dgv_subscribed_feature.*").
-		Where("dgv_subscribed_feature.dao_code = ?", baseInput.Input.DaoCode)
+	query := s.db.Model(&dbmodels.SubscribeFeature{}).
+		Where("user_id = ?", baseInput.User.Id).
+		Where("dao_code = ?", baseInput.Input.DaoCode)
 
 	if baseInput.Input.ProposalID != nil && *baseInput.Input.ProposalID != "" {
-		query = query.Where("dgv_subscribed_feature.proposal_id = ?", *baseInput.Input.ProposalID)
+		query = query.Where("proposal_id = ?", *baseInput.Input.ProposalID)
 	} else {
-		query = query.Where("dgv_subscribed_feature.proposal_id IS NULL OR dgv_subscribed_feature.proposal_id = ''")
+		query = query.Where("proposal_id IS NULL OR proposal_id = ''")
 	}
 
-	err := query.Scan(&features).Error
-	if err != nil {
+	var features []dbmodels.SubscribeFeature
+	if err := query.Find(&features).Error; err != nil {
 		return nil, err
 	}
 
