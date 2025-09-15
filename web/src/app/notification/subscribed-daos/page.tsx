@@ -8,6 +8,7 @@ import { toast } from 'react-toastify';
 import { useIsMobileAndSubSection } from '@/app/notification/_hooks/isMobileAndSubSection';
 import { CustomTable } from '@/components/custom-table';
 import type { ColumnType } from '@/components/custom-table';
+import { Empty } from '@/components/ui/empty';
 import { useConfirm } from '@/contexts/confirm-context';
 import { useSubscribedDaos, useUnsubscribeDao } from '@/hooks/useNotification';
 import { useQueryDaos } from '@/lib/graphql/hooks';
@@ -152,21 +153,26 @@ export default function SubscribedDAOsPage() {
         dataSource={(enhancedSubscriptions as EnhancedSubscribedDaoItem[]) ?? []}
         isLoading={isLoading || isDaosLoading}
         rowKey={(record) => record.dao?.code || ''}
+        emptyText="Haven't subscribed any DAOs yet"
         className="hidden md:block"
       />
 
       <div className="mt-[15px] flex flex-col gap-[15px] md:hidden">
-        {enhancedSubscriptions.map((subscription) => (
-          <Item
-            key={subscription.dao?.code}
-            id={subscription.dao?.code || ''}
-            name={subscription.dao?.name || 'Unknown DAO'}
-            logo={subscription.enhancedDao?.logo || ''}
-            network={subscription.enhancedDao?.chainName || 'Unknown Network'}
-            networkLogo={subscription.enhancedDao?.chainLogo || ''}
-            onRemove={() => handleUnsubscribe(subscription.dao?.code || '')}
-          />
-        ))}
+        {!isLoading && !isDaosLoading && enhancedSubscriptions.length === 0 ? (
+          <Empty label="Haven't subscribed any DAOs yet" className="mt-[100px]" />
+        ) : (
+          enhancedSubscriptions.map((subscription) => (
+            <Item
+              key={subscription.dao?.code}
+              id={subscription.dao?.code || ''}
+              name={subscription.dao?.name || 'Unknown DAO'}
+              logo={subscription.enhancedDao?.logo || ''}
+              network={subscription.enhancedDao?.chainName || 'Unknown Network'}
+              networkLogo={subscription.enhancedDao?.chainLogo || ''}
+              onRemove={() => handleUnsubscribe(subscription.dao?.code || '')}
+            />
+          ))
+        )}
       </div>
     </>
   );
