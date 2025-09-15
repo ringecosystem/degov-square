@@ -19,9 +19,6 @@ Follow us:
 [{{.Name}}]({{.Link}})
 {{end}}
 
-{{with .DaoConfig -}}
-  {{- if .Name}}{{.Name}} - {{end -}}
-{{- end -}}
 DeGov.AI
 
 Want to change how you receive these emails?
