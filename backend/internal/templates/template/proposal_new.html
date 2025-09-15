@@ -41,15 +41,21 @@
 
   <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" class="cta-table">
     <tr>
-      {{if .DaoConfig.OffChainDiscussionURL}}
-      <td width="50%" class="cell-left">
-        <a href="{{.DaoConfig.OffChainDiscussionURL}}" target="_blank" class="btn-outline">Join Discussion</a>
-      </td>
-      {{end}}
-      {{if .Proposal.TweetLink}}
-      <td width="50%" class="cell-right">
-        <a href="{{.Proposal.TweetLink}}" target="_blank" class="btn-outline">View Tweet</a>
-      </td>
+      {{if and .DaoConfig.OffChainDiscussionURL .Proposal.TweetLink}}
+        <td width="50%" class="cell-left">
+          <a href="{{.DaoConfig.OffChainDiscussionURL}}" target="_blank" class="btn-outline">Join Discussion</a>
+        </td>
+        <td width="50%" class="cell-right">
+          <a href="{{.Proposal.TweetLink}}" target="_blank" class="btn-outline">View Tweet</a>
+        </td>
+      {{else if .DaoConfig.OffChainDiscussionURL}}
+        <td width="100%">
+          <a href="{{.DaoConfig.OffChainDiscussionURL}}" target="_blank" class="btn-outline">Join Discussion</a>
+        </td>
+      {{else if .Proposal.TweetLink}}
+        <td width="100%">
+          <a href="{{.Proposal.TweetLink}}" target="_blank" class="btn-outline">View Tweet</a>
+        </td>
       {{end}}
     </tr>
   </table>
