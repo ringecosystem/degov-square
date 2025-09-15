@@ -1,0 +1,208 @@
+{
+  "degov_site_config": {
+    "EmailTheme": "light",
+    "EmailProposalIncludeDescription": false,
+    "Logo": "https://cdn.jsdelivr.net/gh/ringecosystem/degov-registry@main/assets/common/light-degov-4x.png",
+    "LogoLight": "https://cdn.jsdelivr.net/gh/ringecosystem/degov-registry@main/assets/common/light-degov-4x.png",
+    "LogoDark": "https://cdn.jsdelivr.net/gh/ringecosystem/degov-registry@main/assets/common/dark-degov-4x.png",
+    "Name": "DeGov.AI",
+    "Home": "https://degov.ai",
+    "Apps": "https://apps.degov.ai",
+    "Docs": "https://docs.degov.ai",
+    "Socials": [
+      {
+        "Name": "Twitter",
+        "Icon": "https://cdn.jsdelivr.net/gh/ringecosystem/degov-registry@main/assets/common/light-x-4x.png",
+        "IconLight": "https://cdn.jsdelivr.net/gh/ringecosystem/degov-registry@main/assets/common/light-x-4x.png",
+        "IconDark": "https://cdn.jsdelivr.net/gh/ringecosystem/degov-registry@main/assets/common/dark-x-4x.png",
+        "Link": "https://x.com/ai_degov"
+      },
+      {
+        "Name": "Telegram",
+        "Icon": "https://cdn.jsdelivr.net/gh/ringecosystem/degov-registry@main/assets/common/light-telegram-4x.png",
+        "IconLight": "https://cdn.jsdelivr.net/gh/ringecosystem/degov-registry@main/assets/common/light-telegram-4x.png",
+        "IconDark": "https://cdn.jsdelivr.net/gh/ringecosystem/degov-registry@main/assets/common/dark-telegram-4x.png",
+        "Link": "https://t.me/RingDAO_Hub"
+      },
+      {
+        "Name": "GitHub",
+        "Icon": "https://cdn.jsdelivr.net/gh/ringecosystem/degov-registry@main/assets/common/light-github-4x.png",
+        "IconLight": "https://cdn.jsdelivr.net/gh/ringecosystem/degov-registry@main/assets/common/light-github-4x.png",
+        "IconDark": "https://cdn.jsdelivr.net/gh/ringecosystem/degov-registry@main/assets/common/dark-github-4x.png",
+        "Link": "https://github.com/ringecosystem/degov"
+      }
+    ]
+  },
+  "email_style": {
+    "ContainerMaxWidth": "85%"
+  },
+  "title": "[RingDAO] Vote Emitted: Helixbox Community Curator Transition",
+  "dao_config": {
+    "Name": "RingDAO",
+    "Code": "ring-dao",
+    "Logo": "https://pbs.twimg.com/profile_images/1830098608638889984/J0JrhC1L_400x400.png",
+    "SiteURL": "https://gov.ringdao.com",
+    "OffChainDiscussionURL": "https://github.com/orgs/ringecosystem/discussions",
+    "Description": "RingDAO is a Venture DAO focused on curating DeFi and DAO applications within the blockchain space, originally from the Darwinia chain.\nThe DAO's operations are governed by all RING holders, who make decisions to innovate and expand the ecosystem.\n",
+    "Chain": {
+      "ID": 46,
+      "Name": "Darwinia Network",
+      "Logo": "https://pbs.twimg.com/profile_images/1742030786495500288/merX__YL_400x400.jpg",
+      "RPCs": [
+        "https://rpc.darwinia.network"
+      ],
+      "Explorers": [
+        "https://explorer.darwinia.network"
+      ],
+      "NativeToken": {
+        "Symbol": "RING",
+        "PriceID": "darwinia-network-native-token",
+        "Decimals": 18,
+        "Logo": "https://assets.coingecko.com/coins/images/9443/standard/RING.png"
+      }
+    },
+    "AIAgent": {
+      "Endpoint": "https://agent.degov.ai"
+    },
+    "Links": {
+      "Coingecko": "https://www.coingecko.com/en/coins/ringdao",
+      "Website": "https://ringdao.com",
+      "Twitter": "https://x.com/ringecosystem",
+      "GitHub": "https://github.com/ringecosystem"
+    },
+    "Wallet": {
+      "WalletConnectProjectID": "4e204efdf64201e155ce7ad7123d127d"
+    },
+    "Indexer": {
+      "Endpoint": "https://indexer.degov.ai/ring-dao/graphql",
+      "StartBlock": 4455584,
+      "RPC": "wss://rpc.darwinia.network",
+      "Gateway": ""
+    },
+    "Contracts": {
+      "Governor": "0x52cDD25f7C83c335236Ce209fA1ec8e197E96533",
+      "GovernorToken": {
+        "Address": "0xdafa555e2785DC8834F4Ea9D1ED88B6049142999",
+        "Standard": "ERC20"
+      },
+      "TimeLock": "0x4DCf0f14cC58fc2Bf313e70573dDB7309523bb23"
+    },
+    "Safes": null
+  },
+  "dao": {
+    "id": "1962903956325666816",
+    "chainId": 46,
+    "chainName": "Darwinia Network",
+    "chainLogo": "https://pbs.twimg.com/profile_images/1742030786495500288/merX__YL_400x400.jpg",
+    "name": "RingDAO",
+    "code": "ring-dao",
+    "logo": "https://pbs.twimg.com/profile_images/1830098608638889984/J0JrhC1L_400x400.png",
+    "seq": 0,
+    "endpoint": "https://gov.ringdao.com",
+    "state": "ACTIVE",
+    "timeSyncd": "2025-09-15T07:22:15.210217Z",
+    "metricsCountProposals": 7,
+    "metricsCountMembers": 27,
+    "metricsSumPower": "166548535966036930038170686",
+    "metricsCountVote": 46,
+    "offsetTrackingProposal": 0,
+    "ctime": "2025-09-02T15:42:26.837401Z",
+    "utime": "2025-09-15T07:22:15.210217Z",
+    "chips": [
+      {
+        "id": "1963144465191276570",
+        "daoCode": "ring-dao",
+        "chipCode": "METRICS_STATE",
+        "flag": "DEFEATED",
+        "additional": "{\"dao_code\":\"ring-dao\",\"state\":\"DEFEATED\",\"total\":1}",
+        "ctime": "2025-09-03T07:38:08.619841Z",
+        "utime": "2025-09-03T07:38:08.619841Z"
+      },
+      {
+        "id": "1963144465191276571",
+        "daoCode": "ring-dao",
+        "chipCode": "METRICS_STATE",
+        "flag": "EXECUTED",
+        "additional": "{\"dao_code\":\"ring-dao\",\"state\":\"EXECUTED\",\"total\":6}",
+        "ctime": "2025-09-03T07:38:08.619842Z",
+        "utime": "2025-09-03T07:38:08.619842Z"
+      },
+      {
+        "id": "1967489136130527233",
+        "daoCode": "ring-dao",
+        "chipCode": "AGENT",
+        "flag": "ENABLED",
+        "additional": "{\"name\":\"RingDAO\",\"code\":\"ring-dao\",\"xprofile\":\"official\",\"carry\":[\"#Governance\",\"#DeFAI\",\"#DAO\"],\"last_processed_block\":0}",
+        "ctime": "2025-09-15T07:22:18.891857Z"
+      }
+    ]
+  },
+  "proposal": {
+    "proposal_db": {
+      "id": "1962904409868341249",
+      "dao_code": "ring-dao",
+      "chain_id": 46,
+      "title": "Helixbox Community Curator Transition",
+      "proposal_link": "https://gov.ringdao.com/proposal/0xe97181369d7a724fb61b73f2d7ccaa654e486af453e8e4b2db8ee8301165a5e7",
+      "proposal_id": "0xe97181369d7a724fb61b73f2d7ccaa654e486af453e8e4b2db8ee8301165a5e7",
+      "state": "DEFEATED",
+      "proposal_created_at": "2025-04-10T02:23:12Z",
+      "proposal_at_block": 6244347,
+      "times_track": 0,
+      "offset_tracking_vote": 0,
+      "ctime": "2025-09-02T15:44:14.970663Z",
+      "utime": "2025-09-02T15:44:17.069072Z"
+    },
+    "proposal_indexer": {
+      "id": "0006244347-6327a-000000",
+      "proposalId": "0xe97181369d7a724fb61b73f2d7ccaa654e486af453e8e4b2db8ee8301165a5e7",
+      "title": "Helixbox Community Curator Transition",
+      "quorum": "40000000000000000000000000",
+      "voteStartTimestamp": "1744251792000",
+      "voteEndTimestamp": "1745461392000",
+      "voteStart": "1744251792",
+      "voteEnd": "1745461392",
+      "decimals": "18",
+      "blockInterval": "6",
+      "clockMode": "timestamp",
+      "proposer": "0xebd9a48ed1128375eb4383ed4d53478b4fd85a8d",
+      "blockNumber": "6244347",
+      "blockTimestamp": "1744251792000",
+      "transactionHash": "0xd0c5728e44d4bc97341376096e472fe21f6f63e8c85d2241877a73c4eb7f136f",
+      "metricsVotesCount": 5,
+      "metricsVotesWeightAbstainSum": "0",
+      "metricsVotesWeightAgainstSum": "88115353917125995000000000",
+      "metricsVotesWeightForSum": "8385000000000000000000000",
+      "description": "# Helixbox Community Curator Transition\n\n\u003cp\u003e\u003cstrong\u003eThis is being posted for June as currently she does not have the necessary voting power to post​\u003c/strong\u003e\u003c/p\u003e\n\u003cp\u003e\u003cstrong\u003eIntroduction\u003c/strong\u003e\u003c/p\u003e\n\u003cp\u003eThis a briefing on my transition from DCDAO to Helixbox to ensure transparency regarding my role change. Ongoing, I will be officially working with Helixbox as a Community Curator.\u003c/p\u003e\n\u003cp\u003ePrior to this transition, I had discussions/meeting with:\u003c/p\u003e\n\u003cp\u003eEve (Helixbox Growth Manager) – to align on expectations and responsibilities.\u2028Jesse (Darwinia Community Manager) – to ensure a smooth transition and address any concerns regarding my contributions to DCDAO.\u003c/p\u003e\n\u003cp\u003e\u003cstrong\u003eNew Role at Helixbox\u003c/strong\u003e\u003c/p\u003e\n\u003cp\u003e\u2028As a Community Curator at Helixbox, my primary responsibilities will include:\u003c/p\u003e\n\u003cp\u003e\u003cstrong\u003eUser Experience \u0026amp; Feedback\u003c/strong\u003e\u003c/p\u003e\n\u003cul\u003e\n\u003cli\u003eCollecting user insights and providing feedback to improve the DeFi experience.\u003c/li\u003e\n\u003cli\u003eAssessing the onboarding process and identifying areas for enhancement.\u003c/li\u003e\n\u003cli\u003eReporting technical issues and participating in beta testing for new features.\u003c/li\u003e\n\u003cli\u003eAssisting Eve on various tasks.\u003c/li\u003e\n\u003c/ul\u003e\n\u003cp\u003e\u003cstrong\u003eEducational Contributions\u003c/strong\u003e\u2028\u003c/p\u003e\n\u003cp\u003eI’ll also contribute via writing by:\u003c/p\u003e\n\u003cul\u003e\n\u003cli\u003eCreating content such as blog posts, FAQs, and visual guides.\u003c/li\u003e\n\u003cli\u003eSimplifying DeFi concepts for users through structured educational material.\u003c/li\u003e\n\u003c/ul\u003e\n\u003cp\u003e\u003cstrong\u003eDCDAO Tasks\u003c/strong\u003e\u003c/p\u003e\n\u003cp\u003eDue to role restrictions, my contributions to DCDAO will be voluntary. This includes curating the weekly and monthly reports. \u003c/p\u003e\n\u003cp\u003e\u003cstrong\u003eProgram Funding\u003c/strong\u003e\u003c/p\u003e\n\u003cp\u003eThis role at Helixbox will be funded with a monthly stipend of $500.\u003c/p\u003e\n\u003cp\u003eReceiving address: 0x8683A0ED2bAdb1F3AaBeA6686d78649F0Da774A0\u003c/p\u003e\n\u003cp\u003e\u003cstrong\u003eConclusion\u003c/strong\u003e\u003c/p\u003e\n\u003cp\u003eThis transition allows me to contribute more effectively to Helixbox while maintaining a limited, voluntary engagement with DCDAO. I appreciate the opportunities from both communities and look forward to enhancing the DeFi user experience in my new role.\u003c/p\u003e\n\n\n\u003csignature\u003e[\"\"]\u003c/signature\u003e"
+    },
+    "proposal_description_markdown": null,
+    "proposal_description_html": null,
+    "proposer_ens_name": null,
+    "tweet_link": null
+  },
+  "vote": {
+    "vote_indexer": {
+      "proposalId": "0xe97181369d7a724fb61b73f2d7ccaa654e486af453e8e4b2db8ee8301165a5e7",
+      "reason": "",
+      "support": 1,
+      "voter": "0xebd9a48ed1128375eb4383ed4d53478b4fd85a8d",
+      "weight": "8385000000000000000000000",
+      "transactionHash": "0xf68c78753bc2f498649edc495cd12cc48b5b0bd61c945ed4b7583711105f725c",
+      "id": "0006244367-cbc15-000000",
+      "blockNumber": "6244367",
+      "blockTimestamp": "1744251918000"
+    },
+    "total_vote_power": "",
+    "percent_for": 0,
+    "percent_against": 0,
+    "percent_abstain": 0,
+    "percent_quorum": 0
+  },
+  "payload_data": {
+    "DecimalsInt": 18
+  },
+  "event_id": "1962904409872535553",
+  "user_id": "1962918824172851200",
+  "user_address": "0x0b001c95e86d64c1ad6e43944c568a6c31b53887",
+  "ens_name": null
+}
