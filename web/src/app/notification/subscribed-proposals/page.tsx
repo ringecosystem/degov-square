@@ -9,6 +9,7 @@ import { useIsMobileAndSubSection } from '@/app/notification/_hooks/isMobileAndS
 import { CustomTable } from '@/components/custom-table';
 import type { ColumnType } from '@/components/custom-table';
 import { ProposalStatus } from '@/components/proposal-status';
+import { Empty } from '@/components/ui/empty';
 import { useConfirm } from '@/contexts/confirm-context';
 import { useSubscribedProposals, useUnsubscribeProposal } from '@/hooks/useNotification';
 import type { SubscribedProposalItem } from '@/lib/graphql/types';
@@ -136,26 +137,31 @@ export default function SubscribedProposalsPage() {
         dataSource={(subscriptions as SubscribedProposalItem[]) ?? []}
         isLoading={isLoading}
         rowKey={(record) => `${record.proposal?.daoCode}-${record.proposal?.proposalId}` || ''}
+        emptyText="Haven't subscribed any proposals yet"
         className="hidden md:block"
       />
 
       <div className="mt-[15px] flex flex-col gap-[15px] md:hidden">
-        {(subscriptions || []).map((subscription) => (
-          <Item
-            key={`${subscription.proposal?.daoCode}-${subscription.proposal?.proposalId}`}
-            id={subscription.proposal?.proposalId || ''}
-            name={subscription.proposal?.title || 'Untitled Proposal'}
-            daoName={subscription.dao?.name || 'Unknown DAO'}
-            daoLogo={subscription.dao?.logo || '/example/dao-placeholder.svg'}
-            status={subscription.proposal?.state}
-            onRemove={() =>
-              handleUnsubscribe(
-                subscription.proposal?.daoCode || '',
-                subscription.proposal?.proposalId || ''
-              )
-            }
-          />
-        ))}
+        {!isLoading && (!subscriptions || subscriptions.length === 0) ? (
+          <Empty label="Haven't subscribed any proposals yet" className="mt-[100px]" />
+        ) : (
+          (subscriptions || []).map((subscription) => (
+            <Item
+              key={`${subscription.proposal?.daoCode}-${subscription.proposal?.proposalId}`}
+              id={subscription.proposal?.proposalId || ''}
+              name={subscription.proposal?.title || 'Untitled Proposal'}
+              daoName={subscription.dao?.name || 'Unknown DAO'}
+              daoLogo={subscription.dao?.logo || '/example/dao-placeholder.svg'}
+              status={subscription.proposal?.state}
+              onRemove={() =>
+                handleUnsubscribe(
+                  subscription.proposal?.daoCode || '',
+                  subscription.proposal?.proposalId || ''
+                )
+              }
+            />
+          ))
+        )}
       </div>
     </>
   );
