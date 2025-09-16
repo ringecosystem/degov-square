@@ -6,10 +6,10 @@ import (
 
 	"gorm.io/gorm"
 
-	"github.com/ringecosystem/degov-apps/database"
-	dbmodels "github.com/ringecosystem/degov-apps/database/models"
-	"github.com/ringecosystem/degov-apps/internal/utils"
-	"github.com/ringecosystem/degov-apps/types"
+	"github.com/ringecosystem/degov-square/database"
+	dbmodels "github.com/ringecosystem/degov-square/database/models"
+	"github.com/ringecosystem/degov-square/internal/utils"
+	"github.com/ringecosystem/degov-square/types"
 )
 
 type NotificationService struct {

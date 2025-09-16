@@ -6,11 +6,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ringecosystem/degov-apps/database"
-	dbmodels "github.com/ringecosystem/degov-apps/database/models"
-	gqlmodels "github.com/ringecosystem/degov-apps/graph/models"
-	"github.com/ringecosystem/degov-apps/internal/utils"
-	"github.com/ringecosystem/degov-apps/types"
+	"github.com/ringecosystem/degov-square/database"
+	dbmodels "github.com/ringecosystem/degov-square/database/models"
+	gqlmodels "github.com/ringecosystem/degov-square/graph/models"
+	"github.com/ringecosystem/degov-square/internal/utils"
+	"github.com/ringecosystem/degov-square/types"
 	"gorm.io/gorm"
 )
 

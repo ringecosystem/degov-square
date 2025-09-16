@@ -8,9 +8,9 @@ import (
 	"time"
 
 	"github.com/patrickmn/go-cache"
-	dbmodels "github.com/ringecosystem/degov-apps/database/models"
-	"github.com/ringecosystem/degov-apps/services"
-	"github.com/ringecosystem/degov-apps/types"
+	dbmodels "github.com/ringecosystem/degov-square/database/models"
+	"github.com/ringecosystem/degov-square/services"
+	"github.com/ringecosystem/degov-square/types"
 )
 
 const (

@@ -1,6 +1,6 @@
 package types
 
-import dbmodels "github.com/ringecosystem/degov-apps/database/models"
+import dbmodels "github.com/ringecosystem/degov-square/database/models"
 
 type RefreshDaoAndConfigInput struct {
 	Code                  string            `json:"code"`

@@ -19,8 +19,8 @@ jobs:
           vercel_token: ${{ secrets.VERCEL_TOKEN }}
           vercel_group: itering
           preview_output: true
-          alias_domain: "degov-apps-stg"
-          project_name: "degov-apps"
+          alias_domain: "degov-square-stg"
+          project_name: "degov-square"
           script_run: false
           dist_path: .
           enable_notify_slack: false

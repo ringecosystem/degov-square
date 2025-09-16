@@ -20,7 +20,7 @@ jobs:
           vercel_group: itering
           preview_output: true
           prod_mode: true
-          project_name: "degov-apps"
+          project_name: "degov-square"
           script_run: false
           dist_path: .
           enable_notify_slack: true

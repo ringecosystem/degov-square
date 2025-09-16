@@ -3,7 +3,7 @@ package types
 import (
 	"time"
 
-	dbmodels "github.com/ringecosystem/degov-apps/database/models"
+	dbmodels "github.com/ringecosystem/degov-square/database/models"
 )
 
 type ListSubscribeUserInput struct {

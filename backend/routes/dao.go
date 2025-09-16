@@ -6,9 +6,9 @@ import (
 	"time"
 
 	"github.com/patrickmn/go-cache"
-	gqlmodels "github.com/ringecosystem/degov-apps/graph/models"
-	"github.com/ringecosystem/degov-apps/internal/middleware"
-	"github.com/ringecosystem/degov-apps/services"
+	gqlmodels "github.com/ringecosystem/degov-square/graph/models"
+	"github.com/ringecosystem/degov-square/internal/middleware"
+	"github.com/ringecosystem/degov-square/services"
 )
 
 type DaoRoute struct {

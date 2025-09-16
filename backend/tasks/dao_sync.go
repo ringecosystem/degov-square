@@ -12,11 +12,11 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	dbmodels "github.com/ringecosystem/degov-apps/database/models"
-	"github.com/ringecosystem/degov-apps/internal"
-	"github.com/ringecosystem/degov-apps/internal/config"
-	"github.com/ringecosystem/degov-apps/services"
-	"github.com/ringecosystem/degov-apps/types"
+	dbmodels "github.com/ringecosystem/degov-square/database/models"
+	"github.com/ringecosystem/degov-square/internal"
+	"github.com/ringecosystem/degov-square/internal/config"
+	"github.com/ringecosystem/degov-square/services"
+	"github.com/ringecosystem/degov-square/types"
 )
 
 // GitHubTag represents a GitHub tag response
