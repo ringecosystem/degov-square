@@ -350,7 +350,7 @@ func GetDegovSiteConfig() types.DegovSiteConfig {
 		LogoDark:                        GetStringWithDefault("DEGOV_SITE_LOGO_DARK", "https://cdn.jsdelivr.net/gh/ringecosystem/degov-registry@main/assets/common/dark-degov-4x.png"),
 		Name:                            GetStringWithDefault("DEGOV_SITE_NAME", "DeGov.AI"),
 		Home:                            GetStringWithDefault("DEGOV_SITE_HOME", "https://degov.ai"),
-		Apps:                            GetStringWithDefault("DEGOV_SITE_APPS", "https://apps.degov.ai"),
+		Square:                          GetStringWithDefault("DEGOV_SITE_SQUARE", "https://square.degov.ai"),
 		Docs:                            GetStringWithDefault("DEGOV_SITE_DOCS", "https://docs.degov.ai"),
 		Socials: []types.DegovSiteConfigSocial{
 			{
