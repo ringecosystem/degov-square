@@ -410,7 +410,7 @@ func (s *TemplateService) GenerateTemplateOTP(input types.GenerateTemplateOTPInp
 	}
 
 	return &types.TemplateOutput{
-		Title:            "[DeGov] Email Verification",
+		Title:            "Email Verification",
 		RichTextContent:  richText,
 		PlainTextContent: plainText,
 	}, nil

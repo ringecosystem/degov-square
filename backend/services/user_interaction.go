@@ -27,8 +27,10 @@ type UserInteractionService struct {
 	userService     *UserService
 }
 
+const ExpirationMinutes = 10
+
 func NewUserInteractionService() *UserInteractionService {
-	otpCache := cache.New(3*time.Minute, 5*time.Minute)
+	otpCache := cache.New(ExpirationMinutes*time.Minute, 5*time.Minute)
 	rateLimitCache := cache.New(1*time.Minute, 2*time.Minute)
 
 	return &UserInteractionService{
@@ -202,12 +204,12 @@ func (s *UserInteractionService) resendOTPForChannel(baseInput types.BasicInput[
 		if err != nil {
 			return nil, fmt.Errorf("error generating OTP code: %w", err)
 		}
-		s.otpCache.Set(user.Id, otpCode, 3*time.Minute)
+		s.otpCache.Set(user.Id, otpCode, ExpirationMinutes*time.Minute)
 
 		templateOutput, err := s.templateService.GenerateTemplateOTP(types.GenerateTemplateOTPInput{
 			DegovSiteConfig: config.GetDegovSiteConfig(),
 			OTP:             otpCode,
-			Expiration:      3,
+			Expiration:      ExpirationMinutes,
 			UserAddress:     user.Address,
 			EnsName:         ensName,
 		})
