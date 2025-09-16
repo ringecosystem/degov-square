@@ -4,8 +4,8 @@ import (
 	"log/slog"
 	"strings"
 
-	"github.com/ringecosystem/degov-apps/internal/config"
-	"github.com/ringecosystem/degov-apps/types"
+	"github.com/ringecosystem/degov-square/internal/config"
+	"github.com/ringecosystem/degov-square/types"
 	"github.com/sendgrid/sendgrid-go"
 	"github.com/sendgrid/sendgrid-go/helpers/mail"
 	"gorm.io/gorm"

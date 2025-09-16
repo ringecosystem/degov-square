@@ -3,8 +3,8 @@
 package graph
 
 import (
-	"github.com/ringecosystem/degov-apps/internal/middleware"
-	"github.com/ringecosystem/degov-apps/services"
+	"github.com/ringecosystem/degov-square/internal/middleware"
+	"github.com/ringecosystem/degov-square/services"
 )
 
 // This file will not be regenerated automatically.

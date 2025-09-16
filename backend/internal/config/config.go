@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ringecosystem/degov-apps/types"
+	"github.com/ringecosystem/degov-square/types"
 	"github.com/spf13/viper"
 	"go.uber.org/zap/zapcore"
 	"gorm.io/gorm/logger"

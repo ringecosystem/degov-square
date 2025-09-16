@@ -10,9 +10,9 @@ import (
 
 	"gorm.io/gorm"
 
-	"github.com/ringecosystem/degov-apps/database"
-	dbmodels "github.com/ringecosystem/degov-apps/database/models"
-	"github.com/ringecosystem/degov-apps/internal/utils"
+	"github.com/ringecosystem/degov-square/database"
+	dbmodels "github.com/ringecosystem/degov-square/database/models"
+	"github.com/ringecosystem/degov-square/internal/utils"
 	"github.com/wealdtech/go-ens/v3"
 
 	"github.com/ethereum/go-ethereum/common"

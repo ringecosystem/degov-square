@@ -5,8 +5,8 @@ import (
 	"fmt"
 
 	"github.com/99designs/gqlgen/graphql"
-	gqlmodels "github.com/ringecosystem/degov-apps/graph/models"
-	"github.com/ringecosystem/degov-apps/internal/middleware"
+	gqlmodels "github.com/ringecosystem/degov-square/graph/models"
+	"github.com/ringecosystem/degov-square/internal/middleware"
 )
 
 // AuthDirective handles @auth directive

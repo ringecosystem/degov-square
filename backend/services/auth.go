@@ -9,11 +9,11 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/patrickmn/go-cache"
-	"github.com/ringecosystem/degov-apps/database"
-	dbmodels "github.com/ringecosystem/degov-apps/database/models"
-	gqlmodels "github.com/ringecosystem/degov-apps/graph/models"
-	"github.com/ringecosystem/degov-apps/internal/config"
-	"github.com/ringecosystem/degov-apps/types"
+	"github.com/ringecosystem/degov-square/database"
+	dbmodels "github.com/ringecosystem/degov-square/database/models"
+	gqlmodels "github.com/ringecosystem/degov-square/graph/models"
+	"github.com/ringecosystem/degov-square/internal/config"
+	"github.com/ringecosystem/degov-square/types"
 	"github.com/spruceid/siwe-go"
 	"gorm.io/gorm"
 )

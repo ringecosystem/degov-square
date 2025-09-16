@@ -3,7 +3,7 @@ package tasks
 import (
 	"time"
 
-	"github.com/ringecosystem/degov-apps/internal/config"
+	"github.com/ringecosystem/degov-square/internal/config"
 )
 
 // TaskConfig represents the configuration for a background task
