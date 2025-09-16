@@ -1,8 +1,8 @@
 import { useMemo } from 'react';
 
-import { useAuthStore } from '@/stores/auth';
 import { useQueryDaosPublic, useQueryDaos } from '@/lib/graphql';
 import type { Dao } from '@/lib/graphql/types';
+import { useAuthStore } from '@/stores/auth';
 import type { DaoInfo } from '@/utils/config';
 
 function transformDaoData(dao: Dao, index: number): DaoInfo {

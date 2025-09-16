@@ -1,8 +1,8 @@
 import { useCallback } from 'react';
 import { useDisconnect } from 'wagmi';
 
-import { useAuthStore } from '@/stores/auth';
 import { useAccount } from '@/hooks/useAccount';
+import { useAuthStore } from '@/stores/auth';
 
 export const useDisconnectWallet = () => {
   const { disconnect } = useDisconnect();
@@ -37,7 +37,7 @@ export const useDisconnectWallet = () => {
         console.error('Error during wallet disconnection:', error);
       }
     },
-    [disconnect, clearAuth, authSource]
+    [disconnect, clearAuth]
   );
   return { disconnectWallet };
 };

@@ -6,9 +6,9 @@ import { createSiweMessage } from 'viem/siwe';
 import { createPublicClient } from '@/lib/graphql/client';
 import { QUERY_NONCE, LOGIN_MUTATION } from '@/lib/graphql/queries';
 import type { NonceVariables, LoginVariables } from '@/lib/graphql/types';
+import { useAuthStore } from '@/stores/auth';
 import { extractAddressFromSiweMessage } from '@/utils/siwe';
 
-import { useAuthStore } from '@/stores/auth';
 
 /**
  * Custom authentication adapter for RainbowKit that integrates with our existing backend

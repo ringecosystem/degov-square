@@ -3,9 +3,9 @@
 import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { useCallback } from 'react';
 
-import { useAuthStore } from '@/stores/auth';
 import { useAccount } from '@/hooks/useAccount';
 import { useSiweAuth } from '@/hooks/useSiweAuth';
+import { useAuthStore } from '@/stores/auth';
 
 export const useRequireAuth = () => {
   const { isAuthenticated } = useAuthStore();

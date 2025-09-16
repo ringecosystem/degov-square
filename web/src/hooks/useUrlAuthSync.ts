@@ -2,8 +2,9 @@
 
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { useEffect } from 'react';
-import { useAuthStore } from '@/stores/auth';
+
 import { useDisconnectWallet } from '@/hooks/useDisconnectWallet';
+import { useAuthStore } from '@/stores/auth';
 
 export const useUrlAuthSync = () => {
   const searchParams = useSearchParams();

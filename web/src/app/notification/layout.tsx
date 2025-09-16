@@ -5,8 +5,8 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Suspense } from 'react';
 
-import { cn } from '@/lib/utils';
 import { useUrlAuthSync } from '@/hooks/useUrlAuthSync';
+import { cn } from '@/lib/utils';
 
 import { AuthGuard } from './_components';
 import { useIsMobileAndSubSection } from './_hooks/isMobileAndSubSection';

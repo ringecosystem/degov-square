@@ -2,7 +2,6 @@
  * NotificationService - Service layer for notification operations
  */
 
-import { getToken } from '@/stores/auth';
 import { createAuthorizedClient } from '@/lib/graphql/client';
 import {
   LIST_NOTIFICATION_CHANNELS,
@@ -24,6 +23,7 @@ import type {
   ProposalSubscriptionResponse,
   DaoSubscriptionResponse
 } from '@/lib/graphql/types';
+import { getToken } from '@/stores/auth';
 
 export type NotificationChannelType = 'EMAIL';
 
