@@ -7,8 +7,8 @@ import (
 	"strings"
 
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/ringecosystem/degov-apps/internal/config"
-	"github.com/ringecosystem/degov-apps/types"
+	"github.com/ringecosystem/degov-square/internal/config"
+	"github.com/ringecosystem/degov-square/types"
 )
 
 // AuthClaims represents the JWT claims structure

@@ -7,7 +7,7 @@ import (
 	"github.com/golang-migrate/migrate/v4"
 	migratePg "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
-	"github.com/ringecosystem/degov-apps/internal/config"
+	"github.com/ringecosystem/degov-square/internal/config"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"

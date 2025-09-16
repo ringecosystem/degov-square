@@ -11,7 +11,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 
-	dbmodels "github.com/ringecosystem/degov-apps/database/models"
+	dbmodels "github.com/ringecosystem/degov-square/database/models"
 )
 
 // GovernorContract handles governor contract interactions

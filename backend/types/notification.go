@@ -1,7 +1,7 @@
 package types
 
 import (
-	dbmodels "github.com/ringecosystem/degov-apps/database/models"
+	dbmodels "github.com/ringecosystem/degov-square/database/models"
 )
 
 type InspectNotificationEventInput struct {

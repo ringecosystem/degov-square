@@ -57,7 +57,7 @@ type DegovSiteConfig struct {
 	LogoDark                        string
 	Name                            string
 	Home                            string
-	Apps                            string
+	Square                          string
 	Docs                            string
 	Socials                         []DegovSiteConfigSocial
 }
