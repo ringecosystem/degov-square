@@ -3,8 +3,10 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { Suspense } from 'react';
 
 import { cn } from '@/lib/utils';
+import { useUrlAuthSync } from '@/hooks/useUrlAuthSync';
 
 import { AuthGuard } from './_components';
 import { useIsMobileAndSubSection } from './_hooks/isMobileAndSubSection';
@@ -42,9 +44,12 @@ const getHref = (nav: (typeof NAVS)[0]) => {
   return `/notification/${nav.value}`;
 };
 
-export default function NotificationLayout({ children }: { children: React.ReactNode }) {
+function NotificationLayoutContent({ children }: { children: React.ReactNode }) {
   const isMobileAndSubSection = useIsMobileAndSubSection();
   const pathname = usePathname();
+
+  // Initialize URL auth sync at layout level
+  useUrlAuthSync();
 
   const isActive = (nav: (typeof NAVS)[0]) => {
     return `/notification/${nav.value}` === pathname;
@@ -83,5 +88,13 @@ export default function NotificationLayout({ children }: { children: React.React
         </main>
       </div>
     </div>
+  );
+}
+
+export default function NotificationLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <NotificationLayoutContent>{children}</NotificationLayoutContent>
+    </Suspense>
   );
 }

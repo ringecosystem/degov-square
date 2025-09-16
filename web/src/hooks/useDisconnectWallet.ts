@@ -1,26 +1,22 @@
 import { useCallback } from 'react';
 import { useDisconnect } from 'wagmi';
 
-import { useAuth } from '@/contexts/auth';
+import { useAuthStore } from '@/stores/auth';
 import { useAccount } from '@/hooks/useAccount';
 
 export const useDisconnectWallet = () => {
   const { disconnect } = useDisconnect();
-  const { clearUrlAuth, isUsingUrlAuth } = useAuth();
+  const { clearAuth } = useAuthStore();
   const { authSource } = useAccount();
 
   const disconnectWallet = useCallback(
     async (address: `0x${string}`) => {
       // Handle URL auth disconnection - clear everything
-      if (authSource === 'url' || isUsingUrlAuth) {
-        clearUrlAuth();
-        return;
-      }
 
       // Handle wallet disconnection - also clear any existing auth states
       try {
         // Clear any tokens first
-        clearUrlAuth();
+        clearAuth();
 
         // Try to revoke wallet permissions
         if (typeof window !== 'undefined' && window?.ethereum?.request) {
@@ -41,7 +37,7 @@ export const useDisconnectWallet = () => {
         console.error('Error during wallet disconnection:', error);
       }
     },
-    [disconnect, clearUrlAuth, authSource, isUsingUrlAuth]
+    [disconnect, clearAuth, authSource]
   );
   return { disconnectWallet };
 };

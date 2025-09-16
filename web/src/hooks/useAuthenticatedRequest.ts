@@ -2,13 +2,13 @@
 
 import { useCallback } from 'react';
 
-import { useAuth } from '@/contexts/auth';
-import { getToken } from '@/lib/auth/token-manager';
+import { useAuthStore } from '@/stores/auth';
+import { getToken } from '@/stores/auth';
 
 import { useSiweAuth } from './useSiweAuth';
 
 export const useAuthenticatedRequest = () => {
-  const { token: contextToken, setToken } = useAuth();
+  const { token: contextToken } = useAuthStore();
   const { authenticate } = useSiweAuth();
 
   const executeWithAuth = useCallback(
@@ -36,7 +36,7 @@ export const useAuthenticatedRequest = () => {
           error instanceof Error &&
           (error.message.includes('401') || error.message.includes('Unauthorized'))
         ) {
-          setToken(null);
+          useAuthStore.getState().setToken(null);
 
           if (!options?.skipAutoAuth) {
             const res = await authenticate();
@@ -54,7 +54,7 @@ export const useAuthenticatedRequest = () => {
         throw error;
       }
     },
-    [contextToken, authenticate, setToken]
+    [contextToken, authenticate]
   );
 
   return { executeWithAuth };

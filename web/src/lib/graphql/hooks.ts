@@ -1,8 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
-import { useAuth } from '@/contexts/auth';
 import { useAuthenticatedRequest } from '@/hooks/useAuthenticatedRequest';
-import { getToken } from '@/lib/auth/token-manager';
+import { getToken, useAuthStore } from '@/stores/auth';
+import { extractAddressFromSiweMessage } from '@/utils/siwe';
 
 import { createAuthorizedClient, createPublicClient } from './client';
 import {
@@ -72,17 +72,24 @@ export const useQueryNonce = (length: number = 10) => {
 };
 
 export const useLogin = () => {
-  const { setToken } = useAuth();
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (variables: LoginVariables) => {
       const client = createPublicClient();
       const data = await client.request<LoginResponse>(LOGIN_MUTATION, variables);
-      return data.login.token;
+      return {
+        token: data.login.token,
+        message: variables.input.message
+      };
     },
-    onSuccess: (token) => {
-      setToken(token);
+    onSuccess: ({ token, message }) => {
+      const address = extractAddressFromSiweMessage(message);
+      if (!address) {
+        throw new Error('Failed to extract address from SIWE message');
+      }
+      useAuthStore.getState().setToken(token);
+      useAuthStore.getState().setAddress(address);
       queryClient.invalidateQueries({
         predicate: (query) => query.queryKey[0] === 'daos'
       });
@@ -94,8 +101,7 @@ export const useLogin = () => {
 };
 
 export const useQueryDaos = () => {
-  const { token: contextToken } = useAuth();
-  const token = getToken() || contextToken;
+  const token = getToken();
 
   return useQuery({
     queryKey: [...QUERY_KEYS.daos(), token],
@@ -123,8 +129,7 @@ export const useQueryDaosPublic = () => {
 };
 
 export const useModifyLikeDao = () => {
-  const { token: contextToken, setToken } = useAuth();
-  const token = getToken() || contextToken;
+  const token = getToken();
   const queryClient = useQueryClient();
   const { executeWithAuth } = useAuthenticatedRequest();
 
@@ -206,19 +211,17 @@ export const useLikeDao = () => {
 };
 
 export const useLogout = () => {
-  const { setToken } = useAuth();
   const queryClient = useQueryClient();
 
   return () => {
-    setToken(null);
+    useAuthStore.getState().clearAuth();
     queryClient.clear();
   };
 };
 
 // Notification Hooks
 export const useListNotificationChannels = () => {
-  const { token: contextToken } = useAuth();
-  const token = getToken() || contextToken;
+  const token = getToken();
 
   return useQuery({
     queryKey: [...QUERY_KEYS.notificationChannels(), token],
@@ -236,8 +239,7 @@ export const useListNotificationChannels = () => {
 };
 
 export const useSubscribedDaos = () => {
-  const { token: contextToken } = useAuth();
-  const token = getToken() || contextToken;
+  const token = getToken();
 
   return useQuery({
     queryKey: [...QUERY_KEYS.subscribedDaos(), token],
@@ -254,8 +256,7 @@ export const useSubscribedDaos = () => {
 };
 
 export const useSubscribedProposals = () => {
-  const { token: contextToken } = useAuth();
-  const token = getToken() || contextToken;
+  const token = getToken();
 
   return useQuery({
     queryKey: [...QUERY_KEYS.subscribedProposals(), token],
@@ -272,8 +273,6 @@ export const useSubscribedProposals = () => {
 };
 
 export const useBindNotificationChannel = () => {
-  const { token: contextToken, setToken } = useAuth();
-  const token = getToken() || contextToken;
   const queryClient = useQueryClient();
   const { executeWithAuth } = useAuthenticatedRequest();
 
@@ -317,8 +316,6 @@ export const useResendOTP = () => {
 };
 
 export const useVerifyNotificationChannel = () => {
-  const { token: contextToken, setToken } = useAuth();
-  const token = getToken() || contextToken;
   const queryClient = useQueryClient();
   const { executeWithAuth } = useAuthenticatedRequest();
 
@@ -342,8 +339,6 @@ export const useVerifyNotificationChannel = () => {
 };
 
 export const useSubscribeProposal = () => {
-  const { token: contextToken, setToken } = useAuth();
-  const token = getToken() || contextToken;
   const queryClient = useQueryClient();
   const { executeWithAuth } = useAuthenticatedRequest();
 
@@ -368,8 +363,6 @@ export const useSubscribeProposal = () => {
 };
 
 export const useUnsubscribeProposal = () => {
-  const { token: contextToken, setToken } = useAuth();
-  const token = getToken() || contextToken;
   const queryClient = useQueryClient();
   const { executeWithAuth } = useAuthenticatedRequest();
 
@@ -394,8 +387,6 @@ export const useUnsubscribeProposal = () => {
 };
 
 export const useSubscribeDao = () => {
-  const { token: contextToken, setToken } = useAuth();
-  const token = getToken() || contextToken;
   const queryClient = useQueryClient();
   const { executeWithAuth } = useAuthenticatedRequest();
 
@@ -420,8 +411,6 @@ export const useSubscribeDao = () => {
 };
 
 export const useUnsubscribeDao = () => {
-  const { token: contextToken, setToken } = useAuth();
-  const token = getToken() || contextToken;
   const queryClient = useQueryClient();
   const { executeWithAuth } = useAuthenticatedRequest();
 
@@ -446,8 +435,6 @@ export const useUnsubscribeDao = () => {
 };
 
 export const useUnSubscribeChannel = () => {
-  const { token: contextToken, setToken } = useAuth();
-  const token = getToken() || contextToken;
   const queryClient = useQueryClient();
   const { executeWithAuth } = useAuthenticatedRequest();
 
@@ -472,8 +459,6 @@ export const useUnSubscribeChannel = () => {
 };
 
 export const useUnSubscribeProposal = () => {
-  const { token: contextToken, setToken } = useAuth();
-  const token = getToken() || contextToken;
   const queryClient = useQueryClient();
   const { executeWithAuth } = useAuthenticatedRequest();
 

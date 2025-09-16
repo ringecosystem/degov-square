@@ -3,7 +3,6 @@
 import { useCallback, useState, useEffect } from 'react';
 import { useAccount, useSignMessage, useChainId } from 'wagmi';
 
-import { useAuth as useAuthContext } from '@/contexts/auth';
 import { globalAuthManager, type AuthResult } from '@/lib/auth/global-auth-manager';
 import { siweService } from '@/lib/auth/siwe-service';
 
@@ -12,7 +11,7 @@ import { siweService } from '@/lib/auth/siwe-service';
 export const useSiweAuth = () => {
   const { address, isConnected } = useAccount();
   const chainId = useChainId();
-  const { setToken } = useAuthContext();
+  // Using tokenManager directly instead of auth context
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
@@ -51,8 +50,7 @@ export const useSiweAuth = () => {
         signMessageAsync
       });
 
-      if (result.success && result.token) {
-        setToken(result.token);
+      if (result.success && result.token && address) {
       } else {
         setError(new Error(result.error || 'Authentication failed'));
       }
@@ -63,7 +61,7 @@ export const useSiweAuth = () => {
       setError(error);
       return { success: false, error: error.message };
     }
-  }, [isConnected, address, chainId, signMessageAsync, setToken]);
+  }, [isConnected, address, chainId, signMessageAsync]);
 
   // Public authenticate method that uses global auth manager
   const authenticate = useCallback(async (): Promise<AuthResult> => {
@@ -73,14 +71,13 @@ export const useSiweAuth = () => {
   const signOut = useCallback(async (): Promise<void> => {
     try {
       await siweService.signOut();
-      setToken(null);
       setError(null);
       // Reset global auth state on sign out
       globalAuthManager.reset();
     } catch (err) {
       console.error('Sign out failed:', err);
     }
-  }, [setToken]);
+  }, []);
 
   return {
     authenticate,

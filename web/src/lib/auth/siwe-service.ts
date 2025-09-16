@@ -7,7 +7,7 @@ import { createPublicClient } from '@/lib/graphql/client';
 import { QUERY_NONCE, LOGIN_MUTATION } from '@/lib/graphql/queries';
 import type { NonceVariables, LoginVariables } from '@/lib/graphql/types';
 
-import { tokenManager } from './token-manager';
+import { useAuthStore } from '@/stores/auth';
 
 import type { AuthResult } from './global-auth-manager';
 import type { SignMessageParameters } from 'wagmi/actions';
@@ -72,8 +72,9 @@ class SiweService {
         return { success: false, error: 'No token received from login' };
       }
 
-      // Store token
-      tokenManager.setToken(token);
+      // Store token with address (ensure token-address binding)
+      useAuthStore.getState().setToken(token);
+      useAuthStore.getState().setAddress(address);
 
       return {
         success: true,
@@ -100,9 +101,8 @@ class SiweService {
 
   async signOut(): Promise<void> {
     try {
-      // Clear both token and address
-      tokenManager.setToken(null);
-      tokenManager.setAddress(null);
+      // Clear auth data (both token and address)
+      useAuthStore.getState().clearAuth();
     } catch (error) {
       console.error('Sign out failed:', error);
       throw error;

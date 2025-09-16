@@ -1,12 +1,11 @@
 import { useMemo } from 'react';
 
-import { useAuth } from '@/contexts/auth';
+import { useAuthStore } from '@/stores/auth';
 import { useQueryDaosPublic, useQueryDaos } from '@/lib/graphql';
 import type { Dao } from '@/lib/graphql/types';
 import type { DaoInfo } from '@/utils/config';
 
 function transformDaoData(dao: Dao, index: number): DaoInfo {
-
   return {
     id: dao.id,
     name: dao.name,
@@ -26,14 +25,14 @@ function transformDaoData(dao: Dao, index: number): DaoInfo {
 }
 
 export function useGraphqlDaoData() {
-  const { isAuthenticated } = useAuth();
-  
+  const { isAuthenticated } = useAuthStore();
+
   const publicQuery = useQueryDaosPublic();
   const authQuery = useQueryDaos();
-  
-  const graphqlData = (isAuthenticated && authQuery.data) ? authQuery.data : publicQuery.data;
-  const isLoading = isAuthenticated ? authQuery.isLoading : publicQuery.isLoading;
-  const error = isAuthenticated ? authQuery.error : publicQuery.error;
+
+  const graphqlData = isAuthenticated() && authQuery.data ? authQuery.data : publicQuery.data;
+  const isLoading = isAuthenticated() ? authQuery.isLoading : publicQuery.isLoading;
+  const error = isAuthenticated() ? authQuery.error : publicQuery.error;
 
   const daoData = useMemo(() => {
     if (!graphqlData?.daos) return [];
@@ -43,11 +42,10 @@ export function useGraphqlDaoData() {
       .map((dao, index) => transformDaoData(dao, index));
   }, [graphqlData]);
 
-
   return {
     daoData,
     isLoading,
     error: error?.message || null,
-    subscribedDaos: isAuthenticated ? (graphqlData?.subscribedDaos || []) : []
+    subscribedDaos: isAuthenticated() ? graphqlData?.subscribedDaos || [] : []
   };
 }

@@ -1,13 +1,35 @@
 'use client';
 
+import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { useRouter } from 'next/navigation';
+
+import { useAccount } from '@/hooks/useAccount';
+import { useSiweAuth } from '@/hooks/useSiweAuth';
+import { useAuthStore } from '@/stores/auth';
 
 import { NotificationIcon } from './icons/notification-icon';
 import { Button } from './ui/button';
+
 export function NotificationButton() {
   const router = useRouter();
+  const { token, localAddress } = useAuthStore();
+  const { address } = useAccount();
+  const { openConnectModal } = useConnectModal();
+  const { authenticate } = useSiweAuth();
 
-  const handleClick = () => {
+  const handleClick = async () => {
+    if (!address && !localAddress) {
+      openConnectModal?.();
+      return;
+    }
+
+    if ((address || localAddress) && !token) {
+      const result = await authenticate();
+      if (!result.success) {
+        return;
+      }
+    }
+
     router.push('/notification/subscription');
   };
 

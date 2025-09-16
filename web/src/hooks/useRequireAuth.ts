@@ -3,13 +3,12 @@
 import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { useCallback } from 'react';
 
-import { useAuth } from '@/contexts/auth';
+import { useAuthStore } from '@/stores/auth';
 import { useAccount } from '@/hooks/useAccount';
 import { useSiweAuth } from '@/hooks/useSiweAuth';
 
-
 export const useRequireAuth = () => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated } = useAuthStore();
   const { isConnected, authSource } = useAccount();
   const { openConnectModal } = useConnectModal();
   const { authenticate, isAuthenticating } = useSiweAuth();
@@ -29,7 +28,7 @@ export const useRequireAuth = () => {
     }
 
     // Check authentication status
-    if (!isAuthenticated) {
+    if (!isAuthenticated()) {
       const authResult = await authenticate();
       return authResult.success;
     }
@@ -38,7 +37,7 @@ export const useRequireAuth = () => {
   }, [isConnected, authSource, isAuthenticated, openConnectModal, authenticate]);
 
   /**
-    * Wrap operations that require authentication
+   * Wrap operations that require authentication
    * @param action - The operation function that requires authentication
    * @returns The wrapped function, which will first check the authentication status
    */
@@ -60,6 +59,6 @@ export const useRequireAuth = () => {
     withAuth,
     isAuthenticating,
     canAuthenticate: isConnected,
-    isAuthenticated: isConnected && isAuthenticated,
+    isAuthenticated: isConnected && isAuthenticated()
   };
 };

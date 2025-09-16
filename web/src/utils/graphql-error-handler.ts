@@ -15,6 +15,15 @@ export const isAuthenticationRequired = (error: any): boolean => {
 
   if (status === 401) return true;
 
+  if (
+    error &&
+    typeof error === 'object' &&
+    'message' in error &&
+    error?.message === 'No authentication token available'
+  ) {
+    return true;
+  }
+
   // Check for GraphQL errors with "authentication required" message
   if (error && typeof error === 'object') {
     // Handle GraphQL Client errors

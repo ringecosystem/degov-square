@@ -6,8 +6,9 @@ import { createSiweMessage } from 'viem/siwe';
 import { createPublicClient } from '@/lib/graphql/client';
 import { QUERY_NONCE, LOGIN_MUTATION } from '@/lib/graphql/queries';
 import type { NonceVariables, LoginVariables } from '@/lib/graphql/types';
+import { extractAddressFromSiweMessage } from '@/utils/siwe';
 
-import { tokenManager } from './token-manager';
+import { useAuthStore } from '@/stores/auth';
 
 /**
  * Custom authentication adapter for RainbowKit that integrates with our existing backend
@@ -44,9 +45,15 @@ export const authenticationAdapter = createAuthenticationAdapter({
 
     const data = await client.request<{ login: { token: string } }>(LOGIN_MUTATION, variables);
 
-    // Store the token using token manager
+    // Store the token with address (ensure token-address binding)
     if (data.login?.token) {
-      tokenManager.setToken(data.login.token);
+      const address = extractAddressFromSiweMessage(message);
+      if (!address) {
+        console.error('Failed to extract address from SIWE message');
+        return false;
+      }
+      useAuthStore.getState().setToken(data.login.token);
+      useAuthStore.getState().setAddress(address);
       return true;
     }
 
@@ -54,7 +61,6 @@ export const authenticationAdapter = createAuthenticationAdapter({
   },
 
   signOut: async () => {
-    tokenManager.setToken(null);
-    tokenManager.setAddress(null);
+    useAuthStore.getState().clearAuth();
   }
 });

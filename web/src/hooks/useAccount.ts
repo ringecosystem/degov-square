@@ -2,7 +2,7 @@
 
 import { useAccount as useWagmiAccount } from 'wagmi';
 
-import { useAuth } from '@/contexts/auth';
+import { useAuthStore } from '@/stores/auth';
 
 /**
  * Enhanced useAccount hook that supports both wagmi wallet connection and URL-based auth
@@ -14,12 +14,12 @@ import { useAuth } from '@/contexts/auth';
  */
 export const useAccount = () => {
   const wagmiAccount = useWagmiAccount();
-  const { isUsingUrlAuth, urlAddress } = useAuth();
+  const { localAddress, isLocalMode } = useAuthStore();
 
-  // URL auth takes COMPLETE priority - when active, wagmi is completely disabled
-  if (isUsingUrlAuth && urlAddress) {
+  // Local address mode takes COMPLETE priority - when active, wagmi is completely disabled
+  if (isLocalMode() && localAddress) {
     return {
-      address: urlAddress as `0x${string}`,
+      address: localAddress as `0x${string}`,
       isConnected: true,
       isConnecting: false,
       isReconnecting: false,
@@ -30,8 +30,8 @@ export const useAccount = () => {
     };
   }
 
-  // Only use wallet when URL auth is NOT active
-  if (!isUsingUrlAuth && wagmiAccount.isConnected && wagmiAccount.address) {
+  // Only use wallet when local mode is NOT active
+  if (!isLocalMode() && wagmiAccount.isConnected && wagmiAccount.address) {
     return {
       address: wagmiAccount.address,
       isConnected: true,
@@ -48,8 +48,8 @@ export const useAccount = () => {
   return {
     address: undefined,
     isConnected: false,
-    isConnecting: isUsingUrlAuth ? false : wagmiAccount.isConnecting, // Disable wagmi loading states during URL auth
-    isReconnecting: isUsingUrlAuth ? false : wagmiAccount.isReconnecting,
+    isConnecting: isLocalMode() ? false : wagmiAccount.isConnecting, // Disable wagmi loading states during URL auth
+    isReconnecting: isLocalMode() ? false : wagmiAccount.isReconnecting,
     chainId: wagmiAccount.chainId,
     // Additional fields to indicate auth source
     authSource: 'none' as const,

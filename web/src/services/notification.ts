@@ -2,7 +2,7 @@
  * NotificationService - Service layer for notification operations
  */
 
-import { getToken } from '@/lib/auth/token-manager';
+import { getToken } from '@/stores/auth';
 import { createAuthorizedClient } from '@/lib/graphql/client';
 import {
   LIST_NOTIFICATION_CHANNELS,
