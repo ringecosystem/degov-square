@@ -180,6 +180,7 @@ export interface SubscribedProposal {
   state: string;
   title: string;
   proposalCreatedAt: string;
+  proposalLink: string;
 }
 
 export interface SubscribedProposalItem extends Record<string, unknown> {
@@ -190,6 +191,7 @@ export interface SubscribedProposalItem extends Record<string, unknown> {
     logo: string;
     chainName: string;
     chainLogo: string;
+    endpoint: string;
   };
   features: SubscribedFeature[];
 }

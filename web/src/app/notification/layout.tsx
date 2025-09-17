@@ -58,7 +58,7 @@ function NotificationLayoutContent({ children }: { children: React.ReactNode }) 
   return (
     <div className="container space-y-[20px]">
       {!isMobileAndSubSection && (
-        <Link href="/" className="flex items-center gap-[5px] md:gap-[10px]">
+        <Link href="/" className="flex items-center gap-[5px] lg:gap-[10px]">
           <Image
             src="/back.svg"
             alt="back"
@@ -70,10 +70,10 @@ function NotificationLayoutContent({ children }: { children: React.ReactNode }) 
         </Link>
       )}
 
-      <div className="flex w-full flex-col gap-[30px] md:flex-row">
+      <div className="flex w-full flex-col gap-[30px] lg:flex-row">
         {!isMobileAndSubSection && (
-          <aside className="w-full flex-shrink-0 md:w-[300px]">
-            <div className="flex flex-col gap-[20px] md:gap-[10px]">
+          <aside className="w-full flex-shrink-0 lg:w-[300px]">
+            <div className="flex flex-col gap-[20px] lg:gap-[10px]">
               {NAVS.map((nav) => (
                 <NavLink key={nav.value} nav={nav} isActive={isActive(nav)} href={getHref(nav)} />
               ))}
@@ -82,7 +82,7 @@ function NotificationLayoutContent({ children }: { children: React.ReactNode }) 
         )}
 
         <main className="flex flex-1 flex-col">
-          <div className="md:bg-card h-[calc(100vh-300px)] space-y-[15px] md:space-y-[20px] md:rounded-[14px] md:p-[20px]">
+          <div className="lg:bg-card h-[calc(100vh-300px)] space-y-[15px] lg:space-y-[20px] lg:rounded-[14px] lg:p-[20px]">
             <AuthGuard>{children}</AuthGuard>
           </div>
         </main>

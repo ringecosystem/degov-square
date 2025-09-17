@@ -108,6 +108,7 @@ export const SUBSCRIBED_PROPOSALS = gql`
         state
         title
         proposalCreatedAt
+        proposalLink
       }
       dao {
         code
@@ -115,6 +116,7 @@ export const SUBSCRIBED_PROPOSALS = gql`
         logo
         chainName
         chainLogo
+        endpoint
       }
       features {
         name
