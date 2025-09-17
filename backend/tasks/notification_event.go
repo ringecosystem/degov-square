@@ -107,6 +107,7 @@ func (t *NotificationEventTask) buildNotificationRecordByEvent(event *dbmodels.N
 				Type:        event.Type,
 				ProposalID:  event.ProposalID,
 				VoteID:      event.VoteID,
+				Payload:     event.Payload,
 				UserID:      user.UserID,
 				UserAddress: user.UserAddress,
 				State:       dbmodels.NotificationRecordStatePending,
