@@ -11,14 +11,7 @@ import { z } from 'zod';
 import { useIsMobileAndSubSection } from '@/app/notification/_hooks/isMobileAndSubSection';
 import { Countdown } from '@/components/countdown';
 import { ErrorIcon } from '@/components/icons/error-icon';
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage
-} from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { LoadedButton } from '@/components/ui/loaded-button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -96,6 +89,7 @@ function SubscriptionPageContent() {
   });
 
   const [isChangingEmail, setIsChangingEmail] = useState(false);
+  const [emailError, setEmailError] = useState<string>('');
   const [verificationError, setVerificationError] = useState<string>('');
 
   const form = useForm<SubscriptionFormValues>({
@@ -118,7 +112,19 @@ function SubscriptionPageContent() {
   const verifyLoading = verifyEmailMutation.isPending;
 
   const handleSendCode = useCallback(async () => {
-    if (!formState.email || !isEmailValid || sendingLoading) return;
+    setEmailError('');
+
+    if (!formState.email) {
+      setEmailError('Please enter your email address');
+      return;
+    }
+
+    if (!isEmailValid) {
+      setEmailError('Please enter a valid email address');
+      return;
+    }
+
+    if (sendingLoading) return;
 
     // Check if the new email is the same as the current verified email when changing email
     if (
@@ -126,9 +132,7 @@ function SubscriptionPageContent() {
       notificationChannels?.emailAddress &&
       formState.email === notificationChannels.emailAddress
     ) {
-      toast.error(
-        'The new email is the same as your current email. Please enter a different email address.'
-      );
+      setEmailError("Your new email shouldn't be the same as the old one.");
       return;
     }
 
@@ -165,9 +169,14 @@ function SubscriptionPageContent() {
   ]);
 
   const handleVerify = useCallback(async () => {
-    if (!formState.verificationCode || verifyLoading) return;
-
     setVerificationError('');
+
+    if (!formState.verificationCode.trim()) {
+      setVerificationError('Please enter verification code');
+      return;
+    }
+
+    if (verifyLoading) return;
 
     verifyEmailMutation.mutate(
       { type: 'EMAIL' as const, value: formState.email, otpCode: formState.verificationCode },
@@ -182,7 +191,7 @@ function SubscriptionPageContent() {
             setIsChangingEmail(false);
             setVerificationError('');
           } else {
-            setVerificationError(data.message || 'Verification failed');
+            setVerificationError('Invalid verification code. Please try again.');
           }
         },
         onError: (error: any) => {
@@ -216,6 +225,8 @@ function SubscriptionPageContent() {
     form.setValue('email', currentEmail);
     form.setValue('verificationCode', '');
     setCountdown({ active: false, duration: 60, key: 0 });
+    setEmailError('');
+    setVerificationError('');
   }, [form, notificationChannels?.emailAddress]);
 
   return (
@@ -246,7 +257,7 @@ function SubscriptionPageContent() {
       ) : hasVerifiedEmail ? (
         // Show verified email with Change button
         <div className="space-y-[20px] rounded-lg">
-          <div className="space-y-[8px]">
+          <div className="flex flex-col gap-[5px]">
             <label className="text-[14px] text-white">Your Email</label>
             <div className="flex items-center gap-[10px]">
               <Input
@@ -275,42 +286,52 @@ function SubscriptionPageContent() {
                 control={form.control}
                 name="email"
                 render={({ field }) => (
-                  <FormItem className="space-y-[8px]">
-                    <FormLabel className="text-[14px] text-white">Your Email</FormLabel>
+                  <FormItem className="space-y-[5px]">
+                    <FormLabel className="mb-0 text-[14px] text-white">Your Email</FormLabel>
                     <FormControl>
-                      <div className="flex items-center gap-[10px]">
-                        <Input
-                          className="h-[39px] max-w-[335px] flex-1 rounded-[100px] border-gray-600 bg-gray-700 text-white placeholder:text-gray-400"
-                          placeholder="yourname@example.com"
-                          value={formState.email}
-                          onChange={(e) => {
-                            dispatch({ type: 'SET_EMAIL', payload: e.target.value });
-                            field.onChange(e.target.value);
-                          }}
-                        />
-                        <LoadedButton
-                          type="button"
-                          onClick={handleSendCode}
-                          variant="default"
-                          className="bg-foreground min-w-[120px] rounded-[100px] p-[10px] text-black hover:opacity-80"
-                          isLoading={sendingLoading}
-                          disabled={!formState.email || !isEmailValid || countdown.active}
-                        >
-                          {countdown.active ? (
-                            <Countdown
-                              key={countdown.key}
-                              start={countdown.duration}
-                              autoStart
-                              onEnd={handleCountdownEnd}
-                              onTick={handleCountdownTick}
-                            />
-                          ) : (
-                            'Send Code'
-                          )}
-                        </LoadedButton>
+                      <div className="space-y-[5px]">
+                        <div className="flex items-center gap-[10px]">
+                          <Input
+                            className={`h-[39px] max-w-[335px] flex-1 rounded-[100px] border-gray-600 bg-gray-700 text-white placeholder:text-gray-400 ${
+                              emailError ? 'border-red-500' : ''
+                            }`}
+                            placeholder="yourname@example.com"
+                            value={formState.email}
+                            onChange={(e) => {
+                              dispatch({ type: 'SET_EMAIL', payload: e.target.value });
+                              field.onChange(e.target.value);
+                              setEmailError('');
+                            }}
+                          />
+                          <LoadedButton
+                            type="button"
+                            onClick={handleSendCode}
+                            variant="default"
+                            className="bg-foreground min-w-[120px] rounded-[100px] p-[10px] text-black hover:opacity-80"
+                            isLoading={sendingLoading}
+                            disabled={sendingLoading || countdown.active}
+                          >
+                            {countdown.active ? (
+                              <Countdown
+                                key={countdown.key}
+                                start={countdown.duration}
+                                autoStart
+                                onEnd={handleCountdownEnd}
+                                onTick={handleCountdownTick}
+                              />
+                            ) : (
+                              'Send Code'
+                            )}
+                          </LoadedButton>
+                        </div>
+                        {emailError && (
+                          <div className="flex items-center gap-[5px] text-[12px]">
+                            <ErrorIcon className="h-4 w-4 flex-shrink-0 text-[#FF3C3F]" />
+                            <span>{emailError}</span>
+                          </div>
+                        )}
                       </div>
                     </FormControl>
-                    <FormMessage />
                   </FormItem>
                 )}
               />
@@ -320,8 +341,8 @@ function SubscriptionPageContent() {
                 control={form.control}
                 name="verificationCode"
                 render={({ field }) => (
-                  <FormItem className="space-y-[8px]">
-                    <FormLabel className="text-[14px] text-white">Verification Code</FormLabel>
+                  <FormItem className="space-y-[5px]">
+                    <FormLabel className="mb-0 text-[14px] text-white">Verification Code</FormLabel>
                     <FormControl>
                       <div className="space-y-[5px]">
                         <div className="flex items-center gap-[10px]">
@@ -330,14 +351,12 @@ function SubscriptionPageContent() {
                               verificationError ? 'border-red-500' : ''
                             }`}
                             placeholder="e.g., 123456"
-                            disabled={!formState.email || !isEmailValid}
+                            disabled={!formState.email}
                             value={formState.verificationCode}
                             onChange={(e) => {
                               dispatch({ type: 'SET_VERIFICATION_CODE', payload: e.target.value });
                               field.onChange(e.target.value);
-                              if (verificationError) {
-                                setVerificationError('');
-                              }
+                              setVerificationError('');
                             }}
                           />
                           <LoadedButton
@@ -345,12 +364,7 @@ function SubscriptionPageContent() {
                             variant="default"
                             className="bg-foreground text-background min-w-[120px] rounded-[100px] p-[10px] hover:opacity-80"
                             isLoading={verifyLoading}
-                            disabled={
-                              !formState.email ||
-                              !isEmailValid ||
-                              !formState.verificationCode ||
-                              verifyLoading
-                            }
+                            disabled={verifyLoading}
                           >
                             Verify
                           </LoadedButton>
@@ -358,13 +372,11 @@ function SubscriptionPageContent() {
                         {verificationError && (
                           <div className="flex items-center gap-[5px] text-[12px]">
                             <ErrorIcon className="h-4 w-4 flex-shrink-0 text-[#FF3C3F]" />
-                            <span>Invalid verification code. Please try again.</span>
+                            <span>{verificationError}</span>
                           </div>
                         )}
                       </div>
                     </FormControl>
-
-                    <FormMessage />
                   </FormItem>
                 )}
               />
