@@ -26,10 +26,10 @@ class SiweService {
 
   private createMessage(address: `0x${string}`, nonce: string, chainId: number): string {
     return createSiweMessage({
-      domain: typeof window !== 'undefined' ? window.location.host : 'apps.degov.ai',
+      domain: typeof window !== 'undefined' ? window.location.host : 'square.degov.ai',
       address,
       statement: `DeGov.AI wants you to sign in with your Ethereum account: ${address}`,
-      uri: typeof window !== 'undefined' ? window.location.origin : 'https://apps.degov.ai',
+      uri: typeof window !== 'undefined' ? window.location.origin : 'https://square.degov.ai',
       version: '1',
       chainId,
       nonce
