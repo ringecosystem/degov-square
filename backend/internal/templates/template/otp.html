@@ -1,0 +1,22 @@
+{{define "title"}}Email Verification{{end}}
+
+{{define "content"}}
+  <h1 class="title">Confirm your email address</h1>
+
+  <p class="text mb-30">
+    There's one quick step to confirm your email address. Please enter this verification code on DeGov:
+  </p>
+
+  <div class="box" style="text-align: center;">
+    <div class="value" style="font-size:26px; font-weight:600; letter-spacing:8px; font-family: 'Courier New', Courier, monospace;">{{.OTP}}</div>
+  </div>
+
+  <p class="text mb-30">
+    Verification codes expire after {{.Expiration}} minutes. Do not share this code with anyone.
+  </p>
+
+  <p class="text no-mb">
+    Best regards,<br/>
+    The DeGov.AI Team
+  </p>
+{{end}}
