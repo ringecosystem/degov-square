@@ -17,22 +17,17 @@ export const useUrlAuthSync = () => {
     const urlToken = searchParams.get('token');
     const urlAddress = searchParams.get('address');
 
-    // Debug logging for development
-    if (process.env.NODE_ENV === 'development') {
-      console.log('URL Auth Sync - Token:', urlToken ? 'Present' : 'Missing');
-      console.log('URL Auth Sync - Address:', urlAddress ? urlAddress : 'Missing');
-    }
-
     if (urlToken && urlAddress) {
-      if (process.env.NODE_ENV === 'development') {
-        console.log('Setting local auth with URL parameters');
-      }
-      disconnectWallet(urlAddress as `0x${string}`);
-      // Set local auth mode with URL params
-      setLocalAuth(urlAddress, urlToken);
+      const handleUrlAuth = async () => {
+        await disconnectWallet(urlAddress as `0x${string}`);
+        // Set local auth mode with URL params
+        setLocalAuth(urlAddress, urlToken);
 
-      // Redirect to clean URL after successful auth
-      router.replace(pathname);
+        // Redirect to clean URL after successful auth
+        router.replace(pathname);
+      };
+
+      handleUrlAuth();
     }
   }, [searchParams, setLocalAuth, disconnectWallet, router, pathname]);
 

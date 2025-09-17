@@ -9,7 +9,6 @@ import type { NonceVariables, LoginVariables } from '@/lib/graphql/types';
 import { useAuthStore } from '@/stores/auth';
 import { extractAddressFromSiweMessage } from '@/utils/siwe';
 
-
 /**
  * Custom authentication adapter for RainbowKit that integrates with our existing backend
  * This adapter handles the SIWE authentication flow using our GraphQL API

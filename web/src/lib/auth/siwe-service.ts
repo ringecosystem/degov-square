@@ -2,7 +2,6 @@
 
 import { createSiweMessage } from 'viem/siwe';
 
-
 import { createPublicClient } from '@/lib/graphql/client';
 import { QUERY_NONCE, LOGIN_MUTATION } from '@/lib/graphql/queries';
 import type { NonceVariables, LoginVariables } from '@/lib/graphql/types';

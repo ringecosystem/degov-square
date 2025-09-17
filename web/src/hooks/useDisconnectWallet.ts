@@ -1,13 +1,11 @@
 import { useCallback } from 'react';
 import { useDisconnect } from 'wagmi';
 
-import { useAccount } from '@/hooks/useAccount';
 import { useAuthStore } from '@/stores/auth';
 
 export const useDisconnectWallet = () => {
   const { disconnect } = useDisconnect();
   const { clearAuth } = useAuthStore();
-  const { authSource } = useAccount();
 
   const disconnectWallet = useCallback(
     async (address: `0x${string}`) => {
