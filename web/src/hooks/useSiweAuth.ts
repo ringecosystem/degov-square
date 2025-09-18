@@ -4,7 +4,6 @@ import { useCallback, useState, useEffect } from 'react';
 import { useSignMessage, useChainId } from 'wagmi';
 
 import { useAccount } from '@/hooks/useAccount';
-
 import { globalAuthManager, type AuthResult } from '@/lib/auth/global-auth-manager';
 import { siweService } from '@/lib/auth/siwe-service';
 
