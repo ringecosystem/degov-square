@@ -1,58 +1,22 @@
-{{define "title"}} Confirm Your Email {{end}}
-
-{{define "header"}}
-  {{$theme := "dark"}}
-  {{if eq .DegovSiteConfig.EmailTheme "light"}}
-    {{$theme = "light"}}
-  {{end}}
-
-  {{if eq $theme "dark"}}
-  <style>
-    .verification-code-box { background-color: #2b2b2b; border-radius: 8px; padding: 18px 25px; text-align: center; }
-    .verification-code-box p { margin: 0; }
-    .message, .expiry-note { font-size: 15px; line-height: 1.6; color: #b0b0b0; margin-bottom: 30px; }
-    .expiry-note { margin-top: 25px; margin-bottom: 30px; }
-    .expiry-note p { margin: 0; }
-    .signature { font-size: 15px; color: #b0b0b0; line-height: 1.5; }
-    .signature-name { font-weight: 600; }
-  </style>
-  {{else}}
-  <style>
-    .verification-code-box { background-color: #f0f2f5; border-radius: 8px; padding: 18px 25px; text-align: center; }
-    .verification-code-box p { margin: 0; }
-    .message, .expiry-note { font-size: 15px; line-height: 1.6; color: #65676b; margin-bottom: 30px; }
-    .expiry-note { margin-top: 25px; margin-bottom: 30px; }
-    .message p, .expiry-note p { margin: 0; }
-    .signature { font-size: 15px; color: #65676b; line-height: 1.5; }
-    .signature-name { font-weight: 600; }
-  </style>
-  {{end}}
-{{end}}
+{{define "title"}}Email Verification{{end}}
 
 {{define "content"}}
-<div>
   <h1 class="title">Confirm your email address</h1>
 
-  <div class="message">
-    <p>
-      There's one quick step to confirm your email address. Please enter this verification code on DeGov:
-    </p>
+  <p class="text mb-30">
+    There's one quick step to confirm your email address. Please enter this verification code on DeGov:
+  </p>
+
+  <div class="box" style="text-align: center;">
+    <div class="value" style="font-size:26px; font-weight:600; letter-spacing:8px; font-family: 'Courier New', Courier, monospace;">{{.OTP}}</div>
   </div>
 
-  <div class="verification-code-box">
-    <p class="verification-code">{{.OTP}}</p>
-  </div>
+  <p class="text mb-30">
+    Verification codes expire after {{.Expiration}} minutes. Do not share this code with anyone.
+  </p>
 
-  <div class="expiry-note">
-    <p>
-      Verification codes expire after {{.Expiration}} minutes. Do not share this code with
-      anyone.
-    </p>
-  </div>
-
-  <div class="signature">
-    Thanks,<br />
-    <span class="signature-name">DeGov.AI</span>
-  </div>
-</div>
+  <p class="text no-mb">
+    Best regards,<br/>
+    The DeGov.AI Team
+  </p>
 {{end}}

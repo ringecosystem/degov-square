@@ -1,5 +1,3 @@
-
-{{/* Main layout template definition. */}}
 {{define "layout.html"}}
 <!DOCTYPE html>
 <html lang="en">
@@ -8,174 +6,165 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{{block "title" .}}{{end}} - DeGov.AI</title>
 
-    {{/*
-      The theme variable is now defined only once in the body,
-      so we can determine which single style block to render.
-    */}}
+    {{/* Define theme variable once at the top for reuse. */}}
     {{$theme := "dark"}}
     {{if eq .DegovSiteConfig.EmailTheme "light"}}
       {{$theme = "light"}}
     {{end}}
 
+    <style>
+      /* Base */
+      body { margin:0; padding:0; -webkit-text-size-adjust:100%; -ms-text-size-adjust:100%; font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
+      table { border-collapse: collapse; }
+
+      /* Typography */
+      .title { margin:0 0 40px 0; font-size:26px; font-weight:600; line-height:1.3; }
+      .text { font-size:16px; line-height:22px; font-weight:400; }
+      .text-14 { font-size:14px; font-weight:400; }
+      .fw-600 { font-weight:600; }
+      .mb-8 { margin:0 0 8px 0; }
+      .mb-20 { margin:0 0 20px 0; }
+      .mb-30 { margin:0 0 30px 0; }
+      .mb-40 { margin:0 0 40px 0; }
+      .no-mb { margin:0; }
+      .maxw-450 { max-width:450px; }
+
+      /* Layout */
+      .py-40 { padding:40px 0; }
+      .p-40 { padding:40px; }
+      .px-40 { padding:0 40px; }
+      .pt-0 { padding-top:0; }
+      .text-center { text-align:center; }
+      .text-right { text-align:right; }
+      .nowrap { white-space:nowrap; }
+
+      /* Details Box */
+      .box { margin:0 0 40px 0; padding:20px; border-radius:10px; }
+      .label { font-size:14px; font-weight:400; margin:0 0 5px 0; }
+      .value { font-size:16px; font-weight:600; line-height:22px; }
+      .value-break { word-break:break-word; }
+
+      /* CTAs */
+      .cta-primary { margin:0 0 20px 0; text-align:center; }
+      .btn-primary { display:block; text-decoration:none; font-size:14px; font-weight:600; padding:12px 20px; border-radius:100px; text-align:center; }
+      .btn-primary-sm { display:block; text-decoration:none; font-size:14px; font-weight:600; padding:10px 20px; border-radius:100px; text-align:center; }
+      .btn-outline { display:block; text-align:center; text-decoration:none; font-size:14px; font-weight:400; padding:12px 10px; border:1px solid; border-radius:100px; }
+      .cta-table { margin:0 0 20px 0; }
+      .cell-left { padding-right:10px; }
+      .cell-right { padding-left:10px; }
+
+      /* Footer */
+      .footer-label { font-size:16px; line-height:22px; }
+      .social-cell { padding-left:20px; }
+      .social-icon { width:24px; height:24px; }
+      .unsubscribe-text { display:inline; font-size:14px; line-height:20px; }
+      .unsubscribe-link { display:inline; font-size:14px; line-height:20px; }
+    </style>
+
     {{if eq $theme "dark"}}
     <style>
-      /* Reset styles */
-      body, table, td, p, a, li, blockquote { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; margin: 0; padding: 0; }
-      table, td { mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
-      img { -ms-interpolation-mode: bicubic; border: 0; height: auto; line-height: 100%; outline: none; text-decoration: none; }
-
-      /* Main styles for Dark Theme */
-      body { background-color: #000000; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol"; color: #ffffff; }
-      .email-container { max-width: {{ if and .EmailStyle .EmailStyle.ContainerMaxWidth }}{{ .EmailStyle.ContainerMaxWidth }}{{ else }}600px{{ end }}; margin: 40px auto; background-color: #1a1a1a; border-radius: 12px; overflow: hidden; }
-      .header-logo { padding: 40px; text-align: center; background-color: #1a1a1a; }
-      .header-logo img { max-width: 200px; height: auto; vertical-align: middle; }
-      .divider, .footer-divider { border-bottom: 1px solid #333333; margin: 0 40px; }
-      .content { padding: 35px 40px 40px 40px; background-color: #1a1a1a; color: #ffffff; }
-      .title { font-size: 28px; color: #ffffff; margin-bottom: 16px; font-weight: 600; line-height: 1.3; }
-      .expiry-note p { margin: 0; }
-      .verification-code { font-size: 36px; font-weight: bold; color: #ffffff; letter-spacing: 8px; font-family: "Courier New", Courier, monospace; }
-      .footer-content { padding: 25px 40px; text-align: left; background-color: #1a1a1a; }
-      .footer-project-name { color: #ffffff; font-size: 15px; font-weight: 600; margin: 0; }
-      .social-icons { margin-top: 0; text-align: right; }
-      .social-icon { display: inline-block; margin-left: 20px; width: 20px; height: 20px; vertical-align: middle; }
-      .social-icon img { width: 100%; height: auto; }
-      .unsubscribe-section { padding: 30px 40px; text-align: center; background-color: #1a1a1a; margin-top: 0; }
-      .unsubscribe-text { color: #888888; font-size: 12px; line-height: 1.6; }
-      .unsubscribe-link { color: #55acee; text-decoration: underline; }
-
-      /* Responsive */
-      @media only screen and (max-width: 600px) {
-        .email-container { width: 100% !important; margin: 0 !important; border-radius: 0; }
-        .header-logo, .content, .footer-content, .unsubscribe-section { padding: 25px !important; }
-        .divider, .footer-divider { margin: 0 25px !important; }
-        .title { font-size: 24px !important; }
-        .verification-code { font-size: 30px !important; letter-spacing: 6px !important; }
-        .footer-content td { display: block !important; width: 100% !important; text-align: center !important; }
-        .footer-content td:last-child { padding-top: 20px; }
-      }
+      /* Dark Theme */
+      body { background:#111111; color:#ffffff; }
+      .card { background:#222222; }
+      .divider-line { background:#444444; }
+      .title, .text, .label, .value, .footer-label { color:#ffffff; }
+      .text-14-muted { color:#888888; }
+      .box { background:#333333; }
+      .btn-primary, .btn-primary-sm { background:#ffffff; color:#111111; }
+      .btn-outline { color:#ffffff; border-color:#ffffff; }
+      .unsubscribe-text { color:#888888; }
+      .unsubscribe-link { color:#55acee; }
     </style>
     {{else}}
     <style>
-      /* Reset styles */
-      body, table, td, p, a, li, blockquote { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; margin: 0; padding: 0; }
-      table, td { mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
-      img { -ms-interpolation-mode: bicubic; border: 0; height: auto; line-height: 100%; outline: none; text-decoration: none; }
-
-      /* Main styles */
-      body { background-color: #f0f2f5; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol"; color: #1c1e21; }
-      .email-container { max-width: {{ if and .EmailStyle .EmailStyle.ContainerMaxWidth }}{{ .EmailStyle.ContainerMaxWidth }}{{ else }}600px{{ end }}; margin: 40px auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; border: 1px solid #d2d6dc; }
-      .header-logo { padding: 40px; text-align: center; background-color: #ffffff; }
-      .header-logo img { max-width: 200px; height: auto; vertical-align: middle; }
-      .divider, .footer-divider { border-bottom: 1px solid #d2d6dc; margin: 0 40px; }
-      .content { padding: 35px 40px 40px 40px; background-color: #ffffff; color: #1c1e21; }
-      .title { font-size: 28px; color: #1c1e21; margin-bottom: 16px; font-weight: 600; line-height: 1.3; }
-      .unsubscribe-text p { margin: 0; }
-      .verification-code { font-size: 36px; font-weight: bold; color: #1c1e21; letter-spacing: 8px; font-family: "Courier New", Courier, monospace; }
-      .footer-content { padding: 25px 40px; text-align: left; background-color: #ffffff; }
-      .footer-project-name { color: #1c1e21; font-size: 15px; font-weight: 600; margin: 0; }
-      .social-icons { margin-top: 0; text-align: right; }
-      .social-icon { display: inline-block; margin-left: 20px; width: 20px; height: 20px; vertical-align: middle; }
-      .social-icon img { width: 100%; height: auto; }
-      .unsubscribe-section { padding: 30px 40px; text-align: center; background-color: #ffffff; margin-top: 0; }
-      .unsubscribe-text { color: #8a8d91; font-size: 12px; line-height: 1.6; }
-      .unsubscribe-link { color: #55acee; text-decoration: underline; }
-
-      /* Responsive */
-      @media only screen and (max-width: 600px) {
-        .email-container { width: 100% !important; margin: 0 !important; border-radius: 0; border: 0; }
-        .header-logo, .content, .footer-content, .unsubscribe-section { padding: 25px !important; }
-        .divider, .footer-divider { margin: 0 25px !important; }
-        .title { font-size: 24px !important; }
-        .verification-code { font-size: 30px !important; letter-spacing: 6px !important; }
-        .footer-content td { display: block !important; width: 100% !important; text-align: center !important; }
-        .footer-content td:last-child { padding-top: 20px; }
-      }
+      /* Light Theme */
+      body { background:#F7F7F7; color:#202224; }
+      .card { background:#ffffff; }
+      .divider-line { background:#E5E5E5; }
+      .title, .text, .label, .value, .footer-label { color:#202224; }
+      .text-14-muted { color:#979797; }
+      .box { background:#F7F7F7; }
+      .btn-primary, .btn-primary-sm { background:#202224; color:#ffffff; }
+      .btn-outline { color:#202224; border-color:#202224; }
+      .unsubscribe-text { color:#979797; }
+      .unsubscribe-link { color:#006FFF; }
     </style>
-    {{end}}
-
-    {{block "header" .}}
-      <meta name="_name" content="_content" />
     {{end}}
   </head>
   <body>
     {{$config := .DegovSiteConfig}}
-    {{$theme := "dark"}}
-    {{if eq $config.EmailTheme "light"}}
-      {{$theme = "light"}}
-    {{end}}
-
-    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
       <tr>
-        <td>
-          <div class="email-container">
-            <div class="header-logo">
-              <a href="{{$config.Home}}" target="_blank">
-                {{if eq $theme "dark"}}
-                <img
-                  src="{{$config.LogoLight}}"
-                  alt="{{$config.Name}}"
-                  style="width: auto; height: auto; vertical-align: middle"
-                />
-                {{else}}
-                <img
-                  src="{{$config.LogoDark}}"
-                  alt="{{$config.Name}}"
-                  style="width: auto; height: auto; vertical-align: middle"
-                />
-                {{end}}
-              </a>
-            </div>
+        <td class="py-40">
+          <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="550" align="center" class="card">
+            <tr>
+              <td class="p-40 text-center">
+                <a href="{{$config.Home}}" target="_blank">
+                  {{if eq $theme "dark"}}
+                  <img src="{{$config.LogoLight}}" alt="{{$config.Name}}" style="max-width: 195px; height: auto;" />
+                  {{else}}
+                  <img src="{{$config.LogoDark}}" alt="{{$config.Name}}" style="max-width: 195px; height: auto;" />
+                  {{end}}
+                </a>
+              </td>
+            </tr>
 
-            <div class="divider"></div>
+            <tr>
+              <td class="px-40">
+                <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+                  <tr><td height="1" class="divider-line" style="font-size:0; line-height:0;">&nbsp;</td></tr>
+                </table>
+              </td>
+            </tr>
 
-            <div class="content">
-              {{block "content" .}}
-                <p>This is default content, which should be overridden by a specific template.</p>
-              {{end}}
-            </div>
+            <tr>
+              <td class="p-40">
+                {{block "content" .}}{{end}}
+              </td>
+            </tr>
 
-            <div class="footer-divider"></div>
+            <tr>
+              <td class="px-40">
+                <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+                  <tr><td height="1" class="divider-line" style="font-size:0; line-height:0;">&nbsp;</td></tr>
+                </table>
+              </td>
+            </tr>
 
-            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
-              <tr>
-                <td class="footer-content">
-                  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
-                    <tr>
-                      <td style="width: 50%; vertical-align: middle">
-                        <p class="footer-project-name">
-                          {{- with .DaoConfig -}}
-                            {{- if .Name}}{{.Name}} - {{end -}}
-                          {{- end -}}
-                          DeGov.AI
-                        </p>
-                      </td>
-                      <td style="width: 50%; text-align: right; vertical-align: middle;">
-                        <div class="social-icons">
+            <tr>
+              <td class="p-40">
+                <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+                  <tr>
+                    <td class="footer-label" style="vertical-align: middle;">DeGov.AI</td>
+                    <td align="right">
+                      <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                        <tr>
                           {{range $config.Socials}}
-                           <a href="{{.Link}}" class="social-icon" target="_blank">
+                          <td class="social-cell">
+                            <a href="{{.Link}}" target="_blank">
                               {{if eq $theme "dark"}}
-                              <img src='{{.IconLight}}' alt="{{.Name}}"/>
+                              <img src='{{.IconLight}}' alt="{{.Name}}" class="social-icon" />
                               {{else}}
-                              <img src='{{.IconDark}}' alt="{{.Name}}"/>
+                              <img src='{{.IconDark}}' alt="{{.Name}}" class="social-icon" />
                               {{end}}
-                           </a>
+                            </a>
+                          </td>
                           {{end}}
-                        </div>
-                      </td>
-                    </tr>
-                  </table>
-                </td>
-              </tr>
-            </table>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
 
-            <div class="unsubscribe-section">
-              <p class="unsubscribe-text">
-                Want to change how you receive these emails?<br />
-                You can
-                <a href="#" class="unsubscribe-link">update your subscribe preferences</a>
-              </p>
-            </div>
-          </div>
+            <tr>
+              <td class="p-40 pt-0 text-center">
+                <span class="unsubscribe-text">Want to change how you receive these emails?</span><br/>
+                <span class="unsubscribe-text nowrap">You can <a href="https://square.degov.ai/notification/subscription" class="unsubscribe-link" style="text-decoration: underline;">update your subscribe preferences</a></span>
+              </td>
+            </tr>
+          </table>
         </td>
       </tr>
     </table>

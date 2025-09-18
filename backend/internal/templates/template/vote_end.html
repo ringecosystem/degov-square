@@ -1,17 +1,4 @@
-{{define "title"}} {{.Title}} {{end}}
-
-{{define "header"}}
-  {{$theme := "dark"}}
-  {{if eq .DegovSiteConfig.EmailTheme "light"}}
-    {{$theme = "light"}}
-  {{end}}
-
-  {{if eq $theme "dark"}}
-  <style></style>
-  {{else}}
-  <style></style>
-  {{end}}
-{{end}}
+{{define "title"}}Proposal voting reminder - DeGov.AI{{end}}
 
 {{define "content"}}
   {{$proposalDb := .Proposal.ProposalDb}}
@@ -19,93 +6,74 @@
   {{$dao := .Dao}}
   {{$vote := .Vote}}
   {{$payload := .PayloadData}}
+  {{$config := .DegovSiteConfig}}
 
-  <p style="margin: 0 0 16px; font-size: 16px; line-height: 1.6;">
-    Hello {{if .EnsName}}{{.EnsName}}{{else}}{{.UserAddress}}{{end}},
-  </p>
-  <p style="margin: 0 0 20px; font-size: 16px; line-height: 1.6;">
-    This is a friendly reminder that voting for the proposal <strong>"{{$proposalDb.Title}}"</strong> in {{$dao.Name}} is ending soon.
+  <h1 class="title">Proposal voting reminder</h1>
+
+  <p class="text mb-40 maxw-450">
+    Hello {{if .EnsName}}{{.EnsName}}{{else}}{{.UserAddress}}{{end}},<br/>
+    This is a friendly reminder that voting for the proposal &quot;{{$proposalDb.Title}}&quot; in {{$dao.Name}} is ending soon.
   </p>
 
-  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="font-size: 15px; line-height: 1.6; margin-bottom: 20px;">
-    <tr>
-      <td style="padding: 4px 0; width: 130px; vertical-align: top;"><strong>Proposal:</strong></td>
-      <td style="padding: 4px 0;"><a href="{{$proposalDb.ProposalLink}}" target="_blank" style="color: #55acee; text-decoration: underline;">{{$proposalDb.Title}}</a></td>
-    </tr>
-    <tr>
-      <td style="padding: 4px 0; vertical-align: top;"><strong>Voting Ends:</strong></td>
-      <td style="padding: 4px 0;">{{$proposalIndexer.VoteEndTimestamp | formatDate}} {{if $payload.TimeRemaining}}({{$payload.TimeRemaining}} remaining){{end}}</td>
-    </tr>
+  <div class="box" style="margin-bottom: 40px;">
+    <div class="mb-20">
+      <div class="label">Proposal</div>
+      <div class="value">{{$proposalDb.Title}}</div>
+    </div>
+    <div class="mb-20">
+      <div class="label">Voting Ends</div>
+      <div class="value">{{$proposalIndexer.VoteEndTimestamp | formatDate}} {{if $payload.TimeRemaining}}({{$payload.TimeRemaining}} remaining){{end}}</div>
+    </div>
     {{if $vote.VoteIndexer}}
-    <tr>
-      <td style="padding: 4px 0; vertical-align: top;"><strong>Your Voting Power:</strong></td>
-      <td style="padding: 4px 0;">{{(formatBigIntWithDecimals $vote.VoteIndexer.Weight $payload.DecimalsInt) | formatLargeNumber}}</td>
-    </tr>
+    <div class="mb-20">
+      <div class="label">Your Voting Power</div>
+      <div class="value">{{(formatBigIntWithDecimals $vote.VoteIndexer.Weight $payload.DecimalsInt) | formatLargeNumber}}</div>
+    </div>
     {{end}}
-  </table>
 
-  <div class="divider" style="margin-top: 24px; margin-left: 0; margin-right: 0;"></div>
+    <div class="mb-20">
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" class="mb-8">
+        <tr>
+          <td class="text-14">Voting Progress</td>
+          <td class="text-14-muted text-right">Abstain: {{(formatBigIntWithDecimals $proposalIndexer.MetricsVotesWeightAbstainSum $payload.DecimalsInt) | formatLargeNumber}} ({{$vote.PercentAbstain | formatPercent}})</td>
+        </tr>
+      </table>
 
-  <h3 style="margin: 24px 0 10px; font-size: 20px; font-weight: 600;">📊 Voting Progress ({{(formatBigIntWithDecimals $vote.TotalVotePower $payload.DecimalsInt) | formatLargeNumber}} / {{(formatBigIntWithDecimals $proposalIndexer.Quorum $payload.DecimalsInt) | formatLargeNumber}})</h3>
-  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="font-size: 15px; line-height: 1.6;">
-    <tr>
-      <td style="padding: 4px 0;">✅&nbsp; <strong>For:</strong></td>
-      <td style="padding: 4px 0; text-align: right;">
-        {{if $proposalIndexer}}
-        {{(formatBigIntWithDecimals $proposalIndexer.MetricsVotesWeightForSum $payload.DecimalsInt) | formatLargeNumber}} ({{$vote.PercentFor | formatPercent}})
-        {{else}}
-        N/A
-        {{end}}
-      </td>
-    </tr>
-    <tr>
-      <td style="padding: 4px 0;">❌&nbsp; <strong>Against:</strong></td>
-      <td style="padding: 4px 0; text-align: right;">
-        {{if $proposalIndexer}}
-        {{(formatBigIntWithDecimals $proposalIndexer.MetricsVotesWeightAgainstSum $payload.DecimalsInt) | formatLargeNumber}} ({{$vote.PercentAgainst | formatPercent}})
-        {{else}}
-        N/A
-        {{end}}
-      </td>
-    </tr>
-    <tr>
-      <td style="padding: 4px 0;">⚪️&nbsp; <strong>Abstain:</strong></td>
-      <td style="padding: 4px 0; text-align: right;">
-        {{if $proposalIndexer}}
-        {{(formatBigIntWithDecimals $proposalIndexer.MetricsVotesWeightAbstainSum $payload.DecimalsInt) | formatLargeNumber}} ({{$vote.PercentAbstain | formatPercent}})
-        {{else}}
-        N/A
-        {{end}}
-      </td>
-    </tr>
-  </table>
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+        <tr>
+          <td class="text fw-600" style="padding-right: 10px; white-space: nowrap;">For ({{$vote.PercentFor | formatPercent}})</td>
+          <td width="100%">
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="font-size: 0px; line-height: 0px;">
+              <tr>
+                <td width="{{$vote.PercentFor}}%" style="background-color: #00B403; height: 5px; border-top-left-radius: 5px; border-bottom-left-radius: 5px;"></td>
+                <td width="{{$vote.PercentAbstain}}%" style="background-color: #979797; height: 5px;"></td>
+                <td width="{{$vote.PercentAgainst}}%" style="background-color: #FF3C3F; height: 5px; border-top-right-radius: 5px; border-bottom-right-radius: 5px;"></td>
+              </tr>
+            </table>
+          </td>
+          <td class="text fw-600" style="padding-left: 10px; white-space: nowrap;" align="right">Against ({{$vote.PercentAgainst | formatPercent}})</td>
+        </tr>
+      </table>
+    </div>
 
-  <div class="divider" style="margin-top: 24px; margin-left: 0; margin-right: 0;"></div>
+    <div>
+      <div class="label">Quorum Progress</div>
+      {{if ge $vote.PercentQuorum 100.0}}
+        <div class="value">{{$vote.PercentQuorum | formatPercent}} ✅ (Threshold exceeded!)</div>
+      {{else}}
+        <div class="value">{{$vote.PercentQuorum | formatPercent}} ⚠️ (Needs more votes!)</div>
+      {{end}}
+    </div>
+  </div>
 
-  <h3 style="margin: 24px 0 10px; font-size: 20px; font-weight: 600;">Quorum Progress</h3>
-  <p style="margin: 0; font-size: 16px; line-height: 1.6;">
-    {{if ge $vote.PercentQuorum 100.0}}
-      <strong>{{$vote.PercentQuorum | formatPercent}}</strong> ✅ (Threshold exceeded!)
-    {{else}}
-      <strong>{{$vote.PercentQuorum | formatPercent}}</strong> ⚠️ (Needs more votes!)
-    {{end}}
-  </p>
+  <div class="cta-primary">
+    <a href="{{$proposalDb.ProposalLink}}" target="_blank" class="btn-primary-sm">View And Vote</a>
+  </div>
 
-  <p style="margin: 24px 0 16px; font-size: 16px; line-height: 1.6;">
-    Every vote counts in decentralized governance. Make your voice heard!
-  </p>
-  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-bottom: 20px;">
-    <tr>
-      <td>
-        <a href="{{$proposalDb.ProposalLink}}" target="_blank" style="color: #55acee; text-decoration: underline; font-size: 15px; font-weight: 600;">
-          Cast Your Vote Now &rarr;
-        </a>
-      </td>
-    </tr>
-  </table>
+  <p class="text mb-20">Every vote counts in decentralized governance. Make your voice heard!</p>
 
-  <p style="margin: 0; font-size: 16px; line-height: 1.6;">
-    Best regards,<br />
-    The {{.DegovSiteConfig.Name}} Team
+  <p class="text no-mb">
+    Best regards,<br/>
+    The {{$config.Name}} Team
   </p>
 {{end}}

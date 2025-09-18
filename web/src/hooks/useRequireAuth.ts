@@ -2,15 +2,14 @@
 
 import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { useCallback } from 'react';
-import { useAccount } from 'wagmi';
 
-import { useAuth } from '@/contexts/auth';
+import { useAccount } from '@/hooks/useAccount';
 import { useSiweAuth } from '@/hooks/useSiweAuth';
-
+import { useAuthStore } from '@/stores/auth';
 
 export const useRequireAuth = () => {
-  const { isAuthenticated } = useAuth();
-  const { isConnected } = useAccount();
+  const { isAuthenticated } = useAuthStore();
+  const { isConnected, authSource } = useAccount();
   const { openConnectModal } = useConnectModal();
   const { authenticate, isAuthenticating } = useSiweAuth();
 
@@ -19,23 +18,26 @@ export const useRequireAuth = () => {
    * @returns Promise<boolean> - Whether authentication is successful
    */
   const ensureAuth = useCallback(async (): Promise<boolean> => {
-    // 1. Check wallet connection status
+    // For URL auth, skip wallet connection modal and go directly to auth check
     if (!isConnected) {
-      openConnectModal?.();
-      return false;
+      // Only try to open wallet modal if not using URL auth
+      if (authSource !== 'url') {
+        openConnectModal?.();
+        return false;
+      }
     }
 
-    // 2. Check authentication status
-    if (!isAuthenticated) {
-      const authSuccess = await authenticate();
-      return authSuccess;
+    // Check authentication status
+    if (!isAuthenticated()) {
+      const authResult = await authenticate();
+      return authResult.success;
     }
 
     return true;
-  }, [isConnected, isAuthenticated, openConnectModal, authenticate]);
+  }, [isConnected, authSource, isAuthenticated, openConnectModal, authenticate]);
 
   /**
-    * Wrap operations that require authentication
+   * Wrap operations that require authentication
    * @param action - The operation function that requires authentication
    * @returns The wrapped function, which will first check the authentication status
    */
@@ -57,6 +59,6 @@ export const useRequireAuth = () => {
     withAuth,
     isAuthenticating,
     canAuthenticate: isConnected,
-    isAuthenticated: isConnected && isAuthenticated,
+    isAuthenticated: isConnected && isAuthenticated()
   };
 };

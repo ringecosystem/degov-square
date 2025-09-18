@@ -1,169 +1,69 @@
 {{define "title"}} {{.Title}} {{end}}
 
-{{define "header"}}
-  {{$theme := "dark"}}
-  {{if eq .DegovSiteConfig.EmailTheme "light"}}
-    {{$theme = "light"}}
-  {{end}}
-
-  {{if eq $theme "dark"}}
-  <style>
-    .proposal-description { background-color: #2a2a2a; border: 1px solid #444444; border-radius: 8px; padding: 16px 20px; font-size: 14px; color: #cccccc; }
-    .proposal-description h1,
-    .proposal-description h2,
-    .proposal-description h3,
-    .proposal-description h4 { color: #ffffff; margin-top: 1.2em; margin-bottom: 0.6em; padding-bottom: 0.3em; border-bottom: 1px solid #444444; }
-    .proposal-description h1 { font-size: 1.6em; }
-    .proposal-description h2 { font-size: 1.4em; }
-    .proposal-description h3 { font-size: 1.2em; }
-    .proposal-description p { margin-top: 0; margin-bottom: 1em; line-height: 1.7; }
-    .proposal-description a { color: #55acee; }
-    .proposal-description table { width: 100%; border-collapse: collapse; margin-bottom: 1em; font-size: 0.95em; }
-    .proposal-description th,
-    .proposal-description td { border: 1px solid #444444; padding: 8px 10px; text-align: left; }
-    .proposal-description th { font-weight: 600; }
-    .proposal-description ul,
-    .proposal-description ol { padding-left: 25px; margin-bottom: 1em; }
-    .proposal-description li { margin-bottom: 0.5em; }
-    .proposal-description blockquote { margin: 0 0 1em 0; padding-left: 1em; border-left: 3px solid #555555; color: #999999; font-style: italic; }
-    .proposal-description code { background-color: #333333; padding: 0.2em 0.4em; border-radius: 4px; font-family: monospace; }
-    .proposal-description pre { background-color: #333333; padding: 1em; border-radius: 6px; white-space: pre-wrap; word-break: break-all; }
-    .proposal-description pre code { padding: 0; background-color: transparent; }
-  </style>
-  {{else}}
-  <style>
-    .proposal-description { background-color: #f8f9fa; border: 1px solid #e9ecef; border-radius: 8px; padding: 16px 20px; font-size: 14px; color: #343a40; }
-    .proposal-description h1,
-    .proposal-description h2,
-    .proposal-description h3,
-    .proposal-description h4 { color: #212529; margin-top: 1.2em; margin-bottom: 0.6em; padding-bottom: 0.3em; border-bottom: 1px solid #e9ecef; }
-    .proposal-description h1 { font-size: 1.6em; }
-    .proposal-description h2 { font-size: 1.4em; }
-    .proposal-description h3 { font-size: 1.2em; }
-    .proposal-description p { margin-top: 0; margin-bottom: 1em; line-height: 1.7; }
-    .proposal-description a { color: #55acee; }
-    .proposal-description table { width: 100%; border-collapse: collapse; margin-bottom: 1em; font-size: 0.95em; }
-    .proposal-description th,
-    .proposal-description td { border: 1px solid #dee2e6; padding: 8px 10px; text-align: left; }
-    .proposal-description th { font-weight: 600; }
-    .proposal-description ul,
-    .proposal-description ol { padding-left: 25px; margin-bottom: 1em; }
-    .proposal-description li { margin-bottom: 0.5em; }
-    .proposal-description blockquote { margin: 0 0 1em 0; padding-left: 1em; border-left: 3px solid #ced4da; color: #6c757d; font-style: italic; }
-    .proposal-description code { background-color: #e9ecef; padding: 0.2em 0.4em; border-radius: 4px; font-family: monospace; }
-    .proposal-description pre { background-color: #e9ecef; padding: 1em; border-radius: 6px; white-space: pre-wrap; word-break: break-all; }
-    .proposal-description pre code { padding: 0; background-color: transparent; }
-  </style>
-  {{end}}
-{{end}}
-
 {{define "content"}}
   {{$config := .DegovSiteConfig}}
   {{$dao := .Dao}}
   {{$proposal := .Proposal}}
 
-  <p style="margin: 0 0 16px; font-size: 16px; line-height: 1.6;">
-    Hello {{if .EnsName}}{{.EnsName}}{{else}}{{.UserAddress}}{{end}},
+  <h1 class="title">New proposal from {{$dao.Name}}</h1>
+
+  <p class="text mb-40">
+    Hello {{if .EnsName}}{{.EnsName}}{{else}}{{.UserAddress}}{{end}},<br/>
+    A new proposal has been created in {{$dao.Name}} that you're subscribed to, see details below:
   </p>
-  <p style="margin: 0 0 20px; font-size: 16px; line-height: 1.6;">
-    A new proposal has been created in <strong>{{$dao.Name}}</strong> that you're subscribed to.
-  </p>
 
-  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-top: 24px;">
-    <tr>
-      <td>
-        <h3 style="margin: 0 0 10px; font-size: 20px; font-weight: 600;">Proposal Details</h3>
-      </td>
-    </tr>
-  </table>
-  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="font-size: 15px; line-height: 1.6;">
-    <tr>
-      <td style="padding: 4px 0; width: 100px; vertical-align: top;"><strong>Title:</strong></td>
-      <td style="padding: 4px 0;"><a href="{{$proposal.ProposalDb.ProposalLink}}" target="_blank" style="color: #55acee; text-decoration: underline;">{{$proposal.ProposalDb.Title}}</a></td>
-    </tr>
-    <tr>
-      <td style="padding: 4px 0; vertical-align: top;"><strong>Proposer:</strong></td>
-      <td style="padding: 4px 0;">{{$proposal.ProposalIndexer.Proposer}}{{if $proposal.ProposerEnsName}} ({{$proposal.ProposerEnsName}}){{end}}</td>
-    </tr>
-    <tr>
-      <td style="padding: 4px 0; vertical-align: top;"><strong>DAO:</strong></td>
-      <td style="padding: 4px 0;">{{$dao.Name}}</td>
-    </tr>
-    <tr>
-      <td style="padding: 4px 0; vertical-align: top;"><strong>Chain:</strong></td>
-      <td style="padding: 4px 0;">{{$dao.ChainName}}</td>
-    </tr>
-    <tr>
-      <td style="padding: 4px 0; vertical-align: top;"><strong>Created:</strong></td>
-      <td style="padding: 4px 0;">{{$proposal.ProposalIndexer.BlockTimestamp | formatDate}}</td>
-    </tr>
-    <tr>
-      <td style="padding: 4px 0; vertical-align: top;"><strong>Voting Starts:</strong></td>
-      <td style="padding: 4px 0;">{{$proposal.ProposalIndexer.VoteStartTimestamp | formatDate}}</td>
-    </tr>
-    <tr>
-      <td style="padding: 4px 0; vertical-align: top;"><strong>Voting Ends:</strong></td>
-      <td style="padding: 4px 0;">{{$proposal.ProposalIndexer.VoteEndTimestamp | formatDate}}</td>
-    </tr>
-  </table>
-
-  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-top: 24px;">
-    <tr>
-      <td>
-        <h3 style="margin: 0 0 12px; font-size: 20px; font-weight: 600;">Take Action</h3>
-      </td>
-    </tr>
-    <tr>
-      <td style="padding-bottom: 8px;">
-        <a href="{{$proposal.ProposalDb.ProposalLink}}" target="_blank" style="color: #55acee; text-decoration: underline; font-size: 15px; font-weight: 600;">
-          View & Vote on This Proposal &rarr;
-        </a>
-      </td>
-    </tr>
-    {{if .DaoConfig.OffChainDiscussionURL}}
-    <tr>
-      <td style="padding-top: 8px;">
-        <a href="{{.DaoConfig.OffChainDiscussionURL}}" target="_blank" style="color: #55acee; text-decoration: underline; font-size: 15px;">Join Discussion &rarr;</a>
-      </td>
-    </tr>
-    {{end}}
-    {{if .Proposal.TweetLink}}
-    <tr>
-      <td style="padding-top: 8px;">
-        <a href="{{.Proposal.TweetLink}}" target="_blank" style="color: #55acee; text-decoration: underline; font-size: 15px;">View Tweet &rarr;</a>
-      </td>
-    </tr>
-    {{end}}
-  </table>
-
-  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-top: 24px;">
-    <tr>
-      <td style="padding: 12px; border: 1px solid #333333; border-radius: 8px;">
-        <p style="margin: 0; font-size: 15px; line-height: 1.6;">
-          ⏰ <strong>Important:</strong> Please cast your vote before the voting period ends on <strong>{{$proposal.ProposalIndexer.VoteEndTimestamp | formatDate}}</strong>.
-        </p>
-      </td>
-    </tr>
-  </table>
-
-  {{if $config.EmailProposalIncludeDescription}}
-    {{if $proposal.ProposalDescriptionMarkdown}}
-    <div class="divider" style="margin: 24px 0;"></div>
-    <h3 style="margin: 0 0 15px; font-size: 20px; font-weight: 600;">Proposal Description</h3>
-    <div class="proposal-description" style="font-size: 15px; line-height: 1.7;">
-      {{/*
-        <pre style="font-family: inherit; white-space: pre-wrap; margin: 0; padding: 0;">{{$proposal.ProposalDescriptionMarkdown}}</pre>
-      */}}
-      {{$proposal.ProposalDescriptionHtml}}
+  <div class="box">
+    <div class="mb-20">
+      <div class="label">Proposal</div>
+      <div class="value">{{$proposal.ProposalDb.Title}}</div>
     </div>
-    {{end}}
-  {{end}}
+    <div class="mb-20">
+      <div class="label">Proposer</div>
+      <div class="value value-break">{{$proposal.ProposalIndexer.Proposer}}{{if $proposal.ProposerEnsName}} ({{$proposal.ProposerEnsName}}){{end}}</div>
+    </div>
+    <div class="mb-20">
+      <div class="label">Created</div>
+      <div class="value">{{$proposal.ProposalIndexer.BlockTimestamp | formatDate}}</div>
+    </div>
+    <div class="mb-20">
+      <div class="label">Voting Starts</div>
+      <div class="value">{{$proposal.ProposalIndexer.VoteStartTimestamp | formatDate}}</div>
+    </div>
+    <div>
+      <div class="label">Voting Ends</div>
+      <div class="value">{{$proposal.ProposalIndexer.VoteEndTimestamp | formatDate}}</div>
+    </div>
+  </div>
 
-  <p style="margin: 24px 0 16px; font-size: 16px; line-height: 1.6;">
-    Your participation helps shape the future of <strong>{{$dao.Name}}</strong>!
+  <div class="cta-primary">
+    <a href="{{$proposal.ProposalDb.ProposalLink}}" target="_blank" class="btn-primary">View And Vote</a>
+  </div>
+
+  {{$discussionURL := .DaoConfig.OffChainDiscussionURL}}
+  {{$tweetURL := .Proposal.TweetLink}}
+  {{$bothExist := and $discussionURL $tweetURL}}
+
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" class="cta-table">
+    <tr>
+      {{if $discussionURL}}
+        <td {{if $bothExist}}width="50%" class="cell-left"{{else}}width="100%"{{end}}>
+          <a href="{{$discussionURL}}" target="_blank" class="btn-outline">Join Discussion</a>
+        </td>
+      {{end}}
+      {{if $tweetURL}}
+        <td {{if $bothExist}}width="50%" class="cell-right"{{else}}width="100%"{{end}}>
+          <a href="{{$tweetURL}}" target="_blank" class="btn-outline">View Tweet</a>
+        </td>
+      {{end}}
+    </tr>
+  </table>
+
+  <p class="text mb-20">
+    Your participation helps shape the future of {{$dao.Name}}!
   </p>
-  <p style="margin: 0; font-size: 16px; line-height: 1.6;">
-    Best regards,<br />
+
+  <p class="text no-mb">
+    Best regards,<br/>
     The {{$config.Name}} Team
   </p>
 {{end}}

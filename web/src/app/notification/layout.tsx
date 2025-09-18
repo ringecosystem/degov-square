@@ -3,9 +3,12 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { Suspense } from 'react';
 
+import { useUrlAuthSync } from '@/hooks/useUrlAuthSync';
 import { cn } from '@/lib/utils';
 
+import { AuthGuard } from './_components';
 import { useIsMobileAndSubSection } from './_hooks/isMobileAndSubSection';
 
 const NAVS = [
@@ -41,9 +44,12 @@ const getHref = (nav: (typeof NAVS)[0]) => {
   return `/notification/${nav.value}`;
 };
 
-export default function NotificationLayout({ children }: { children: React.ReactNode }) {
+function NotificationLayoutContent({ children }: { children: React.ReactNode }) {
   const isMobileAndSubSection = useIsMobileAndSubSection();
   const pathname = usePathname();
+
+  // Initialize URL auth sync at layout level
+  useUrlAuthSync();
 
   const isActive = (nav: (typeof NAVS)[0]) => {
     return `/notification/${nav.value}` === pathname;
@@ -52,7 +58,7 @@ export default function NotificationLayout({ children }: { children: React.React
   return (
     <div className="container space-y-[20px]">
       {!isMobileAndSubSection && (
-        <Link href="/" className="flex items-center gap-[5px] md:gap-[10px]">
+        <Link href="/" className="flex items-center gap-[5px] lg:gap-[10px]">
           <Image
             src="/back.svg"
             alt="back"
@@ -64,10 +70,10 @@ export default function NotificationLayout({ children }: { children: React.React
         </Link>
       )}
 
-      <div className="flex w-full flex-col gap-[30px] md:flex-row">
+      <div className="flex w-full flex-col gap-[30px] lg:flex-row">
         {!isMobileAndSubSection && (
-          <aside className="w-full flex-shrink-0 md:w-[300px]">
-            <div className="flex flex-col gap-[20px] md:gap-[10px]">
+          <aside className="w-full flex-shrink-0 lg:w-[300px]">
+            <div className="flex flex-col gap-[20px] lg:gap-[10px]">
               {NAVS.map((nav) => (
                 <NavLink key={nav.value} nav={nav} isActive={isActive(nav)} href={getHref(nav)} />
               ))}
@@ -75,8 +81,20 @@ export default function NotificationLayout({ children }: { children: React.React
           </aside>
         )}
 
-        <main className="flex-1">{children}</main>
+        <main className="flex flex-1 flex-col">
+          <div className="lg:bg-card h-[calc(100vh-300px)] space-y-[15px] lg:space-y-[20px] lg:rounded-[14px] lg:p-[20px]">
+            <AuthGuard>{children}</AuthGuard>
+          </div>
+        </main>
       </div>
     </div>
+  );
+}
+
+export default function NotificationLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <NotificationLayoutContent>{children}</NotificationLayoutContent>
+    </Suspense>
   );
 }

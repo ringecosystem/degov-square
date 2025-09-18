@@ -11,7 +11,7 @@ This is default content, which should be overridden by a specific template.
 ---
 
 [Home]({{.DegovSiteConfig.Home}})
-[Apps]({{.DegovSiteConfig.Apps}})
+[Square]({{.DegovSiteConfig.Square}})
 [Docs]({{.DegovSiteConfig.Docs}})
 
 Follow us:
@@ -19,11 +19,8 @@ Follow us:
 [{{.Name}}]({{.Link}})
 {{end}}
 
-{{with .DaoConfig -}}
-  {{- if .Name}}{{.Name}} - {{end -}}
-{{- end -}}
 DeGov.AI
 
 Want to change how you receive these emails?
-You can update your subscribe preferences https://apps.degiv.ai/subscribe/preference
+You can update your subscribe preferences https://square.degov.ai/notification/subscription
 {{end}}

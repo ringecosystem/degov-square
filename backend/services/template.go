@@ -386,7 +386,7 @@ func (s *TemplateService) renderTemplate(templateName string, data interface{}) 
 
 	if config.GetAppEnv().IsDevelopment() {
 		if outputBasePath := config.GetString("DEBUG_TEMPLATE_OUTPUT_PATH"); outputBasePath != "" {
-			go writeDebugTemplateFile(outputBasePath, templateName, []byte(renderedText))
+			go writeDebugTemplateFile(outputBasePath, templateName, []byte(renderedText), data)
 		}
 	}
 
@@ -442,9 +442,9 @@ func structToMap(data interface{}) (map[string]interface{}, error) {
 	return result, nil
 }
 
-func writeDebugTemplateFile(outputBasePath, templateName string, content []byte) {
+func writeDebugTemplateFile(outputBasePath, templateName string, content []byte, data interface{}) {
 	if err := os.MkdirAll(outputBasePath, 0755); err != nil {
-		slog.Warn("WARN: Failed to create debug template directory %s: %v", outputBasePath, err)
+		slog.Warn("Failed to create debug template directory", "path", outputBasePath, "error", err)
 		return
 	}
 
@@ -454,24 +454,44 @@ func writeDebugTemplateFile(outputBasePath, templateName string, content []byte)
 	sanitizedBaseName := strings.TrimSuffix(sanitizedTemplateName, ext)
 
 	var filePath string
+	// Find an available file path by incrementing a number
 	for i := 1; i < 10000000; i++ {
 		fileName := fmt.Sprintf("%s_%07d.local%s", sanitizedBaseName, i, ext)
 		filePath = filepath.Join(outputBasePath, fileName)
 
 		if _, err := os.Stat(filePath); os.IsNotExist(err) {
-			break
+			break // Found an available path
 		}
 	}
 
 	if filePath == "" {
-		slog.Warn("WARN: Could not find an available debug file name for %s in %s", templateName, outputBasePath)
+		slog.Warn("Could not find an available debug file name", "template", templateName, "path", outputBasePath)
 		return
 	}
 
+	// Write the original template content file
 	if err := os.WriteFile(filePath, content, 0644); err != nil {
-		slog.Warn("WARN: Failed to write debug template to %s: %v", filePath, err)
+		slog.Warn("Failed to write debug template", "filePath", filePath, "error", err)
+		// If the main file fails, no need to write the JSON file
+		return
+	}
+	slog.Info("Debug template written", "filePath", filePath)
+
+	// 1. Marshal the data into a formatted (indented) JSON string
+	jsonData, err := json.MarshalIndent(data, "", "  ") // Using 2 spaces for indentation
+	if err != nil {
+		slog.Warn("Failed to marshal data to JSON for debug file", "filePath", filePath, "error", err)
+		return
+	}
+
+	// 2. Create the file path for the JSON file.
+	jsonFilePath := filePath + ".json"
+
+	// 3. Write the JSON data file
+	if err := os.WriteFile(jsonFilePath, jsonData, 0644); err != nil {
+		slog.Warn("Failed to write debug data JSON file", "jsonFilePath", jsonFilePath, "error", err)
 	} else {
-		slog.Info("INFO: Debug template written", "filePath", filePath)
+		slog.Info("Debug data JSON written", "jsonFilePath", jsonFilePath)
 	}
 }
 

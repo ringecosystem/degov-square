@@ -1,0 +1,198 @@
+{
+  "degov_site_config": {
+    "EmailTheme": "light",
+    "EmailProposalIncludeDescription": false,
+    "Logo": "https://cdn.jsdelivr.net/gh/ringecosystem/degov-registry@main/assets/common/light-degov-4x.png",
+    "LogoLight": "https://cdn.jsdelivr.net/gh/ringecosystem/degov-registry@main/assets/common/light-degov-4x.png",
+    "LogoDark": "https://cdn.jsdelivr.net/gh/ringecosystem/degov-registry@main/assets/common/dark-degov-4x.png",
+    "Name": "DeGov.AI",
+    "Home": "https://degov.ai",
+    "Square": "https://square.degov.ai",
+    "Docs": "https://docs.degov.ai",
+    "Socials": [
+      {
+        "Name": "Twitter",
+        "Icon": "https://cdn.jsdelivr.net/gh/ringecosystem/degov-registry@main/assets/common/light-x-4x.png",
+        "IconLight": "https://cdn.jsdelivr.net/gh/ringecosystem/degov-registry@main/assets/common/light-x-4x.png",
+        "IconDark": "https://cdn.jsdelivr.net/gh/ringecosystem/degov-registry@main/assets/common/dark-x-4x.png",
+        "Link": "https://x.com/ai_degov"
+      },
+      {
+        "Name": "Telegram",
+        "Icon": "https://cdn.jsdelivr.net/gh/ringecosystem/degov-registry@main/assets/common/light-telegram-4x.png",
+        "IconLight": "https://cdn.jsdelivr.net/gh/ringecosystem/degov-registry@main/assets/common/light-telegram-4x.png",
+        "IconDark": "https://cdn.jsdelivr.net/gh/ringecosystem/degov-registry@main/assets/common/dark-telegram-4x.png",
+        "Link": "https://t.me/RingDAO_Hub"
+      },
+      {
+        "Name": "GitHub",
+        "Icon": "https://cdn.jsdelivr.net/gh/ringecosystem/degov-registry@main/assets/common/light-github-4x.png",
+        "IconLight": "https://cdn.jsdelivr.net/gh/ringecosystem/degov-registry@main/assets/common/light-github-4x.png",
+        "IconDark": "https://cdn.jsdelivr.net/gh/ringecosystem/degov-registry@main/assets/common/dark-github-4x.png",
+        "Link": "https://github.com/ringecosystem/degov"
+      }
+    ]
+  },
+  "email_style": {
+    "ContainerMaxWidth": "85%"
+  },
+  "title": "[RingDAO] New Proposal: DCDAO 2024 Q4 Budget Application",
+  "dao_config": {
+    "Name": "RingDAO",
+    "Code": "ring-dao",
+    "Logo": "https://pbs.twimg.com/profile_images/1830098608638889984/J0JrhC1L_400x400.png",
+    "SiteURL": "https://gov.ringdao.com",
+    "OffChainDiscussionURL": "https://github.com/orgs/ringecosystem/discussions",
+    "Description": "RingDAO is a Venture DAO focused on curating DeFi and DAO applications within the blockchain space, originally from the Darwinia chain.\nThe DAO's operations are governed by all RING holders, who make decisions to innovate and expand the ecosystem.\n",
+    "Chain": {
+      "ID": 46,
+      "Name": "Darwinia Network",
+      "Logo": "https://pbs.twimg.com/profile_images/1742030786495500288/merX__YL_400x400.jpg",
+      "RPCs": [
+        "https://rpc.darwinia.network"
+      ],
+      "Explorers": [
+        "https://explorer.darwinia.network"
+      ],
+      "NativeToken": {
+        "Symbol": "RING",
+        "PriceID": "darwinia-network-native-token",
+        "Decimals": 18,
+        "Logo": "https://assets.coingecko.com/coins/images/9443/standard/RING.png"
+      }
+    },
+    "AIAgent": {
+      "Endpoint": "https://agent.degov.ai"
+    },
+    "Links": {
+      "Coingecko": "https://www.coingecko.com/en/coins/ringdao",
+      "Website": "https://ringdao.com",
+      "Twitter": "https://x.com/ringecosystem",
+      "GitHub": "https://github.com/ringecosystem"
+    },
+    "Wallet": {
+      "WalletConnectProjectID": "4e204efdf64201e155ce7ad7123d127d"
+    },
+    "Indexer": {
+      "Endpoint": "https://indexer.degov.ai/ring-dao/graphql",
+      "StartBlock": 4455584,
+      "RPC": "wss://rpc.darwinia.network",
+      "Gateway": ""
+    },
+    "Contracts": {
+      "Governor": "0x52cDD25f7C83c335236Ce209fA1ec8e197E96533",
+      "GovernorToken": {
+        "Address": "0xdafa555e2785DC8834F4Ea9D1ED88B6049142999",
+        "Standard": "ERC20"
+      },
+      "TimeLock": "0x4DCf0f14cC58fc2Bf313e70573dDB7309523bb23"
+    },
+    "Safes": null
+  },
+  "dao": {
+    "id": "1962903956325666816",
+    "chainId": 46,
+    "chainName": "Darwinia Network",
+    "chainLogo": "https://pbs.twimg.com/profile_images/1742030786495500288/merX__YL_400x400.jpg",
+    "name": "RingDAO",
+    "code": "ring-dao",
+    "logo": "https://pbs.twimg.com/profile_images/1830098608638889984/J0JrhC1L_400x400.png",
+    "seq": 0,
+    "endpoint": "https://gov.ringdao.com",
+    "state": "ACTIVE",
+    "timeSyncd": "2025-09-15T07:22:15.210217Z",
+    "metricsCountProposals": 7,
+    "metricsCountMembers": 27,
+    "metricsSumPower": "166548535966036930038170686",
+    "metricsCountVote": 46,
+    "offsetTrackingProposal": 0,
+    "ctime": "2025-09-02T15:42:26.837401Z",
+    "utime": "2025-09-15T07:22:15.210217Z",
+    "chips": [
+      {
+        "id": "1963144465191276570",
+        "daoCode": "ring-dao",
+        "chipCode": "METRICS_STATE",
+        "flag": "DEFEATED",
+        "additional": "{\"dao_code\":\"ring-dao\",\"state\":\"DEFEATED\",\"total\":1}",
+        "ctime": "2025-09-03T07:38:08.619841Z",
+        "utime": "2025-09-03T07:38:08.619841Z"
+      },
+      {
+        "id": "1963144465191276571",
+        "daoCode": "ring-dao",
+        "chipCode": "METRICS_STATE",
+        "flag": "EXECUTED",
+        "additional": "{\"dao_code\":\"ring-dao\",\"state\":\"EXECUTED\",\"total\":6}",
+        "ctime": "2025-09-03T07:38:08.619842Z",
+        "utime": "2025-09-03T07:38:08.619842Z"
+      },
+      {
+        "id": "1967489136130527233",
+        "daoCode": "ring-dao",
+        "chipCode": "AGENT",
+        "flag": "ENABLED",
+        "additional": "{\"name\":\"RingDAO\",\"code\":\"ring-dao\",\"xprofile\":\"official\",\"carry\":[\"#Governance\",\"#DeFAI\",\"#DAO\"],\"last_processed_block\":0}",
+        "ctime": "2025-09-15T07:22:18.891857Z"
+      }
+    ]
+  },
+  "proposal": {
+    "proposal_db": {
+      "id": "1962904409855758336",
+      "dao_code": "ring-dao",
+      "chain_id": 46,
+      "title": "DCDAO 2024 Q4 Budget Application",
+      "proposal_link": "https://gov.ringdao.com/proposal/0x56982c82afb5278f42ecc3553ca80a07eb3125d7f9b776e2e9b35640410651a6",
+      "proposal_id": "0x56982c82afb5278f42ecc3553ca80a07eb3125d7f9b776e2e9b35640410651a6",
+      "state": "EXECUTED",
+      "proposal_created_at": "2024-12-06T06:01:00Z",
+      "proposal_at_block": 4887138,
+      "times_track": 0,
+      "offset_tracking_vote": 0,
+      "ctime": "2025-09-02T15:44:14.967139Z",
+      "utime": "2025-09-02T15:44:15.339244Z"
+    },
+    "proposal_indexer": {
+      "id": "0004887138-e8b50-000000",
+      "proposalId": "0x56982c82afb5278f42ecc3553ca80a07eb3125d7f9b776e2e9b35640410651a6",
+      "title": "DCDAO 2024 Q4 Budget Application",
+      "quorum": "40000000000000000000000000",
+      "voteStartTimestamp": "1733464860000",
+      "voteEndTimestamp": "1734674460000",
+      "voteStart": "1733464860",
+      "voteEnd": "1734674460",
+      "decimals": "18",
+      "blockInterval": "6",
+      "clockMode": "timestamp",
+      "proposer": "0xa6b5ec845c8446a350a50bb58363c241ab7990b5",
+      "blockNumber": "4887138",
+      "blockTimestamp": "1733464860000",
+      "transactionHash": "0x4311ca7e0f5931acc186ea40db8edd736e06a217d4279fa3b084499cb99929f9",
+      "metricsVotesCount": 4,
+      "metricsVotesWeightAbstainSum": "0",
+      "metricsVotesWeightAgainstSum": "0",
+      "metricsVotesWeightForSum": "48573535584620845365681336",
+      "description": "# DCDAO 2024 Q4 Budget Application\n\u003cdiv class=\"comment-body markdown-body js-preview-body\" style=\"min-height: 3040px;\"\u003e\u003cp dir=\"auto\"\u003e\u003cstrong\u003eDate\u003c/strong\u003e: 21/11/2024\u003c/p\u003e\n\u003cp dir=\"auto\"\u003e\u003cstrong\u003eRequested Amount\u003c/strong\u003e: 17,864,806.87 RING\u003c/p\u003e\n\u003cp dir=\"auto\"\u003e\u003cstrong\u003eReceiving Address\u003c/strong\u003e: 0x8683A0ED2bAdb1F3AaBeA6686d78649F0Da774A0\u003c/p\u003e\n\u003ch2 dir=\"auto\"\u003e1. Applicant Identity\u003c/h2\u003e\n\u003cp dir=\"auto\"\u003eThe Darwinia Community DAO (DCDAO) is a decentralized, member-governed entity dedicated to supporting the Darwinia ecosystem through community engagement, marketing, development support, and transparent governance.\u003c/p\u003e\n\u003ch2 dir=\"auto\"\u003e2. About DCDAO\u003c/h2\u003e\n\u003cp dir=\"auto\"\u003e\u003cstrong\u003eDCDAO Overview\u003c/strong\u003e:\u003c/p\u003e\n\u003cul dir=\"auto\"\u003e\n\u003cli\u003eA community self-organized workgroup (WG) aiming to contribute to the growth and development of the Darwinia community.\u003c/li\u003e\n\u003cli\u003eFocus areas:\n\u003cul dir=\"auto\"\u003e\n\u003cli\u003e\u003cstrong\u003eCommunity Engagement and Support\u003c/strong\u003e: Enhance communication, provide educational resources, and assist community members.\u003c/li\u003e\n\u003cli\u003e\u003cstrong\u003eMarketing and Promotion\u003c/strong\u003e: Create awareness through social media, events, and collaborations.\u003c/li\u003e\n\u003cli\u003e\u003cstrong\u003eDevelopment Support\u003c/strong\u003e: Facilitate the creation of tools, applications, and infrastructure for Darwinia.\u003c/li\u003e\n\u003cli\u003e\u003cstrong\u003eGovernance and Decision-Making\u003c/strong\u003e: Encourage community participation and transparency.\u003c/li\u003e\n\u003c/ul\u003e\n\u003c/li\u003e\n\u003c/ul\u003e\n\u003cp dir=\"auto\"\u003e\u003ca href=\"https://snapshot.org/#/darwiniacommunitydao.eth/proposal/0x257aff1540719475411091706f7b200507fe9b9fe7397a8a4347fbc9d7234cb6\" rel=\"nofollow\"\u003eMore information\u003c/a\u003e\u003c/p\u003e\n\u003ch2 dir=\"auto\"\u003e3. Budget Details (Q4 2024)\u003c/h2\u003e\n\u003cp dir=\"auto\"\u003eNote: Any surplus carries over to the next quarter if not used up by DCDAO.\u003c/p\u003e\n\u003cmarkdown-accessiblity-table data-catalyst=\"\"\u003e\u003ctable role=\"table\"\u003e\n\u003cthead\u003e\n\u003ctr\u003e\n\u003cth\u003eProgram\u003c/th\u003e\n\u003cth\u003eMonthly Requested Amount (USD)\u003c/th\u003e\n\u003cth\u003eQuarterly Requested Amount (USD)\u003c/th\u003e\n\u003cth\u003eTotal (RING)\u003c/th\u003e\n\u003cth\u003eRING Price\u003c/th\u003e\n\u003c/tr\u003e\n\u003c/thead\u003e\n\u003ctbody\u003e\n\u003ctr\u003e\n\u003ctd\u003eCommunity Growth Program\u003c/td\u003e\n\u003ctd\u003e1,500.00\u003c/td\u003e\n\u003ctd\u003e4,500.00\u003c/td\u003e\n\u003ctd\u003e2,414,163.09\u003c/td\u003e\n\u003ctd\u003e0.001864\u003c/td\u003e\n\u003c/tr\u003e\n\u003ctr\u003e\n\u003ctd\u003eManagement, Maintenance, and Development Proposal\u003c/td\u003e\n\u003ctd\u003e3,500.00\u003c/td\u003e\n\u003ctd\u003e10,500.00\u003c/td\u003e\n\u003ctd\u003e5,633,047.21\u003c/td\u003e\n\u003ctd\u003e0.001864\u003c/td\u003e\n\u003c/tr\u003e\n\u003ctr\u003e\n\u003ctd\u003eCommunity Manager Proposal\u003c/td\u003e\n\u003ctd\u003e5,000.00\u003c/td\u003e\n\u003ctd\u003e15,000.00\u003c/td\u003e\n\u003ctd\u003e8,047,210.30\u003c/td\u003e\n\u003ctd\u003e0.001864\u003c/td\u003e\n\u003c/tr\u003e\n\u003ctr\u003e\n\u003ctd\u003eTreasury Specialist\u003c/td\u003e\n\u003ctd\u003e600.00\u003c/td\u003e\n\u003ctd\u003e1,800.00\u003c/td\u003e\n\u003ctd\u003e965,665.24\u003c/td\u003e\n\u003ctd\u003e0.001864\u003c/td\u003e\n\u003c/tr\u003e\n\u003ctr\u003e\n\u003ctd\u003eSteering Committee Compensation\u003c/td\u003e\n\u003ctd\u003e500.00\u003c/td\u003e\n\u003ctd\u003e1,500.00\u003c/td\u003e\n\u003ctd\u003e804,721.03\u003c/td\u003e\n\u003ctd\u003e0.001864\u003c/td\u003e\n\u003c/tr\u003e\n\u003c/tbody\u003e\n\u003c/table\u003e\u003c/markdown-accessiblity-table\u003e\n\u003cp dir=\"auto\"\u003e \u003c/p\u003e\n\u003cp dir=\"auto\"\u003eBudget Adjustments:\u003c/p\u003e\n\u003cul dir=\"auto\"\u003e\n\u003cli\u003eSteering Committee Payment: Reduced to 500 USDT per month for two bi-weekly meetings (previously 1,000 USDT for four weekly meetings).\u003c/li\u003e\n\u003cli\u003eTreasury Specialist Payment: Reduced to 600 USDT per month (previously 800 USDT).\u003c/li\u003e\n\u003cli\u003eCommunity Growth Program: Adjusted to 1,500 USDT.\u003c/li\u003e\n\u003cli\u003eMarketing and Branding Program: Adjusted to 3,500 USDT, Infura Program canceled.\u003c/li\u003e\n\u003c/ul\u003e\n\u003cp dir=\"auto\"\u003eThese changes are  parts of DCDAO’s efforts to optimize operational costs in response to bear market pressures and ensure the longevity of the project.\u003c/p\u003e\n\u003ch2 dir=\"auto\"\u003e4. Recent Achievements\u003c/h2\u003e\n\u003ch3 dir=\"auto\"\u003e4.1 Community\u003c/h3\u003e\n\u003cul dir=\"auto\"\u003e\n\u003cli\u003eManaged DAO staking and progressed discussions around KTON/RING LP Farm, treasury voting delegations, and liquidity sources.\u003c/li\u003e\n\u003cli\u003ePromoted an Advocate to Ambassador and supported the RingDAO Marketing Action plan.\u003c/li\u003e\n\u003cli\u003eBoosted community engagement with weekly quizzes (20-25+ participants), Twitter updates, monthly articles, and GitHub discussions.\u003c/li\u003e\n\u003cli\u003eSupported KtonDAO, RingDAO, Helix Discord, and kept community channels spam-free.\u003c/li\u003e\n\u003c/ul\u003e\n\u003ch3 dir=\"auto\"\u003e4.2 Marketing and Branding Management, Maintenance, and Developer Education\u003c/h3\u003e\n\u003cul dir=\"auto\"\u003e\n\u003cli\u003eMarketing and Branding: Developed and executed marketing strategies, established a marketing board for coordination, and proposed a marketing strategy for RingDAO.\u003c/li\u003e\n\u003cli\u003eCommunity Engagement: Represented Darwinia at events such as Token2049, Polkadot Decoded, and Cosmoverse 2024, securing a speaking opportunity and reinforcing community ties.\u003c/li\u003e\n\u003cli\u003eDeveloper Education: Created and published multiple videos for the Darwinia Developer Series, focusing on topics like token transfers and smart contract deployment.\u003c/li\u003e\n\u003cli\u003eWebsite Maintenance: Maintained the Darwinia.Network website and launched the RingDAO site, ensuring they were up-to-date and functional.\u003c/li\u003e\n\u003cli\u003eParalink and Vote.RingDAO.Com: Completed the development of Paralink and made significant updates to the Vote.RingDAO.Com platform, including UI enhancements and support for additional networks.\u003c/li\u003e\n\u003c/ul\u003e\n\u003ch3 dir=\"auto\"\u003e4.3 Growth\u003c/h3\u003e\n\u003cul dir=\"auto\"\u003e\n\u003cli\u003eHosted multiple DCDAO Community Calls to engage the community.\u003c/li\u003e\n\u003cli\u003eExpanded the Darwinia Partner Network, adding Tashi Protocol and Composable Security.\u003c/li\u003e\n\u003cli\u003ePromoted $RING through targeted marketing campaigns, including articles and outreach.\u003c/li\u003e\n\u003cli\u003eSupported ETHCC and Polkadot Decoded events to advance ecosystem goals.\u003c/li\u003e\n\u003cli\u003eOrganized the CKTON/CRAB liquidity event to enhance token utility.\u003c/li\u003e\n\u003cli\u003eConducted Spanish-language outreach to expand community engagement.\u003c/li\u003e\n\u003c/ul\u003e\n\u003ch2 dir=\"auto\"\u003e5. Governance and Constitution\u003c/h2\u003e\n\u003cul dir=\"auto\"\u003e\n\u003cli\u003e\u003ca href=\"https://snapshot.org/#/darwiniacommunitydao.eth/proposal/0xe767cfef64633039225d935daaa24f5050b7e3c267efa74c447a3a25a982d467\" rel=\"nofollow\"\u003eTransition To Tally\u003c/a\u003e\u003c/li\u003e\n\u003cli\u003e\u003ca href=\"https://snapshot.org/#/darwiniacommunitydao.eth/proposal/0xd750140eccee3434f65feb156c985f6425ed884d56aa2a295c189d5e76fe9dc5\" rel=\"nofollow\"\u003eDCDAO Constitution\u003c/a\u003e\u003c/li\u003e\n\u003cli\u003e\u003ca href=\"https://snapshot.org/#/darwiniacommunitydao.eth/proposal/0xf54f569ed893d5391b7b4dc716aa8b52bc99c2ac170c8beb43f98cb1b4ce7557\" rel=\"nofollow\"\u003eSuper Majority Voting Requirement\u003c/a\u003e\u003c/li\u003e\n\u003cli\u003e\u003ca href=\"https://snapshot.org/#/darwiniacommunitydao.eth/proposal/0xadf0533b8e283bbfacb61e69c83f6ca3b624d4de0c78a0a29883ebe6adc85bcb\" rel=\"nofollow\"\u003eMember Join Proposal\u003c/a\u003e\u003c/li\u003e\n\u003cli\u003e\u003ca href=\"https://snapshot.org/#/darwiniacommunitydao.eth/proposal/0x2e17e91c48afaf8233e5b9fed3ea48cc3b572a7f36d895732619fd64d5fa5331\" rel=\"nofollow\"\u003eSteering Committee Proposal\u003c/a\u003e\u003c/li\u003e\n\u003c/ul\u003e\n\u003ch2 dir=\"auto\"\u003e6. Team\u003c/h2\u003e\n\u003cp dir=\"auto\"\u003e\u003cstrong\u003eManagers\u003c/strong\u003e:\u003c/p\u003e\n\u003cul dir=\"auto\"\u003e\n\u003cli\u003eCommunity Manager: Jesse\u003c/li\u003e\n\u003cli\u003eCommunity Growth Manager: David\u003c/li\u003e\n\u003cli\u003eManagement, Maintenance, and Development: Furqan\u003c/li\u003e\n\u003c/ul\u003e\n\u003cp dir=\"auto\"\u003e\u003cstrong\u003eSteering Committee\u003c/strong\u003e:\u003c/p\u003e\n\u003cul dir=\"auto\"\u003e\n\u003cli\u003eDenny\u003c/li\u003e\n\u003cli\u003eAki\u003c/li\u003e\n\u003cli\u003eFurqan\u003c/li\u003e\n\u003cli\u003eEve\u003c/li\u003e\n\u003cli\u003eNada\u003c/li\u003e\n\u003c/ul\u003e\n\u003cp dir=\"auto\"\u003e\u003cstrong\u003eAmbassadors\u003c/strong\u003e:\u003c/p\u003e\n\u003cul dir=\"auto\"\u003e\n\u003cli\u003eLaki\u003c/li\u003e\n\u003cli\u003eSaso\u003c/li\u003e\n\u003cli\u003eJune\u003c/li\u003e\n\u003cli\u003eJohn\u003c/li\u003e\n\u003c/ul\u003e\n\u003cp dir=\"auto\"\u003e\u003cstrong\u003eAdvocates\u003c/strong\u003e:\u003c/p\u003e\n\u003cul dir=\"auto\"\u003e\n\u003cli\u003eLephofora\u003c/li\u003e\n\u003cli\u003eDaniel\u003c/li\u003e\n\u003c/ul\u003e\n\u003ch2 dir=\"auto\"\u003e7. DCDAO Treasury\u003c/h2\u003e\n\u003cp dir=\"auto\"\u003e\u003cstrong\u003eTreasury Addresses\u003c/strong\u003e:\u003c/p\u003e\n\u003cul dir=\"auto\"\u003e\n\u003cli\u003e\u003ca href=\"https://etherscan.io/address/0x195741BC761B25A89fc7798087652f97f29B306a\" rel=\"nofollow\"\u003eEthereum\u003c/a\u003e\u003c/li\u003e\n\u003cli\u003e\u003ca href=\"https://arbiscan.io/address/0x0DF9F845D33a49e259A0A20FD814bcf7e9BA6048\" rel=\"nofollow\"\u003eArbitrum\u003c/a\u003e\u003c/li\u003e\n\u003cli\u003e\u003ca href=\"https://polygonscan.com/address/0x28760448c28617047BCB2a756e2442567c23ED81\" rel=\"nofollow\"\u003ePolygon\u003c/a\u003e\u003c/li\u003e\n\u003cli\u003e\u003ca href=\"https://darwinia.subscan.io/address/0x8683A0ED2bAdb1F3AaBeA6686d78649F0Da774A0\" rel=\"nofollow\"\u003eDarwinia\u003c/a\u003e\u003c/li\u003e\n\u003cli\u003e\u003ca href=\"https://optimistic.etherscan.io/address/0x26102b33bB985bdD6a46D50A692338F0881ff5Cf\" rel=\"nofollow\"\u003eOptimism\u003c/a\u003e\u003c/li\u003e\n\u003c/ul\u003e\n\u003cp dir=\"auto\"\u003e\u003cem\u003eNote\u003c/em\u003e: Multisig accounts are used only for executing decisions made explicitly in proposals. They reserve the right to refuse execution if the proposal lacks clarity.\u003c/p\u003e\u003c/div\u003e"
+    },
+    "proposal_description_markdown": null,
+    "proposal_description_html": null,
+    "proposer_ens_name": "nadaa.eth",
+    "tweet_link": null
+  },
+  "vote": {
+    "vote_indexer": null,
+    "total_vote_power": "",
+    "percent_for": 0,
+    "percent_against": 0,
+    "percent_abstain": 0,
+    "percent_quorum": 0
+  },
+  "payload_data": {
+    "DecimalsInt": 18
+  },
+  "event_id": "1962904409855758337",
+  "user_id": "1962918824172851200",
+  "user_address": "0x0b001c95e86d64c1ad6e43944c568a6c31b53887",
+  "ens_name": null
+}
