@@ -31,20 +31,38 @@ const columns = ({ onRemove }: ColumnProps): ColumnType<EnhancedSubscribedDaoIte
     title: 'Name',
     key: 'dao',
     width: 375,
-    render: (value) => (
-      <div className="flex items-center gap-2">
-        <div className="bg-background flex h-8 w-8 items-center justify-center rounded-full">
-          <Image
-            src={value.enhancedDao?.logo ?? ''}
-            alt={value.dao?.name ?? ''}
-            width={24}
-            height={24}
-            className="rounded-full"
-          />
+    render: (value) => {
+      const daoName = value.dao?.name || 'Unknown DAO';
+      const daoLogo = value.enhancedDao?.logo ?? '';
+      const daoEndpoint = value.enhancedDao?.endpoint;
+
+      return (
+        <div className="flex items-center gap-2">
+          <div className="bg-background flex h-8 w-8 items-center justify-center rounded-full">
+            <Image
+              src={daoLogo}
+              alt={daoName}
+              width={24}
+              height={24}
+              className="rounded-full"
+            />
+          </div>
+          {daoEndpoint ? (
+            <Link
+              href={daoEndpoint}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="transition-opacity hover:underline hover:opacity-80"
+              title={daoName}
+            >
+              {daoName}
+            </Link>
+          ) : (
+            <span>{daoName}</span>
+          )}
         </div>
-        <span>{value.dao?.name || 'Unknown DAO'}</span>
-      </div>
-    )
+      );
+    }
   },
   {
     title: 'Network',

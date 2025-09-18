@@ -115,12 +115,12 @@ function SubscriptionPageContent() {
     setEmailError('');
 
     if (!formState.email) {
-      setEmailError('Please enter your email address');
+      setEmailError('Invalid email address');
       return;
     }
 
     if (!isEmailValid) {
-      setEmailError('Please enter a valid email address');
+      setEmailError('Invalid email address');
       return;
     }
 
@@ -298,9 +298,21 @@ function SubscriptionPageContent() {
                             placeholder="yourname@example.com"
                             value={formState.email}
                             onChange={(e) => {
-                              dispatch({ type: 'SET_EMAIL', payload: e.target.value });
-                              field.onChange(e.target.value);
+                              const value = e.target.value;
+                              dispatch({ type: 'SET_EMAIL', payload: value });
+                              field.onChange(value);
+
+                              // Clear error initially, then validate
                               setEmailError('');
+
+                              // If field is not empty and invalid, show error immediately
+                              if (value && !emailSchema.safeParse(value).success) {
+                                setEmailError('Invalid email address');
+                              }
+                              // If field is empty, show error
+                              else if (!value) {
+                                setEmailError('Invalid email address');
+                              }
                             }}
                           />
                           <LoadedButton
