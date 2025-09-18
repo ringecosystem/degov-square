@@ -1,8 +1,9 @@
 'use client';
 
 import { useCallback, useState, useEffect } from 'react';
-import { useAccount, useSignMessage, useChainId } from 'wagmi';
+import { useSignMessage, useChainId } from 'wagmi';
 
+import { useAccount } from '@/hooks/useAccount';
 import { globalAuthManager, type AuthResult } from '@/lib/auth/global-auth-manager';
 import { siweService } from '@/lib/auth/siwe-service';
 
