@@ -39,13 +39,7 @@ const columns = ({ onRemove }: ColumnProps): ColumnType<EnhancedSubscribedDaoIte
       return (
         <div className="flex items-center gap-2">
           <div className="bg-background flex h-8 w-8 items-center justify-center rounded-full">
-            <Image
-              src={daoLogo}
-              alt={daoName}
-              width={24}
-              height={24}
-              className="rounded-full"
-            />
+            <Image src={daoLogo} alt={daoName} width={24} height={24} className="rounded-full" />
           </div>
           {daoEndpoint ? (
             <Link
@@ -68,10 +62,10 @@ const columns = ({ onRemove }: ColumnProps): ColumnType<EnhancedSubscribedDaoIte
     title: 'Network',
     key: 'network',
     width: 375,
-    className: 'text-center',
+    className: 'text-left',
     render(value) {
       return (
-        <div className="flex items-center justify-center gap-[10px]">
+        <div className="flex items-center gap-[10px]">
           <Image
             src={value.enhancedDao?.chainLogo ?? ''}
             alt={value.enhancedDao?.chainName ?? ''}

@@ -130,7 +130,7 @@ export default function Home() {
     {
       title: 'Last Proposal',
       key: 'lastProposal',
-      className: 'w-[18.97%] text-center',
+      className: 'w-[18.97%] text-left',
       render(value) {
         const proposalLink = value?.lastProposal?.proposalLink;
         const proposalTime = value?.lastProposal?.proposalCreatedAt;
@@ -144,7 +144,7 @@ export default function Home() {
             href={proposalLink}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center justify-center gap-[6px] text-[16px] hover:underline"
+            className="flex items-center gap-[6px] text-[16px] hover:underline"
             title="View latest proposal"
           >
             <span className="text-[16px]">{formatTimeAgo(proposalTime || '')}</span>
