@@ -41,7 +41,7 @@ export default function RootLayout({
             <TooltipProvider>
               <DAppProvider>
                 <ConfirmProvider>
-                <div className="bg-background flex min-h-dvh flex-col overflow-hidden font-sans antialiased">
+                <div className="bg-background flex min-h-dvh flex-col font-sans antialiased">
                   <Header />
                   <main className="flex-1 py-[20px] md:py-[30px]">{children}</main>
                   <Footer />
