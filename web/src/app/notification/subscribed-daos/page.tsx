@@ -14,6 +14,7 @@ import { useSubscribedDaos, useUnsubscribeDao } from '@/hooks/useNotification';
 import { useQueryDaos } from '@/lib/graphql/hooks';
 import type { SubscribedDaoItem, Dao } from '@/lib/graphql/types';
 import { extractErrorMessage } from '@/utils/graphql-error-handler';
+import { formatNetworkName } from '@/utils/helper';
 
 import { Item } from './_components/item';
 
@@ -39,13 +40,7 @@ const columns = ({ onRemove }: ColumnProps): ColumnType<EnhancedSubscribedDaoIte
       return (
         <div className="flex items-center gap-2">
           <div className="bg-background flex h-8 w-8 items-center justify-center rounded-full">
-            <Image
-              src={daoLogo}
-              alt={daoName}
-              width={24}
-              height={24}
-              className="rounded-full"
-            />
+            <Image src={daoLogo} alt={daoName} width={24} height={24} className="rounded-full" />
           </div>
           {daoEndpoint ? (
             <Link
@@ -68,10 +63,10 @@ const columns = ({ onRemove }: ColumnProps): ColumnType<EnhancedSubscribedDaoIte
     title: 'Network',
     key: 'network',
     width: 375,
-    className: 'text-center',
+    className: 'text-left',
     render(value) {
       return (
-        <div className="flex items-center justify-center gap-[10px]">
+        <div className="flex items-center gap-[10px]">
           <Image
             src={value.enhancedDao?.chainLogo ?? ''}
             alt={value.enhancedDao?.chainName ?? ''}
@@ -79,7 +74,9 @@ const columns = ({ onRemove }: ColumnProps): ColumnType<EnhancedSubscribedDaoIte
             height={17}
             className="rounded-full"
           />
-          <span className="text-[16px]">{value.enhancedDao?.chainName || 'Unknown Network'}</span>
+          <span className="text-[16px]">
+            {formatNetworkName(value.enhancedDao?.chainName) || 'Unknown Network'}
+          </span>
         </div>
       );
     }
