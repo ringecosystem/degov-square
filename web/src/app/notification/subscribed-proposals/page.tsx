@@ -14,6 +14,7 @@ import { useConfirm } from '@/contexts/confirm-context';
 import { useSubscribedProposals, useUnsubscribeProposal } from '@/hooks/useNotification';
 import type { SubscribedProposalItem } from '@/lib/graphql/types';
 import { extractErrorMessage } from '@/utils/graphql-error-handler';
+import { formatNetworkName } from '@/utils/helper';
 
 import { Item } from './_components/item';
 
@@ -47,13 +48,13 @@ const columns = ({ onRemove }: ColumnProps): ColumnType<SubscribedProposalItem>[
               target="_blank"
               rel="noopener noreferrer"
               className="truncate transition-opacity hover:underline hover:opacity-80"
-              title={daoName}
+              title={formatNetworkName(daoName)}
             >
-              {daoName}
+              {formatNetworkName(daoName)}
             </Link>
           ) : (
             <div className="truncate" title={daoName}>
-              {daoName}
+              {formatNetworkName(daoName)}
             </div>
           )}
         </div>

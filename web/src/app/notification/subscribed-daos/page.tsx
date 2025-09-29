@@ -14,6 +14,7 @@ import { useSubscribedDaos, useUnsubscribeDao } from '@/hooks/useNotification';
 import { useQueryDaos } from '@/lib/graphql/hooks';
 import type { SubscribedDaoItem, Dao } from '@/lib/graphql/types';
 import { extractErrorMessage } from '@/utils/graphql-error-handler';
+import { formatNetworkName } from '@/utils/helper';
 
 import { Item } from './_components/item';
 
@@ -73,7 +74,9 @@ const columns = ({ onRemove }: ColumnProps): ColumnType<EnhancedSubscribedDaoIte
             height={17}
             className="rounded-full"
           />
-          <span className="text-[16px]">{value.enhancedDao?.chainName || 'Unknown Network'}</span>
+          <span className="text-[16px]">
+            {formatNetworkName(value.enhancedDao?.chainName) || 'Unknown Network'}
+          </span>
         </div>
       );
     }
