@@ -3,7 +3,7 @@ module github.com/ringecosystem/degov-square
 go 1.24.4
 
 require (
-	github.com/99designs/gqlgen v0.17.79
+	github.com/99designs/gqlgen v0.17.81
 	github.com/JohannesKaufmann/html-to-markdown/v2 v2.4.0
 	github.com/bwmarrin/snowflake v0.3.0
 	github.com/ethereum/go-ethereum v1.16.3
