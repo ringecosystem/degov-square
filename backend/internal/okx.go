@@ -184,10 +184,10 @@ type OkxAPI struct {
 // NewOkxAPI creates a new OKX API client
 func NewOkxAPI() *OkxAPI {
 	return &OkxAPI{
-		OKXProject:    getEnv("SMARTWALLET_OKX_PROJECT"),
-		OKXAccessKey:  getEnv("SMARTWALLET_OKX_ACCESS_KEY"),
-		OKXSecretKey:  getEnv("SMARTWALLET_OKX_SECRET_KEY"),
-		OKXPassphrase: getEnv("SMARTWALLET_OKX_PASSPHARSE"),
+		OKXProject:    getEnv("OKX_PROJECT"),
+		OKXAccessKey:  getEnv("OKX_ACCESS_KEY"),
+		OKXSecretKey:  getEnv("OKX_SECRET_KEY"),
+		OKXPassphrase: getEnv("OKX_PASSPHRASE"),
 	}
 }
 
