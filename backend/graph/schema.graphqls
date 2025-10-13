@@ -177,6 +177,27 @@ type NotificationChannel {
   ctime: Time!
 }
 
+type TreasuryAsset {
+  chain: String!
+  address: String!
+  name: String!
+  symbol: String!
+  logo: String
+  native: Int!
+  price: String!
+  balance: String!
+  balanceRaw: String!
+  balanceUSD: String!
+  decimals: Int!
+  displayDecimals: Int!
+  historicalPrices: [TreasuryHistoricalPrice!]
+}
+
+type TreasuryHistoricalPrice {
+  timestamp: String!
+  price: String!
+}
+
 
 ### === inputs
 
@@ -245,6 +266,11 @@ input UnsubscribeProposalInput {
   proposalId: String!
 }
 
+input TreasuryAssetsInput {
+  chain: String!
+  address: String!
+}
+
 ### ==== graphql
 
 type Query {
@@ -265,6 +291,9 @@ type Query {
   # subscribe
   subscribedDaos: [SubscribedDao!]! @auth
   subscribedProposals: [SubscribedProposal!]! @auth
+
+  # treasury
+  treasuryAssets(input: TreasuryAssetsInput): [TreasuryAsset!]! @auth(required: false)
 }
 
 type Mutation {
