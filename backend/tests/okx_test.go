@@ -53,15 +53,19 @@ func TestBalances(t *testing.T) {
 	t.Logf("Successfully retrieved %d token balances", len(balances))
 
 	for i, balance := range balances {
+		if len(balance.Platforms) == 0 {
+			t.Logf("Token %d: %s (%s) - No platform data available", i+1, balance.Symbol, balance.ID)
+			continue
+		}
 		if i < 3 { // Show first 3 tokens for brevity
-		t.Logf(
-			"Token %d: %s (%s) - { Balance: %s, balanceRaw: %s, balanceUSD: %s } - Decimals: %d",
-			i+1, balance.Symbol, balance.ID,
-			balance.Platforms[0].Balance,
-			balance.Platforms[0].BalanceRaw,
-			balance.Platforms[0].BalanceUSD,
-			balance.Platforms[0].Decimals,
-		)
+			t.Logf(
+				"Token %d: %s (%s) - { Balance: %s, balanceRaw: %s, balanceUSD: %s } - Decimals: %d",
+				i+1, balance.Symbol, balance.ID,
+				balance.Platforms[0].Balance,
+				balance.Platforms[0].BalanceRaw,
+				balance.Platforms[0].BalanceUSD,
+				balance.Platforms[0].Decimals,
+			)
 		}
 	}
 
