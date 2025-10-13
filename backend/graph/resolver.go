@@ -37,5 +37,6 @@ func NewResolver() *Resolver {
 		userInteractionService: services.NewUserInteractionService(),
 		evmChainService:        services.NewEvmChainService(),
 		subscribeService:       services.NewSubscribeService(),
+		treasuryService:        services.NewTreasuryService(),
 	}
 }
