@@ -59,7 +59,7 @@ func (s *TreasuryService) LoadTreasuryAssets(input *gqlmodels.TreasuryAssetsInpu
 			Chain:   input.Chain,
 			Address: firstPlatform.Address,
 			Limit:   5,
-			Begin:   utils.Int64Ptr(now.Add(-5 * 24 * time.Hour).UnixMilli()), // 5 days ago
+			Begin:   utils.Int64Ptr(now.Add(-2 * 24 * time.Hour).UnixMilli()), // 2 days ago
 			End:     utils.Int64Ptr(now.UnixMilli()),
 			Period:  internal.OkxPeriod1d,
 		})
@@ -84,6 +84,7 @@ func (s *TreasuryService) LoadTreasuryAssets(input *gqlmodels.TreasuryAssetsInpu
 			Balance:          firstPlatform.Balance,
 			BalanceRaw:       firstPlatform.BalanceRaw,
 			BalanceUsd:       firstPlatform.BalanceUSD,
+			Decimals:         int32(firstPlatform.Decimals),
 			DisplayDecimals:  int32(firstPlatform.DisplayDecimals),
 			HistoricalPrices: treasuryHistoricalPrices,
 		})

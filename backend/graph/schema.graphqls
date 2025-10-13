@@ -188,6 +188,7 @@ type TreasuryAsset {
   balance: String!
   balanceRaw: String!
   balanceUSD: String!
+  decimals: Int!
   displayDecimals: Int!
   historicalPrices: [TreasuryHistoricalPrice!]
 }
