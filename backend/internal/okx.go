@@ -8,6 +8,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math"
+	"math/big"
 	"net/http"
 	"strconv"
 	"strings"
@@ -154,20 +156,17 @@ type WalletTokenBalance struct {
 
 // WalletTokenPlatform represents wallet token platform
 type WalletTokenPlatform struct {
-	Address         string            `json:"address"`
-	ID              int               `json:"id"`
-	Name            string            `json:"name"`
-	NativeCurrency  map[string]string `json:"nativeCurrency"`
-	RpcUrls         []string          `json:"rpcUrls"`
-	BlockExplorers  []string          `json:"blockExplorers"`
-	LogoURI         string            `json:"logoURI"`
-	Decimals        int               `json:"decimals"`
-	Native          bool              `json:"native"`
-	Price           string            `json:"price"`
-	Balance         string            `json:"balance"`
-	BalanceRaw      string            `json:"balanceRaw"`
-	BalanceUSD      string            `json:"balanceUSD"`
-	DisplayDecimals int               `json:"displayDecimals"`
+	Address         string `json:"address"`
+	ID              int    `json:"id"`
+	Name            string `json:"name"`
+	LogoURI         string `json:"logoURI"`
+	Decimals        int    `json:"decimals"`
+	Native          bool   `json:"native"`
+	Price           string `json:"price"`
+	Balance         string `json:"balance"`
+	BalanceRaw      string `json:"balanceRaw"`
+	BalanceUSD      string `json:"balanceUSD"`
+	DisplayDecimals int    `json:"displayDecimals"`
 }
 
 // WalletHistory represents wallet history
@@ -267,6 +266,49 @@ func calculateDisplayDecimals(num string) int {
 		}
 	}
 	return 0
+}
+
+// calculateTokenDecimals calculates token decimals from balance and balanceRaw
+func calculateTokenDecimals(balance, balanceRaw string) int {
+	// Parse balance as big.Float for precision
+	balanceFloat, _, err := big.ParseFloat(balance, 10, 256, big.ToNearestEven)
+	if err != nil || balanceFloat.Cmp(big.NewFloat(0)) == 0 {
+		return 18 // Default to 18 decimals if parsing fails or balance is 0
+	}
+
+	// Parse balanceRaw as big.Int
+	balanceRawInt, ok := new(big.Int).SetString(balanceRaw, 10)
+	if !ok || balanceRawInt.Cmp(big.NewInt(0)) == 0 {
+		return 18 // Default to 18 decimals if parsing fails or balanceRaw is 0
+	}
+
+	// Convert balanceRaw to big.Float for division
+	balanceRawFloat := new(big.Float).SetInt(balanceRawInt)
+
+	// Calculate the ratio: balanceRaw / balance = 10^decimals
+	ratio := new(big.Float).Quo(balanceRawFloat, balanceFloat)
+
+	// Convert ratio to float64 for log calculation
+	ratioFloat64, _ := ratio.Float64()
+
+	// Handle edge cases
+	if ratioFloat64 <= 0 {
+		return 18
+	}
+
+	// Calculate log10 to find decimals
+	// decimals = log10(ratio)
+	decimals := int(math.Round(math.Log10(ratioFloat64)))
+
+	// Validate the result - should be between 0 and 30
+	if decimals < 0 {
+		return 0
+	}
+	if decimals > 30 {
+		return 18 // Default to 18 if calculated decimals seems too high
+	}
+
+	return decimals
 }
 
 // Price gets single token price
@@ -405,6 +447,12 @@ func (api *OkxAPI) Balances(options OkxBalanceOptions) ([]WalletTokenBalance, er
 		// Get logo URI for the token
 		logoURI := api.getLogoURI(ota.ChainIndex, ota.TokenAddress)
 
+		// Convert ChainIndex from string to int for ID field
+		chainIDInt, _ := strconv.Atoi(ota.ChainIndex)
+
+		// Calculate token decimals from balance and balanceRaw
+		tokenDecimals := calculateTokenDecimals(ota.Balance, ota.RawBalance)
+
 		// This is a simplified version - you'll need to implement the HelixboxToken logic
 		walletToken := WalletTokenBalance{
 			ID:      ota.TokenAddress, // Simplified - should use proper token ID
@@ -414,13 +462,9 @@ func (api *OkxAPI) Balances(options OkxBalanceOptions) ([]WalletTokenBalance, er
 			Platforms: []WalletTokenPlatform{
 				{
 					Address:         ota.TokenAddress,
-					ID:              0,  // Would need to parse chainIndex
-					Name:            "", // Would need chain name
-					NativeCurrency:  map[string]string{},
-					RpcUrls:         []string{},
-					BlockExplorers:  []string{},
-					LogoURI:         logoURI, // Use generated logo URI from TrustWallet
-					Decimals:        18,      // Default - should get from token data
+					ID:              chainIDInt,
+					LogoURI:         logoURI,       // Use generated logo URI from TrustWallet
+					Decimals:        tokenDecimals, // Calculate decimals from balance and balanceRaw
 					Native:          ota.TokenAddress == "0x0000000000000000000000000000000000000000",
 					Price:           ota.TokenPrice,
 					Balance:         ota.Balance,
