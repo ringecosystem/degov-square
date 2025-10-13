@@ -193,7 +193,7 @@ type TreasuryAsset {
 }
 
 type TreasuryHistoricalPrice {
-  timestamp: Time!
+  timestamp: String!
   price: String!
 }
 

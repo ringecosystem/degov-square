@@ -1,7 +1,6 @@
 package services
 
 import (
-	"strconv"
 	"time"
 
 	"github.com/ringecosystem/degov-square/database"
@@ -67,12 +66,8 @@ func (s *TreasuryService) LoadTreasuryAssets(input *gqlmodels.TreasuryAssetsInpu
 		if err == nil && len(histories) > 0 {
 			history := histories[0]
 			for _, hp := range history.Prices {
-				timestampInt64, err := strconv.ParseInt(hp.Time, 10, 64)
-				if err != nil {
-					continue
-				}
 				treasuryHistoricalPrices = append(treasuryHistoricalPrices, &gqlmodels.TreasuryHistoricalPrice{
-					Timestamp: timestampInt64,
+					Timestamp: hp.Time,
 					Price:     hp.Price,
 				})
 			}
