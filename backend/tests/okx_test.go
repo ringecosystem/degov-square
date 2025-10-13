@@ -53,7 +53,7 @@ func TestBalances(t *testing.T) {
 	t.Logf("Successfully retrieved %d token balances", len(balances))
 
 	for i, balance := range balances {
-		// if i < 3 { // Show first 3 tokens for brevity
+		if i < 3 { // Show first 3 tokens for brevity
 		t.Logf(
 			"Token %d: %s (%s) - { Balance: %s, balanceRaw: %s, balanceUSD: %s } - Decimals: %d",
 			i+1, balance.Symbol, balance.ID,
@@ -62,7 +62,7 @@ func TestBalances(t *testing.T) {
 			balance.Platforms[0].BalanceUSD,
 			balance.Platforms[0].Decimals,
 		)
-		// }
+		}
 	}
 
 	// Verify we got some balances
