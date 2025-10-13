@@ -3,6 +3,7 @@ package services
 import (
 	"time"
 
+	"github.com/patrickmn/go-cache"
 	"github.com/ringecosystem/degov-square/database"
 	gqlmodels "github.com/ringecosystem/degov-square/graph/models"
 	"github.com/ringecosystem/degov-square/internal"
@@ -12,8 +13,9 @@ import (
 )
 
 type TreasuryService struct {
-	db  *gorm.DB
-	okx *internal.OkxAPI
+	db          *gorm.DB
+	okx         *internal.OkxAPI
+	assetsCache *cache.Cache
 }
 
 func NewTreasuryService() *TreasuryService {
@@ -24,14 +26,26 @@ func NewTreasuryService() *TreasuryService {
 		SecretKey:  cfg.GetStringRequired("OKX_SECRET_KEY"),
 		Passphrase: cfg.GetStringRequired("OKX_PASSPHRASE"),
 	})
+	assetsCache := cache.New(10*time.Second, 15*time.Second)
 	return &TreasuryService{
-		db:  database.GetDB(),
-		okx: okx,
+		db:          database.GetDB(),
+		okx:         okx,
+		assetsCache: assetsCache,
 	}
 }
 
 // Load all assets of treasury
 func (s *TreasuryService) LoadTreasuryAssets(input *gqlmodels.TreasuryAssetsInput) ([]*gqlmodels.TreasuryAsset, error) {
+	// Create cache key based on chain and address
+	cacheKey := input.Chain + ":" + input.Address
+
+	// Try to get data from cache first
+	if cachedData, found := s.assetsCache.Get(cacheKey); found {
+		if assets, ok := cachedData.([]*gqlmodels.TreasuryAsset); ok {
+			return assets, nil
+		}
+	}
+
 	var assets []*gqlmodels.TreasuryAsset
 
 	balances, err := s.okx.Balances(internal.OkxBalanceOptions{
@@ -89,6 +103,9 @@ func (s *TreasuryService) LoadTreasuryAssets(input *gqlmodels.TreasuryAssetsInpu
 			HistoricalPrices: treasuryHistoricalPrices,
 		})
 	}
+
+	// Store the result in cache
+	s.assetsCache.Set(cacheKey, assets, cache.DefaultExpiration)
 
 	return assets, nil
 }
