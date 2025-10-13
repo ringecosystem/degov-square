@@ -292,6 +292,8 @@ type Query {
   subscribedDaos: [SubscribedDao!]! @auth
   subscribedProposals: [SubscribedProposal!]! @auth
 
+  #
+
   # treasury
   treasuryAssets(input: TreasuryAssetsInput): [TreasuryAsset!]! @auth(required: false)
 }
