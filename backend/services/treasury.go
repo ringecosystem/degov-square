@@ -26,7 +26,7 @@ func NewTreasuryService() *TreasuryService {
 		SecretKey:  cfg.GetStringRequired("OKX_SECRET_KEY"),
 		Passphrase: cfg.GetStringRequired("OKX_PASSPHRASE"),
 	})
-	assetsCache := cache.New(10*time.Second, 15*time.Second)
+	assetsCache := cache.New(2*time.Minute, 3*time.Minute)
 	return &TreasuryService{
 		db:          database.GetDB(),
 		okx:         okx,
