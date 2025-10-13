@@ -12,6 +12,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/ethereum/go-ethereum/common"
 )
 
 const OKX_API_ENDPOINT = "https://www.okx.com"
@@ -400,12 +402,15 @@ func (api *OkxAPI) Balances(options OkxBalanceOptions) ([]WalletTokenBalance, er
 		tokenPrice, _ := strconv.ParseFloat(ota.TokenPrice, 64)
 		balanceUSD := balance * tokenPrice
 
+		// Get logo URI for the token
+		logoURI := api.getLogoURI(ota.ChainIndex, ota.TokenAddress)
+
 		// This is a simplified version - you'll need to implement the HelixboxToken logic
 		walletToken := WalletTokenBalance{
 			ID:      ota.TokenAddress, // Simplified - should use proper token ID
 			Symbol:  ota.Symbol,
 			Name:    ota.Symbol, // Simplified - should get proper name
-			LogoURI: "",         // Would need to be fetched from token data
+			LogoURI: logoURI,    // Use generated logo URI from TrustWallet
 			Platforms: []WalletTokenPlatform{
 				{
 					Address:         ota.TokenAddress,
@@ -414,8 +419,8 @@ func (api *OkxAPI) Balances(options OkxBalanceOptions) ([]WalletTokenBalance, er
 					NativeCurrency:  map[string]string{},
 					RpcUrls:         []string{},
 					BlockExplorers:  []string{},
-					LogoURI:         "",
-					Decimals:        18, // Default - should get from token data
+					LogoURI:         logoURI, // Use generated logo URI from TrustWallet
+					Decimals:        18,      // Default - should get from token data
 					Native:          ota.TokenAddress == "0x0000000000000000000000000000000000000000",
 					Price:           ota.TokenPrice,
 					Balance:         ota.Balance,
@@ -590,4 +595,27 @@ func (api *OkxAPI) HistoricalPrice(options OkxHistoricalPriceOptions) ([]WalletH
 	}
 
 	return okxResp.Data, nil
+}
+
+// chainIDToTrustWalletName maps chain IDs to TrustWallet blockchain names
+var chainIDToTrustWalletName = map[string]string{
+	"1":     "ethereum", // Ethereum Mainnet
+	"10":    "optimism", // Optimism
+	"56":    "binance",  // BNB Smart Chain (Binance)
+	"8453":  "base",     // Base
+	"42161": "arbitrum", // Arbitrum One
+	"81457": "blast",    // Blast
+	"1284":  "moonbeam", // Moonbeam
+}
+
+func (api *OkxAPI) getLogoURI(chain string, address string) string {
+	checkedEvmAddress := common.HexToAddress(address)
+
+	// Map chainID to TrustWallet blockchain name
+	trustWalletChainName := chain
+	if mappedName, exists := chainIDToTrustWalletName[chain]; exists {
+		trustWalletChainName = mappedName
+	}
+
+	return fmt.Sprintf("https://raw.githubusercontent.com/trustwallet/assets/refs/heads/master/blockchains/%s/assets/%s/logo.png", trustWalletChainName, checkedEvmAddress.Hex())
 }
