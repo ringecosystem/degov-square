@@ -9,13 +9,22 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 	"strconv"
 	"strings"
 	"time"
 )
 
 const OKX_API_ENDPOINT = "https://www.okx.com"
+
+type OkxPeriod string
+
+const (
+	OkxPeriod1m  OkxPeriod = "1m"
+	OkxPeriod5m  OkxPeriod = "5m"
+	OkxPeriod30m OkxPeriod = "30m"
+	OkxPeriod1h  OkxPeriod = "1h"
+	OkxPeriod1d  OkxPeriod = "1d"
+)
 
 // OkxBalanceOptions represents options for balance query
 type OkxBalanceOptions struct {
@@ -43,6 +52,16 @@ type OkxSignOptions struct {
 	API    string      `json:"api"`
 	Method string      `json:"method"`
 	Body   interface{} `json:"body,omitempty"`
+}
+
+type OkxHistoricalPriceOptions struct {
+	Chain   string    `json:"chain"`
+	Address string    `json:"address"`
+	Limit   int       `json:"limit"`
+	Cursor  *string   `json:"cursor,omitempty"`
+	Begin   *int64    `json:"begin"`
+	End     *int64    `json:"end"`
+	Period  OkxPeriod `json:"period"`
 }
 
 // OkxResp represents OKX API response
@@ -173,6 +192,16 @@ type WalletTransaction struct {
 	IType        string                 `json:"itype"`
 }
 
+type WalletHistoricalPrice struct {
+	Cursor string                `json:"cursor"`
+	Prices []WalletTimeWithPrice `json:"prices"`
+}
+
+type WalletTimeWithPrice struct {
+	Time  string `json:"time"`
+	Price string `json:"price"`
+}
+
 // OkxAPI represents OKX API client
 type OkxAPI struct {
 	OKXProject    string
@@ -181,23 +210,21 @@ type OkxAPI struct {
 	OKXPassphrase string
 }
 
-// NewOkxAPI creates a new OKX API client
-func NewOkxAPI() *OkxAPI {
-	return &OkxAPI{
-		OKXProject:    getEnv("OKX_PROJECT"),
-		OKXAccessKey:  getEnv("OKX_ACCESS_KEY"),
-		OKXSecretKey:  getEnv("OKX_SECRET_KEY"),
-		OKXPassphrase: getEnv("OKX_PASSPHRASE"),
-	}
+type OkxOptions struct {
+	Project    string
+	AccessKey  string
+	SecretKey  string
+	Passphrase string
 }
 
-// getEnv gets environment variable or panics if not found
-func getEnv(key string) string {
-	value := os.Getenv(key)
-	if value == "" {
-		panic(fmt.Sprintf("Environment variable %s is required", key))
+// NewOkxAPI creates a new OKX API client
+func NewOkxAPI(options OkxOptions) *OkxAPI {
+	return &OkxAPI{
+		OKXProject:    options.Project,
+		OKXAccessKey:  options.AccessKey,
+		OKXSecretKey:  options.SecretKey,
+		OKXPassphrase: options.Passphrase,
 	}
-	return value
 }
 
 // generateSignature generates OKX API signature
@@ -492,4 +519,75 @@ func (api *OkxAPI) History(options OkxHistoryOptions) ([]WalletHistory, error) {
 	}
 
 	return histories, nil
+}
+
+func (api *OkxAPI) HistoricalPrice(options OkxHistoricalPriceOptions) ([]WalletHistoricalPrice, error) {
+	if options.Chain == "" {
+		return nil, fmt.Errorf("chain is required")
+	}
+
+	apiPath := fmt.Sprintf("/api/v5/wallet/token/historical-price?chainIndex=%s", options.Chain)
+
+	// Add optional parameters
+	if options.Address != "" {
+		apiPath += fmt.Sprintf("&tokenAddress=%s", options.Address)
+	}
+	if options.Limit > 0 {
+		apiPath += fmt.Sprintf("&limit=%d", options.Limit)
+	} else {
+		// Set default limit as per API documentation
+		apiPath += "&limit=50"
+	}
+	if options.Cursor != nil && *options.Cursor != "" {
+		apiPath += fmt.Sprintf("&cursor=%s", *options.Cursor)
+	}
+	if options.Begin != nil && *options.Begin > 0 {
+		apiPath += fmt.Sprintf("&begin=%d", *options.Begin)
+	}
+	if options.End != nil && *options.End > 0 {
+		apiPath += fmt.Sprintf("&end=%d", *options.End)
+	}
+	if options.Period != "" {
+		apiPath += fmt.Sprintf("&period=%s", options.Period)
+	} else {
+		// Set default period as per API documentation
+		apiPath += "&period=1d"
+	}
+
+	headers := api.generateSignature(OkxSignOptions{
+		API:    apiPath,
+		Method: "GET",
+	})
+
+	req, err := http.NewRequest("GET", OKX_API_ENDPOINT+apiPath, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	for key, value := range headers {
+		req.Header.Set(key, value)
+	}
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	responseBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	var okxResp OkxResp[[]WalletHistoricalPrice]
+	if err := json.Unmarshal(responseBody, &okxResp); err != nil {
+		return nil, err
+	}
+
+	if okxResp.Code != "0" {
+		return nil, fmt.Errorf("OKX API error: %s - %s", okxResp.Code, okxResp.Msg)
+	}
+
+	return okxResp.Data, nil
 }
