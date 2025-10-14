@@ -172,6 +172,11 @@ func (r *queryResolver) SubscribedProposals(ctx context.Context) ([]*gqlmodels.S
 	})
 }
 
+// SummaryProposalStates is the resolver for the summaryProposalStates field.
+func (r *queryResolver) SummaryProposalStates(ctx context.Context, input gqlmodels.SummaryProposalStatesInput) ([]*gqlmodels.SummaryProposalStates, error) {
+	return r.proposalService.SummaryProposalStates(input)
+}
+
 // TreasuryAssets is the resolver for the treasuryAssets field.
 func (r *queryResolver) TreasuryAssets(ctx context.Context, input *gqlmodels.TreasuryAssetsInput) ([]*gqlmodels.TreasuryAsset, error) {
 	return r.treasuryService.LoadTreasuryAssets(input)

@@ -198,6 +198,11 @@ type TreasuryHistoricalPrice {
   price: String!
 }
 
+type SummaryProposalStates {
+  state: ProposalState!
+  count: Int!
+}
+
 
 ### === inputs
 
@@ -271,6 +276,10 @@ input TreasuryAssetsInput {
   address: String!
 }
 
+input SummaryProposalStatesInput {
+  daoCode: String!
+}
+
 ### ==== graphql
 
 type Query {
@@ -292,7 +301,8 @@ type Query {
   subscribedDaos: [SubscribedDao!]! @auth
   subscribedProposals: [SubscribedProposal!]! @auth
 
-  #
+  # proposal queries
+  summaryProposalStates(input: SummaryProposalStatesInput!): [SummaryProposalStates!]! @auth(required: false)
 
   # treasury
   treasuryAssets(input: TreasuryAssetsInput): [TreasuryAsset!]! @auth(required: false)
