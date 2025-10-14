@@ -69,6 +69,7 @@ type Dao {
   seq: Int!
   endpoint: String! # Website endpoint
   state: String!
+  domains: [String!]
   tags: [String!]
   timeSyncd: Time
   metricsCountProposals: Int!
