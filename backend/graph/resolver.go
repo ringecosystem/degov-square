@@ -23,6 +23,7 @@ type Resolver struct {
 	evmChainService        *services.EvmChainService
 	subscribeService       *services.SubscribeService
 	treasuryService        *services.TreasuryService
+	proposalService        *services.ProposalService
 }
 
 func NewResolver() *Resolver {
@@ -38,5 +39,6 @@ func NewResolver() *Resolver {
 		evmChainService:        services.NewEvmChainService(),
 		subscribeService:       services.NewSubscribeService(),
 		treasuryService:        services.NewTreasuryService(),
+		proposalService:        services.NewProposalService(),
 	}
 }

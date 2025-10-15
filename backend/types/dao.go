@@ -4,6 +4,7 @@ import dbmodels "github.com/ringecosystem/degov-square/database/models"
 
 type RefreshDaoAndConfigInput struct {
 	Code                  string            `json:"code"`
+	Domains               []string          `json:"domains"`
 	Tags                  []string          `json:"tags"`
 	ConfigLink            string            `json:"configLink"`
 	Config                DaoConfig         `json:"config"`

@@ -35,9 +35,16 @@ func (s *DaoService) convertToGqlDao(dbDao dbmodels.Dao) *gqlmodels.Dao {
 			tags = []string{} // If JSON unmarshal fails, treat as empty array
 		}
 	}
+	var domains []string
+	if dbDao.Domains != "" {
+		if err := json.Unmarshal([]byte(dbDao.Domains), &domains); err != nil {
+			domains = []string{} // If JSON unmarshal fails, treat as empty array
+		}
+	}
 	gqlDao := gqlmodels.Dao{}
 	copier.Copy(&gqlDao, &dbDao)
 	gqlDao.Tags = tags
+	gqlDao.Domains = domains
 	return &gqlDao
 }
 
@@ -269,6 +276,7 @@ func (s *DaoService) RefreshDaoAndConfig(input types.RefreshDaoAndConfigInput) e
 	result := s.db.Where("code = ?", input.Code).First(&existingDao)
 
 	tagsJson := utils.ToJSON(input.Tags)
+	domainsJson := utils.ToJSON(input.Domains)
 	if result.Error == gorm.ErrRecordNotFound {
 		// Insert new DAO
 		dao := &dbmodels.Dao{
@@ -281,6 +289,7 @@ func (s *DaoService) RefreshDaoAndConfig(input types.RefreshDaoAndConfigInput) e
 			Logo:                input.Config.Logo,
 			Endpoint:            input.Config.SiteURL,
 			State:               input.State,
+			Domains:             domainsJson,
 			Tags:                tagsJson,
 			ConfigLink:          input.ConfigLink,
 			TimeSyncd:           utils.TimePtrNow(),
@@ -312,6 +321,7 @@ func (s *DaoService) RefreshDaoAndConfig(input types.RefreshDaoAndConfigInput) e
 		existingDao.Logo = input.Config.Logo
 		existingDao.Endpoint = input.Config.SiteURL
 		existingDao.State = input.State
+		existingDao.Domains = domainsJson
 		existingDao.Tags = tagsJson
 		existingDao.ConfigLink = input.ConfigLink
 		existingDao.UTime = utils.TimePtrNow()

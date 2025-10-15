@@ -195,3 +195,19 @@ func (s *ProposalService) ConvertToGqlProposal(input *dbmodels.ProposalTracking)
 	copier.Copy(&gqlProposal, input)
 	return &gqlProposal
 }
+
+func (s *ProposalService) SummaryProposalStates(input gqlmodels.SummaryProposalStatesInput) ([]*gqlmodels.SummaryProposalStates, error) {
+	var results []*gqlmodels.SummaryProposalStates
+
+	err := s.db.Table("dgv_proposal_tracking").
+		Select("state, count(1) as count").
+		Where("dao_code = ?", input.DaoCode).
+		Group("state").
+		Find(&results).Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	return results, nil
+}

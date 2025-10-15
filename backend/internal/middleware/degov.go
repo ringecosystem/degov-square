@@ -101,6 +101,13 @@ func (m *DegovMiddleware) findDaoCodeByURL(customSite, origin, referer string) (
 				return dao.Code, targetHost
 			}
 		}
+		if len(dao.Domains) > 0 {
+			for _, domain := range dao.Domains {
+				if strings.EqualFold(domain, targetHost) {
+					return dao.Code, targetHost
+				}
+			}
+		}
 	}
 
 	return "", targetHost
@@ -150,6 +157,7 @@ func (m *DegovMiddleware) getDaosFromCache() []DaoEndpoint {
 		dao := DaoEndpoint{
 			Code:     gqlDao.Code,
 			Endpoint: m.extractHost(gqlDao.Endpoint),
+			Domains:  gqlDao.Domains,
 		}
 		daos = append(daos, dao)
 	}
@@ -164,4 +172,5 @@ func (m *DegovMiddleware) getDaosFromCache() []DaoEndpoint {
 type DaoEndpoint struct {
 	Code     string
 	Endpoint string
+	Domains  []string
 }
