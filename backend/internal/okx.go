@@ -686,7 +686,7 @@ func (api *OkxAPI) getLogoURIByZapperFi(chain string, address string) string {
 	if mappedName, exists := chainIDToZapperFiName[chain]; exists {
 		zapperFiChainName = mappedName
 	}
-	return fmt.Sprintf("https://storage.googleapis.com/zapper-fi-assets/tokens/%s/%s/logo.png", zapperFiChainName, lowerCaseAddress)
+	return fmt.Sprintf("https://storage.googleapis.com/zapper-fi-assets/tokens/%s/%s.png", zapperFiChainName, lowerCaseAddress)
 }
 
 func (api *OkxAPI) getLogoURI(chain string, address string) string {
