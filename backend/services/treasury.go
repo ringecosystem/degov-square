@@ -1,6 +1,8 @@
 package services
 
 import (
+	"log/slog"
+	"strconv"
 	"time"
 
 	"github.com/patrickmn/go-cache"
@@ -69,21 +71,30 @@ func (s *TreasuryService) LoadTreasuryAssets(input *gqlmodels.TreasuryAssetsInpu
 		}
 
 		var treasuryHistoricalPrices []*gqlmodels.TreasuryHistoricalPrice
-		histories, err := s.okx.HistoricalPrice(internal.OkxHistoricalPriceOptions{
-			Chain:   input.Chain,
-			Address: firstPlatform.Address,
-			Limit:   2,
-			Begin:   utils.Int64Ptr(now.Add(-2 * 24 * time.Hour).UnixMilli()), // 2 days ago
-			// End:     utils.Int64Ptr(now.UnixMilli()),
-			// Period:  internal.OkxPeriod1d,
-		})
-		if err == nil && len(histories) > 0 {
-			history := histories[0]
-			for _, hp := range history.Prices {
-				treasuryHistoricalPrices = append(treasuryHistoricalPrices, &gqlmodels.TreasuryHistoricalPrice{
-					Timestamp: hp.Time,
-					Price:     hp.Price,
-				})
+		if firstPlatform.BalanceUSD != "" {
+			balanceUsdFloat, err := strconv.ParseFloat(firstPlatform.BalanceUSD, 64)
+			if err != nil {
+				slog.Warn("Failed to parse BalanceUSD", "error", err)
+			} else {
+				if balanceUsdFloat >= 0.01 {
+					histories, err := s.okx.HistoricalPrice(internal.OkxHistoricalPriceOptions{
+						Chain:   input.Chain,
+						Address: firstPlatform.Address,
+						Limit:   2,
+						Begin:   utils.Int64Ptr(now.Add(-2 * 24 * time.Hour).UnixMilli()), // 2 days ago
+						// End:     utils.Int64Ptr(now.UnixMilli()),
+						// Period:  internal.OkxPeriod1d,
+					})
+					if err == nil && len(histories) > 0 {
+						history := histories[0]
+						for _, hp := range history.Prices {
+							treasuryHistoricalPrices = append(treasuryHistoricalPrices, &gqlmodels.TreasuryHistoricalPrice{
+								Timestamp: hp.Time,
+								Price:     hp.Price,
+							})
+						}
+					}
+				}
 			}
 		}
 
