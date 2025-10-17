@@ -444,9 +444,6 @@ func (api *OkxAPI) Balances(options OkxBalanceOptions) ([]WalletTokenBalance, er
 		tokenPrice, _ := strconv.ParseFloat(ota.TokenPrice, 64)
 		balanceUSD := balance * tokenPrice
 
-		// Get logo URI for the token
-		logoURI := api.getLogoURI(ota.ChainIndex, ota.TokenAddress)
-
 		// Convert ChainIndex from string to int for ID field
 		chainIDInt, _ := strconv.Atoi(ota.ChainIndex)
 
@@ -454,15 +451,22 @@ func (api *OkxAPI) Balances(options OkxBalanceOptions) ([]WalletTokenBalance, er
 		tokenDecimals := calculateTokenDecimals(ota.Balance, ota.RawBalance)
 
 		native := ota.TokenAddress == "" || ota.TokenAddress == "0x0000000000000000000000000000000000000000"
+		tokenAddress := ota.TokenAddress
+		if native {
+			tokenAddress = "0x0000000000000000000000000000000000000000"
+		}
+
+		// Get logo URI for the token
+		logoURI := api.getLogoURI(ota.ChainIndex, tokenAddress)
 		// This is a simplified version - you'll need to implement the HelixboxToken logic
 		walletToken := WalletTokenBalance{
-			ID:      ota.TokenAddress, // Simplified - should use proper token ID
+			ID:      tokenAddress, // Simplified - should use proper token ID
 			Symbol:  ota.Symbol,
 			Name:    ota.Symbol, // Simplified - should get proper name
 			LogoURI: logoURI,    // Use generated logo URI from TrustWallet
 			Platforms: []WalletTokenPlatform{
 				{
-					Address:         ota.TokenAddress,
+					Address:         tokenAddress,
 					ID:              chainIDInt,
 					LogoURI:         logoURI,       // Use generated logo URI from TrustWallet
 					Decimals:        tokenDecimals, // Calculate decimals from balance and balanceRaw
