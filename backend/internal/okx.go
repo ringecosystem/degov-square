@@ -453,6 +453,7 @@ func (api *OkxAPI) Balances(options OkxBalanceOptions) ([]WalletTokenBalance, er
 		// Calculate token decimals from balance and balanceRaw
 		tokenDecimals := calculateTokenDecimals(ota.Balance, ota.RawBalance)
 
+		native := ota.TokenAddress == "" || ota.TokenAddress == "0x0000000000000000000000000000000000000000"
 		// This is a simplified version - you'll need to implement the HelixboxToken logic
 		walletToken := WalletTokenBalance{
 			ID:      ota.TokenAddress, // Simplified - should use proper token ID
@@ -465,7 +466,7 @@ func (api *OkxAPI) Balances(options OkxBalanceOptions) ([]WalletTokenBalance, er
 					ID:              chainIDInt,
 					LogoURI:         logoURI,       // Use generated logo URI from TrustWallet
 					Decimals:        tokenDecimals, // Calculate decimals from balance and balanceRaw
-					Native:          ota.TokenAddress == "0x0000000000000000000000000000000000000000",
+					Native:          native,
 					Price:           ota.TokenPrice,
 					Balance:         ota.Balance,
 					BalanceRaw:      ota.RawBalance,
@@ -641,29 +642,52 @@ func (api *OkxAPI) HistoricalPrice(options OkxHistoricalPriceOptions) ([]WalletH
 	return okxResp.Data, nil
 }
 
-// chainIDToTrustWalletName maps chain IDs to TrustWallet blockchain names
-var chainIDToTrustWalletName = map[string]string{
-	"1":     "ethereum", // Ethereum Mainnet
-	"10":    "optimism", // Optimism
-	"56":    "binance",  // BNB Smart Chain (Binance)
-	"8453":  "base",     // Base
-	"42161": "arbitrum", // Arbitrum One
-	"81457": "blast",    // Blast
-	"1284":  "moonbeam", // Moonbeam
-}
-
-func (api *OkxAPI) getLogoURI(chain string, address string) string {
+// ##### trustwallet
+func (api *OkxAPI) getLogoURIByTrustWallet(chain string, address string) string {
+	// chainIDToTrustWalletName maps chain IDs to TrustWallet blockchain names
+	var chainIDToTrustWalletName = map[string]string{
+		"1":     "ethereum", // Ethereum Mainnet
+		"10":    "optimism", // Optimism
+		"56":    "binance",  // BNB Smart Chain (Binance)
+		"8453":  "base",     // Base
+		"42161": "arbitrum", // Arbitrum One
+		"81457": "blast",    // Blast
+		"1284":  "moonbeam", // Moonbeam
+	}
 	checkedEvmAddress := common.HexToAddress(address)
-
 	// Map chainID to TrustWallet blockchain name
 	trustWalletChainName := chain
 	if mappedName, exists := chainIDToTrustWalletName[chain]; exists {
 		trustWalletChainName = mappedName
 	}
-
 	if checkedEvmAddress.Hex() == "0x0000000000000000000000000000000000000000" {
-		return fmt.Sprintf("https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/%s/info/logo.png", trustWalletChainName)
+		return ""
 	}
-
 	return fmt.Sprintf("https://assets-cdn.trustwallet.com/blockchains/%s/assets/%s/logo.png", trustWalletChainName, checkedEvmAddress.Hex())
+}
+
+// ##### zapper-fi
+func (api *OkxAPI) getLogoURIByZapperFi(chain string, address string) string {
+	var chainIDToZapperFiName = map[string]string{
+		"1":     "ethereum",            // Ethereum Mainnet
+		"10":    "optimism",            // Optimism
+		"56":    "binance-smart-chain", // BNB Smart Chain (Binance)
+		"8453":  "base",                // Base
+		"42161": "arbitrum",            // Arbitrum One
+		"81457": "blast",               // Blast
+		"1284":  "moonbeam",            // Moonbeam
+	}
+	lowerCaseAddress := strings.ToLower(address)
+	zapperFiChainName := chain
+	if mappedName, exists := chainIDToZapperFiName[chain]; exists {
+		zapperFiChainName = mappedName
+	}
+	return fmt.Sprintf("https://storage.googleapis.com/zapper-fi-assets/tokens/%s/%s/logo.png", zapperFiChainName, lowerCaseAddress)
+}
+
+func (api *OkxAPI) getLogoURI(chain string, address string) string {
+	if chain == "1284" {
+		return api.getLogoURIByTrustWallet(chain, address)
+	}
+	return api.getLogoURIByZapperFi(chain, address)
 }
