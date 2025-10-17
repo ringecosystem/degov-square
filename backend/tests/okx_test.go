@@ -148,10 +148,10 @@ func TestHistoricalPrice(t *testing.T) {
 	histories, err := okx.HistoricalPrice(internal.OkxHistoricalPriceOptions{
 		Chain:   "1",
 		Address: "0xc18360217d8f7ab5e7c516566761ea12ce7f9d72", // USDT
-		Limit:   10,
-		Begin:   utils.Int64Ptr(now.Add(-5 * 24 * time.Hour).UnixMilli()), // 5 days ago
-		End:     utils.Int64Ptr(now.UnixMilli()),
-		Period:  internal.OkxPeriod1d,
+		Limit:   2,
+		Begin:   utils.Int64Ptr(now.Add(-2 * 24 * time.Hour).UnixMilli()), // 2 days ago
+		// End:     utils.Int64Ptr(now.UnixMilli()),
+		// Period:  internal.OkxPeriod1d,
 	})
 	if err != nil {
 		t.Errorf("Failed to get OKX historical prices: %v", err)

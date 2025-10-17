@@ -72,10 +72,10 @@ func (s *TreasuryService) LoadTreasuryAssets(input *gqlmodels.TreasuryAssetsInpu
 		histories, err := s.okx.HistoricalPrice(internal.OkxHistoricalPriceOptions{
 			Chain:   input.Chain,
 			Address: firstPlatform.Address,
-			Limit:   5,
+			Limit:   2,
 			Begin:   utils.Int64Ptr(now.Add(-2 * 24 * time.Hour).UnixMilli()), // 2 days ago
-			End:     utils.Int64Ptr(now.UnixMilli()),
-			Period:  internal.OkxPeriod1d,
+			// End:     utils.Int64Ptr(now.UnixMilli()),
+			// Period:  internal.OkxPeriod1d,
 		})
 		if err == nil && len(histories) > 0 {
 			history := histories[0]
