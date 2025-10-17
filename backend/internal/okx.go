@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ringecosystem/degov-square/internal/utils"
 )
 
 const OKX_API_ENDPOINT = "https://www.okx.com"
@@ -450,7 +451,7 @@ func (api *OkxAPI) Balances(options OkxBalanceOptions) ([]WalletTokenBalance, er
 		// Calculate token decimals from balance and balanceRaw
 		tokenDecimals := calculateTokenDecimals(ota.Balance, ota.RawBalance)
 
-		native := ota.TokenAddress == "" || ota.TokenAddress == "0x0000000000000000000000000000000000000000"
+		native := ota.TokenAddress == "" || utils.IsNativeToken(ota.TokenAddress)
 		tokenAddress := ota.TokenAddress
 		if native {
 			tokenAddress = "0x0000000000000000000000000000000000000000"
@@ -576,15 +577,39 @@ func (api *OkxAPI) History(options OkxHistoryOptions) ([]WalletHistory, error) {
 }
 
 func (api *OkxAPI) HistoricalPrice(options OkxHistoricalPriceOptions) ([]WalletHistoricalPrice, error) {
-	if options.Chain == "" {
+	address := options.Address
+	chain := options.Chain
+
+	if chain == "" {
 		return nil, fmt.Errorf("chain is required")
+	}
+
+	if utils.IsNativeToken(options.Address) {
+		switch chain {
+		case "1": // Ethereum
+			address = "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2" // WETH
+		case "10": // Optimism
+			address = "0x4200000000000000000000000000000000000006" // WETH
+		case "56": // BNB Smart Chain
+			address = "0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c" // WBNB
+		case "8453": // Base
+			address = "0x4200000000000000000000000000000000000006" // WETH
+		case "42161": // Arbitrum
+			address = "0x82af49447d8a07e3bd95bd0d56f35241523fbab1" // WETH
+		case "81457": // Blast
+			address = "0x4300000000000000000000000000000000000004" // WETH
+		case "1284": // Moonbeam
+			address = "0xacc15dc74880c9944775448304b263d191c6077f" // WGLMR
+		default:
+			break
+		}
 	}
 
 	apiPath := fmt.Sprintf("/api/v5/wallet/token/historical-price?chainIndex=%s", options.Chain)
 
 	// Add optional parameters
-	if options.Address != "" {
-		apiPath += fmt.Sprintf("&tokenAddress=%s", options.Address)
+	if address != "" {
+		apiPath += fmt.Sprintf("&tokenAddress=%s", address)
 	}
 	if options.Limit > 0 {
 		apiPath += fmt.Sprintf("&limit=%d", options.Limit)
@@ -664,7 +689,7 @@ func (api *OkxAPI) getLogoURIByTrustWallet(chain string, address string) string 
 	if mappedName, exists := chainIDToTrustWalletName[chain]; exists {
 		trustWalletChainName = mappedName
 	}
-	if checkedEvmAddress.Hex() == "0x0000000000000000000000000000000000000000" {
+	if utils.IsNativeToken(checkedEvmAddress.Hex()) {
 		return ""
 	}
 	return fmt.Sprintf("https://assets-cdn.trustwallet.com/blockchains/%s/assets/%s/logo.png", trustWalletChainName, checkedEvmAddress.Hex())
