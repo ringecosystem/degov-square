@@ -444,28 +444,33 @@ func (api *OkxAPI) Balances(options OkxBalanceOptions) ([]WalletTokenBalance, er
 		tokenPrice, _ := strconv.ParseFloat(ota.TokenPrice, 64)
 		balanceUSD := balance * tokenPrice
 
-		// Get logo URI for the token
-		logoURI := api.getLogoURI(ota.ChainIndex, ota.TokenAddress)
-
 		// Convert ChainIndex from string to int for ID field
 		chainIDInt, _ := strconv.Atoi(ota.ChainIndex)
 
 		// Calculate token decimals from balance and balanceRaw
 		tokenDecimals := calculateTokenDecimals(ota.Balance, ota.RawBalance)
 
+		native := ota.TokenAddress == "" || ota.TokenAddress == "0x0000000000000000000000000000000000000000"
+		tokenAddress := ota.TokenAddress
+		if native {
+			tokenAddress = "0x0000000000000000000000000000000000000000"
+		}
+
+		// Get logo URI for the token
+		logoURI := api.getLogoURI(ota.ChainIndex, tokenAddress)
 		// This is a simplified version - you'll need to implement the HelixboxToken logic
 		walletToken := WalletTokenBalance{
-			ID:      ota.TokenAddress, // Simplified - should use proper token ID
+			ID:      tokenAddress, // Simplified - should use proper token ID
 			Symbol:  ota.Symbol,
 			Name:    ota.Symbol, // Simplified - should get proper name
 			LogoURI: logoURI,    // Use generated logo URI from TrustWallet
 			Platforms: []WalletTokenPlatform{
 				{
-					Address:         ota.TokenAddress,
+					Address:         tokenAddress,
 					ID:              chainIDInt,
 					LogoURI:         logoURI,       // Use generated logo URI from TrustWallet
 					Decimals:        tokenDecimals, // Calculate decimals from balance and balanceRaw
-					Native:          ota.TokenAddress == "0x0000000000000000000000000000000000000000",
+					Native:          native,
 					Price:           ota.TokenPrice,
 					Balance:         ota.Balance,
 					BalanceRaw:      ota.RawBalance,
@@ -641,25 +646,52 @@ func (api *OkxAPI) HistoricalPrice(options OkxHistoricalPriceOptions) ([]WalletH
 	return okxResp.Data, nil
 }
 
-// chainIDToTrustWalletName maps chain IDs to TrustWallet blockchain names
-var chainIDToTrustWalletName = map[string]string{
-	"1":     "ethereum", // Ethereum Mainnet
-	"10":    "optimism", // Optimism
-	"56":    "binance",  // BNB Smart Chain (Binance)
-	"8453":  "base",     // Base
-	"42161": "arbitrum", // Arbitrum One
-	"81457": "blast",    // Blast
-	"1284":  "moonbeam", // Moonbeam
-}
-
-func (api *OkxAPI) getLogoURI(chain string, address string) string {
+// ##### trustwallet
+func (api *OkxAPI) getLogoURIByTrustWallet(chain string, address string) string {
+	// chainIDToTrustWalletName maps chain IDs to TrustWallet blockchain names
+	var chainIDToTrustWalletName = map[string]string{
+		"1":     "ethereum", // Ethereum Mainnet
+		"10":    "optimism", // Optimism
+		"56":    "binance",  // BNB Smart Chain (Binance)
+		"8453":  "base",     // Base
+		"42161": "arbitrum", // Arbitrum One
+		"81457": "blast",    // Blast
+		"1284":  "moonbeam", // Moonbeam
+	}
 	checkedEvmAddress := common.HexToAddress(address)
-
 	// Map chainID to TrustWallet blockchain name
 	trustWalletChainName := chain
 	if mappedName, exists := chainIDToTrustWalletName[chain]; exists {
 		trustWalletChainName = mappedName
 	}
+	if checkedEvmAddress.Hex() == "0x0000000000000000000000000000000000000000" {
+		return ""
+	}
+	return fmt.Sprintf("https://assets-cdn.trustwallet.com/blockchains/%s/assets/%s/logo.png", trustWalletChainName, checkedEvmAddress.Hex())
+}
 
-	return fmt.Sprintf("https://raw.githubusercontent.com/trustwallet/assets/refs/heads/master/blockchains/%s/assets/%s/logo.png", trustWalletChainName, checkedEvmAddress.Hex())
+// ##### zapper-fi
+func (api *OkxAPI) getLogoURIByZapperFi(chain string, address string) string {
+	var chainIDToZapperFiName = map[string]string{
+		"1":     "ethereum",            // Ethereum Mainnet
+		"10":    "optimism",            // Optimism
+		"56":    "binance-smart-chain", // BNB Smart Chain (Binance)
+		"8453":  "base",                // Base
+		"42161": "arbitrum",            // Arbitrum One
+		"81457": "blast",               // Blast
+		"1284":  "moonbeam",            // Moonbeam
+	}
+	lowerCaseAddress := strings.ToLower(address)
+	zapperFiChainName := chain
+	if mappedName, exists := chainIDToZapperFiName[chain]; exists {
+		zapperFiChainName = mappedName
+	}
+	return fmt.Sprintf("https://storage.googleapis.com/zapper-fi-assets/tokens/%s/%s.png", zapperFiChainName, lowerCaseAddress)
+}
+
+func (api *OkxAPI) getLogoURI(chain string, address string) string {
+	if chain == "1284" {
+		return api.getLogoURIByTrustWallet(chain, address)
+	}
+	return api.getLogoURIByZapperFi(chain, address)
 }
