@@ -661,5 +661,9 @@ func (api *OkxAPI) getLogoURI(chain string, address string) string {
 		trustWalletChainName = mappedName
 	}
 
-	return fmt.Sprintf("https://raw.githubusercontent.com/trustwallet/assets/refs/heads/master/blockchains/%s/assets/%s/logo.png", trustWalletChainName, checkedEvmAddress.Hex())
+	if checkedEvmAddress.Hex() == "0x0000000000000000000000000000000000000000" {
+		return fmt.Sprintf("https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/%s/info/logo.png", trustWalletChainName)
+	}
+
+	return fmt.Sprintf("https://assets-cdn.trustwallet.com/blockchains/%s/assets/%s/logo.png", trustWalletChainName, checkedEvmAddress.Hex())
 }
