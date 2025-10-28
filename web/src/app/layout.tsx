@@ -1,4 +1,5 @@
 import { Geist, Geist_Mono } from 'next/font/google';
+import Script from 'next/script';
 import './globals.css';
 import { ToastContainer } from 'react-toastify';
 
@@ -28,6 +29,8 @@ export const metadata: Metadata = {
   description: APP_DESCRIPTION
 };
 
+const gaTag = 'G-26505WB9XS';
+
 export default function RootLayout({
   children
 }: Readonly<{
@@ -56,6 +59,23 @@ export default function RootLayout({
             </TooltipProvider>
           </QueryProvider>
         </NextThemeProvider>
+
+        {gaTag && (
+          <Script
+            src={`https://www.googletagmanager.com/gtag/js?id=${gaTag}`}
+            strategy="afterInteractive"
+          />
+        )}
+        {gaTag && (
+          <Script id="google-analytics" strategy="afterInteractive">
+            {`
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments);}
+              gtag('js', new Date());
+              gtag('config', '${gaTag}');
+            `}
+          </Script>
+        )}
       </body>
     </html>
   );
