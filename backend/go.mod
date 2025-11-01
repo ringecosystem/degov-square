@@ -21,7 +21,7 @@ require (
 	github.com/spf13/viper v1.21.0
 	github.com/spruceid/siwe-go v0.2.1
 	github.com/vanng822/go-premailer v1.25.0
-	github.com/vektah/gqlparser/v2 v2.5.30
+	github.com/vektah/gqlparser/v2 v2.5.31
 	github.com/wealdtech/go-ens/v3 v3.6.0
 	go.uber.org/zap v1.27.0
 	go.uber.org/zap/exp v0.3.0
