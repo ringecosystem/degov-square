@@ -1,0 +1,22 @@
+{
+  "accountAssociation": {
+    "header": "",
+    "payload": "",
+    "signature": ""
+  },
+  "baseBuilder": {
+    "ownerAddress": "0xE60efe52c6C98bF3636097F77c672bF9F1CC2485"
+  },
+  "miniapp": {
+    "version": "1",
+    "name": "DeGov Square",
+    "homeUrl": "https://square.degov.ai",
+    "iconUrl": "",
+    "splashImageUrl": "",
+    "splashBackgroundColor": "",
+    "subtitle": "Onchain governance market",
+    "description": "Open source DAO governance based on OpenZeppelin Governor framework.",
+    "primaryCategory": "utility",
+    "tags": ["infra", "dao", "governance", "ai"]
+  }
+}
