@@ -9,7 +9,7 @@ import {
 } from '@rainbow-me/rainbowkit/wallets';
 import { QueryClient } from '@tanstack/react-query';
 import { cookieStorage, createStorage } from 'wagmi';
-import { mainnet } from 'wagmi/chains';
+import { base, mainnet } from 'wagmi/chains';
 
 import { APP_NAME } from './base';
 
@@ -34,7 +34,7 @@ export const config = getDefaultConfig({
       wallets: [talismanWallet, subWallet, okxWallet, imTokenWallet, trustWallet, safeWallet]
     }
   ],
-  chains: [mainnet],
+  chains: [base, mainnet],
   ssr: true,
   storage: createStorage({
     storage: cookieStorage
