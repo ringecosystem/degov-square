@@ -1,7 +1,7 @@
 'use client';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 
 import type { ColumnType } from '@/components/custom-table';
 import { CustomTable } from '@/components/custom-table';
@@ -10,6 +10,7 @@ import { SortableCell } from '@/components/sortable-cell';
 import { Button } from '@/components/ui/button';
 import TagGroup from '@/components/ui/tag-group';
 import { useGraphqlDaoData } from '@/hooks/useGraphqlDaoData';
+import { useMiniApp } from '@/provider/miniapp';
 import type { DaoInfo } from '@/utils/config';
 import { formatNetworkName, formatTimeAgo } from '@/utils/helper';
 
@@ -20,6 +21,8 @@ type SortState = 'asc' | 'desc';
 
 export default function Home() {
   const { daoData, isLoading } = useGraphqlDaoData();
+  const { isMiniApp, markReady } = useMiniApp();
+  const readySentRef = useRef(false);
 
   const [sortState, setSortState] = useState<SortState | undefined>(undefined);
   const [searchQuery, setSearchQuery] = useState('');
@@ -199,6 +202,12 @@ export default function Home() {
   const openMobileSearch = useCallback(() => {
     setOpenSearchDialog(true);
   }, []);
+
+  useEffect(() => {
+    if (!isMiniApp || isLoading || readySentRef.current) return;
+    readySentRef.current = true;
+    void markReady();
+  }, [isMiniApp, isLoading, markReady]);
 
   useEffect(() => {
     return () => {
