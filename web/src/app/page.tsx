@@ -263,11 +263,11 @@ export default function Home() {
               asChild
             >
               <Link
-                href="https://docs.google.com/forms/u/1/d/e/1FAIpQLSdYjX87_xxTQFLl-brEj87vxU3ucH682nYy3bGUNpR4nL9HaQ/viewform"
+                href="https://docs.degov.ai/integration/deploy"
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                With Assistance
+                Self Host
               </Link>
             </Button>
           </div>
@@ -298,11 +298,11 @@ export default function Home() {
       <div className="flex flex-col py-[20px] md:hidden">
         <Button variant="outline" className="!border-foreground rounded-[100px] p-[10px]" asChild>
           <Link
-            href="https://docs.google.com/forms/u/1/d/e/1FAIpQLSdYjX87_xxTQFLl-brEj87vxU3ucH682nYy3bGUNpR4nL9HaQ/viewform"
+            href="https://docs.degov.ai/integration/deploy"
             target="_blank"
             rel="noopener noreferrer"
           >
-            With Assistance
+            Self Host
           </Link>
         </Button>
       </div>
