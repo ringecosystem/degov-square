@@ -82,7 +82,7 @@ function NotificationLayoutContent({ children }: { children: React.ReactNode }) 
         )}
 
         <main className="flex flex-1 flex-col">
-          <div className="lg:bg-card h-[calc(100vh-300px)] space-y-[15px] lg:space-y-[20px] lg:rounded-[14px] lg:p-[20px]">
+          <div className="lg:bg-card space-y-[15px] lg:space-y-[20px] lg:rounded-[14px] lg:p-[20px]">
             <AuthGuard>{children}</AuthGuard>
           </div>
         </main>
