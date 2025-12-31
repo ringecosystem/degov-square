@@ -296,3 +296,17 @@ func (s *ProposalService) MarkFulfillExpired(proposalID, daoCode string) error {
 			"utime":           time.Now(),
 		}).Error
 }
+
+// MarkFulfillNoDelegators marks a proposal as skipped due to no delegators
+// This is called when the agent has no delegators other than itself
+func (s *ProposalService) MarkFulfillNoDelegators(proposalID, daoCode string) error {
+	newMessage := "[" + time.Now().Format("2006-01-02 15:04:05") + "] [fulfill] No delegators found for agent, skipping"
+
+	return s.db.Model(&dbmodels.ProposalTracking{}).
+		Where("proposal_id = ? AND dao_code = ?", proposalID, daoCode).
+		Updates(map[string]interface{}{
+			"fulfill_errored": 1,
+			"message":         gorm.Expr("CASE WHEN message IS NULL OR message = '' THEN ? ELSE CONCAT(?, '\n----\n', message) END", newMessage, newMessage),
+			"utime":           time.Now(),
+		}).Error
+}

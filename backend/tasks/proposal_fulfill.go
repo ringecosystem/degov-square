@@ -120,6 +120,12 @@ type readyProposalItem struct {
 func (t *ProposalFulfillTask) filterReadyProposals(proposals []*dbmodels.ProposalTracking) ([]readyProposalItem, error) {
 	var ready []readyProposalItem
 
+	// Get agent address for delegation check
+	agentAddress := internal.GetAgentAddress()
+	if agentAddress == "" {
+		slog.Warn("[proposal-fulfill] Agent address not configured, skipping delegation check")
+	}
+
 	for _, proposal := range proposals {
 		// Get DAO config
 		daoConfig, err := t.daoConfigService.StandardConfig(proposal.DaoCode)
@@ -132,6 +138,35 @@ func (t *ProposalFulfillTask) filterReadyProposals(proposals []*dbmodels.Proposa
 
 		// Create indexer to query proposal details
 		indexer := internal.NewDegovIndexer(daoConfig.Indexer.Endpoint)
+
+		// Check if agent has delegators (other than itself)
+		if agentAddress != "" {
+			ctx := context.Background()
+			hasDelegators, err := indexer.HasDelegatorsOtherThanSelf(ctx, agentAddress)
+			if err != nil {
+				slog.Warn("[proposal-fulfill] Failed to check delegators",
+					"proposal_id", proposal.ProposalID,
+					"agent_address", agentAddress,
+					"error", err)
+				// Continue with other checks, don't skip due to query error
+			} else if !hasDelegators {
+				slog.Info("[proposal-fulfill] No delegators found for agent, marking as skipped",
+					"proposal_id", proposal.ProposalID,
+					"dao_code", proposal.DaoCode,
+					"agent_address", agentAddress)
+
+				// Mark as skipped - no delegators
+				if updateErr := t.proposalService.MarkFulfillNoDelegators(
+					proposal.ProposalID,
+					proposal.DaoCode,
+				); updateErr != nil {
+					slog.Error("[proposal-fulfill] Failed to mark proposal as no delegators",
+						"proposal_id", proposal.ProposalID,
+						"error", updateErr)
+				}
+				continue
+			}
+		}
 
 		// Query proposal to get vote window
 		proposalData, err := indexer.InspectProposal(proposal.ProposalID)

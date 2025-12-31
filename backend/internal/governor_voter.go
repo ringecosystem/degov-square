@@ -37,6 +37,32 @@ const castVoteWithReasonABI = `[{
 	"type": "function"
 }]`
 
+// GetAgentAddress returns the address derived from DEGOV_AGENT_PRIVATE_KEY
+// Returns empty string if not configured or invalid
+func GetAgentAddress() string {
+	cfg := config.GetConfig()
+	privateKeyHex := cfg.GetString("DEGOV_AGENT_PRIVATE_KEY")
+	if privateKeyHex == "" {
+		return ""
+	}
+
+	// Remove 0x prefix if present
+	privateKeyHex = strings.TrimPrefix(privateKeyHex, "0x")
+
+	privateKey, err := crypto.HexToECDSA(privateKeyHex)
+	if err != nil {
+		return ""
+	}
+
+	publicKey := privateKey.Public()
+	publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
+	if !ok {
+		return ""
+	}
+
+	return strings.ToLower(crypto.PubkeyToAddress(*publicKeyECDSA).Hex())
+}
+
 // NewGovernorVoter creates a new GovernorVoter client
 func NewGovernorVoter(rpcURL string, chainID int) (*GovernorVoter, error) {
 	client, err := ethclient.Dial(rpcURL)

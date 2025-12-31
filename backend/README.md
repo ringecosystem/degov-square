@@ -15,11 +15,17 @@ ListUnfulfilledProposals (query: state=Active, fulfilled=0, fulfill_errored=0)
 filterReadyProposals
        │
        ▼
-┌──────────────────┐
-│ Voting ended?    │
-└────────┬─────────┘
-      Yes│         No
-         ▼          ▼
+┌──────────────────────┐
+│ Has delegators?      │
+│ (other than self)    │
+└────────┬─────────────┘
+      Yes│              No
+         ▼               ▼
+  ┌──────────────────┐  MarkFulfillNoDelegators
+  │ Voting ended?    │  (fulfill_errored=1)
+  └────────┬─────────┘
+        Yes│         No
+           ▼          ▼
   MarkFulfillExpired   ┌─────────────────┐
   (fulfill_errored=1)  │ Past midpoint?  │
                        └────────┬────────┘
@@ -31,9 +37,17 @@ filterReadyProposals
 
 #### Logic Explanation
 
-1. **Voting ended** → Mark as expired (`fulfill_errored=1`), will not be queried again
-2. **Voting ongoing + Past midpoint** → Add to ready list, execute AI analysis and cast vote
-3. **Voting ongoing + Before midpoint** → Skip, wait for next task execution cycle
+1. **No delegators** → Mark as skipped (`fulfill_errored=1`), will not vote without delegation
+2. **Voting ended** → Mark as expired (`fulfill_errored=1`), will not be queried again
+3. **Voting ongoing + Past midpoint** → Add to ready list, execute AI analysis and cast vote
+4. **Voting ongoing + Before midpoint** → Skip, wait for next task execution cycle
+
+#### Delegation Check
+
+The agent only votes when it has delegators other than itself. This ensures:
+- The agent represents actual community delegation
+- No self-voting without real voting power from others
+- Queries the indexer for `delegates` where `toDelegate = agentAddress` and `fromDelegate != agentAddress`
 
 #### Why Vote at Midpoint?
 
