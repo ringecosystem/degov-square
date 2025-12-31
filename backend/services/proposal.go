@@ -211,3 +211,88 @@ func (s *ProposalService) SummaryProposalStates(input gqlmodels.SummaryProposalS
 
 	return results, nil
 }
+
+// ListUnfulfilledProposals returns proposals that need AI fulfill processing
+// Only returns proposals that are Active, not fulfilled, not errored, and under retry limit
+// If supportedDAOs is provided (non-nil), only proposals from those DAOs are returned
+func (s *ProposalService) ListUnfulfilledProposals(supportedDAOs []string) ([]*dbmodels.ProposalTracking, error) {
+	var proposals []*dbmodels.ProposalTracking
+
+	query := s.db.Where(`
+		state = ?
+		AND fulfilled = 0
+		AND fulfill_errored = 0
+		AND times_fulfill <= 4
+	`, dbmodels.ProposalStateActive)
+
+	// Filter by supported DAOs if specified
+	if len(supportedDAOs) > 0 {
+		query = query.Where("dao_code IN ?", supportedDAOs)
+	}
+
+	err := query.Order("ctime asc, times_fulfill asc").
+		Find(&proposals).Error
+
+	if err != nil {
+		return nil, err
+	}
+	return proposals, nil
+}
+
+// UpdateProposalFulfilled marks a proposal as fulfilled with AI explanation
+func (s *ProposalService) UpdateProposalFulfilled(proposalID, daoCode string, fulfilledExplain string) error {
+	now := time.Now()
+	return s.db.Model(&dbmodels.ProposalTracking{}).
+		Where("proposal_id = ? AND dao_code = ?", proposalID, daoCode).
+		Updates(map[string]interface{}{
+			"fulfilled":         1,
+			"fulfilled_explain": fulfilledExplain,
+			"fulfilled_at":      now,
+			"utime":             now,
+		}).Error
+}
+
+// UpdateFulfillError updates fulfill tracking info when processing fails
+func (s *ProposalService) UpdateFulfillError(proposalID, daoCode string, errorMessage string) error {
+	// Get current proposal
+	var proposal dbmodels.ProposalTracking
+	err := s.db.Where("proposal_id = ? AND dao_code = ?", proposalID, daoCode).First(&proposal).Error
+	if err != nil {
+		return err
+	}
+
+	timesFulfill := proposal.TimesFulfill + 1
+	fulfillErrored := 0
+	if timesFulfill > 3 {
+		fulfillErrored = 1
+	}
+
+	// Build message with timestamp
+	newMessage := "[" + time.Now().Format("2006-01-02 15:04:05") + "] [fulfill] " + errorMessage
+	if proposal.Message != "" {
+		newMessage += "\n----\n" + proposal.Message
+	}
+
+	return s.db.Model(&dbmodels.ProposalTracking{}).
+		Where("proposal_id = ? AND dao_code = ?", proposalID, daoCode).
+		Updates(map[string]interface{}{
+			"times_fulfill":   timesFulfill,
+			"fulfill_errored": fulfillErrored,
+			"message":         newMessage,
+			"utime":           time.Now(),
+		}).Error
+}
+
+// MarkFulfillExpired marks a proposal as expired for fulfill processing
+// This is called when the voting period has ended and the proposal can no longer be voted on
+func (s *ProposalService) MarkFulfillExpired(proposalID, daoCode string) error {
+	newMessage := "[" + time.Now().Format("2006-01-02 15:04:05") + "] [fulfill] Voting period expired, skipping"
+
+	return s.db.Model(&dbmodels.ProposalTracking{}).
+		Where("proposal_id = ? AND dao_code = ?", proposalID, daoCode).
+		Updates(map[string]interface{}{
+			"fulfill_errored": 1,
+			"message":         gorm.Expr("CASE WHEN message IS NULL OR message = '' THEN ? ELSE CONCAT(?, '\n----\n', message) END", newMessage, newMessage),
+			"utime":           time.Now(),
+		}).Error
+}
