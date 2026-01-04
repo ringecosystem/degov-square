@@ -1,18 +1,16 @@
 package internal
 
 import (
-	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"log/slog"
-	"net/http"
 	"time"
+
+	openai "github.com/sashabaranov/go-openai"
 
 	"github.com/ringecosystem/degov-square/internal/config"
 )
-
-const OpenRouterAPIURL = "https://openrouter.ai/api/v1/chat/completions"
 
 // VoteSupport represents the vote support type
 type VoteSupport string
@@ -80,120 +78,56 @@ type VoteCastInfo struct {
 	BlockTimestamp time.Time   `json:"blockTimestamp"`
 }
 
-// OpenRouterClient handles AI API calls
+// OpenRouterClient handles AI API calls using OpenAI-compatible SDK
 type OpenRouterClient struct {
-	apiKey string
+	client *openai.Client
 	model  string
 }
 
 // NewOpenRouterClient creates a new OpenRouter client
 func NewOpenRouterClient() *OpenRouterClient {
 	cfg := config.GetConfig()
+	apiKey := cfg.GetString("OPENROUTER_API_KEY")
+	model := cfg.GetStringWithDefault("OPENROUTER_MODEL", "google/gemini-2.0-flash-001")
+
+	openaiConfig := openai.DefaultConfig(apiKey)
+	openaiConfig.BaseURL = "https://openrouter.ai/api/v1"
+
 	return &OpenRouterClient{
-		apiKey: cfg.GetString("OPENROUTER_API_KEY"),
-		model:  cfg.GetStringWithDefault("OPENROUTER_MODEL", "google/gemini-2.0-flash-001"),
+		client: openai.NewClientWithConfig(openaiConfig),
+		model:  model,
 	}
-}
-
-// ChatMessage represents a chat message
-type ChatMessage struct {
-	Role    string `json:"role"`
-	Content string `json:"content"`
-}
-
-// ChatCompletionRequest represents the request to OpenRouter
-type ChatCompletionRequest struct {
-	Model       string        `json:"model"`
-	Messages    []ChatMessage `json:"messages"`
-	Temperature float64       `json:"temperature,omitempty"`
-	MaxTokens   int           `json:"max_tokens,omitempty"`
-}
-
-// ChatCompletionResponse represents the response from OpenRouter
-type ChatCompletionResponse struct {
-	ID      string `json:"id"`
-	Choices []struct {
-		Message struct {
-			Content string `json:"content"`
-		} `json:"message"`
-		FinishReason string `json:"finish_reason"`
-	} `json:"choices"`
-	Error *struct {
-		Message string `json:"message"`
-		Type    string `json:"type"`
-	} `json:"error,omitempty"`
 }
 
 // AnalyzeVotes analyzes votes using AI and returns the analysis result
 func (c *OpenRouterClient) AnalyzeVotes(voteCasts []VoteCastInfo) (*AnalysisResult, error) {
-	if c.apiKey == "" {
-		return nil, fmt.Errorf("OPENROUTER_API_KEY is not set")
-	}
-
 	systemPrompt := getFulfillContractSystemPrompt()
 	userPrompt := buildFulfillPrompt(voteCasts)
 
-	request := ChatCompletionRequest{
+	ctx := context.Background()
+	resp, err := c.client.CreateChatCompletion(ctx, openai.ChatCompletionRequest{
 		Model: c.model,
-		Messages: []ChatMessage{
-			{Role: "system", Content: systemPrompt},
-			{Role: "user", Content: userPrompt},
+		Messages: []openai.ChatCompletionMessage{
+			{Role: openai.ChatMessageRoleSystem, Content: systemPrompt},
+			{Role: openai.ChatMessageRoleUser, Content: userPrompt},
 		},
 		Temperature: 0.3,
 		MaxTokens:   4096,
-	}
-
-	reqBody, err := json.Marshal(request)
+	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to marshal request: %w", err)
+		return nil, fmt.Errorf("failed to create chat completion: %w", err)
 	}
 
-	req, err := http.NewRequest("POST", OpenRouterAPIURL, bytes.NewBuffer(reqBody))
-	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
-	}
-
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+c.apiKey)
-	req.Header.Set("HTTP-Referer", "https://degov.ai")
-	req.Header.Set("X-Title", "DeGov AI Agent")
-
-	client := &http.Client{Timeout: 120 * time.Second}
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("failed to send request: %w", err)
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read response: %w", err)
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		slog.Error("OpenRouter API error", "status", resp.StatusCode, "body", string(body))
-		return nil, fmt.Errorf("API returned status %d: %s", resp.StatusCode, string(body))
-	}
-
-	var chatResp ChatCompletionResponse
-	if err := json.Unmarshal(body, &chatResp); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
-	}
-
-	if chatResp.Error != nil {
-		return nil, fmt.Errorf("API error: %s", chatResp.Error.Message)
-	}
-
-	if len(chatResp.Choices) == 0 {
+	if len(resp.Choices) == 0 {
 		return nil, fmt.Errorf("no choices in response")
 	}
 
-	content := chatResp.Choices[0].Message.Content
+	content := resp.Choices[0].Message.Content
 
 	// Parse the JSON response from content
 	result, err := parseAnalysisResult(content)
 	if err != nil {
-		slog.Warn("Failed to parse AI response, content", "content", content, "error", err)
+		slog.Warn("Failed to parse AI response", "content", content, "error", err)
 		return nil, fmt.Errorf("failed to parse AI response: %w", err)
 	}
 
