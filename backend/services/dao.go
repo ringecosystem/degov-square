@@ -70,6 +70,19 @@ func (s *DaoService) Inspect(baseInput types.BasicInput[string]) (*gqlmodels.Dao
 	return dao, nil
 }
 
+// GetByCode returns a DAO by its code (simple version without chips)
+func (s *DaoService) GetByCode(code string) (*gqlmodels.Dao, error) {
+	var dbDao dbmodels.Dao
+	err := s.db.Where("code = ?", code).First(&dbDao).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return s.convertToGqlDao(dbDao), nil
+}
+
 func (s *DaoService) SingleDaoChips(code string) ([]*gqlmodels.DaoChip, error) {
 	return s.MultipleDaoChips([]string{code})
 }

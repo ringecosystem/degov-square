@@ -190,6 +190,24 @@ func (s *ProposalService) InspectProposal(input types.InspectProposalInput) (*db
 	return &proposal, nil
 }
 
+// FindByChainAndProposalID finds a proposal by chain ID and proposal ID
+// Optional fulfilled filter can be applied
+func (s *ProposalService) FindByChainAndProposalID(chainID int, proposalID string, fulfilled *int) (*dbmodels.ProposalTracking, error) {
+	var proposal dbmodels.ProposalTracking
+	query := s.db.Table("dgv_proposal_tracking").
+		Where("chain_id = ? AND proposal_id = ?", chainID, proposalID)
+
+	if fulfilled != nil {
+		query = query.Where("fulfilled = ?", *fulfilled)
+	}
+
+	err := query.First(&proposal).Error
+	if err != nil {
+		return nil, err
+	}
+	return &proposal, nil
+}
+
 func (s *ProposalService) ConvertToGqlProposal(input *dbmodels.ProposalTracking) *gqlmodels.Proposal {
 	gqlProposal := gqlmodels.Proposal{}
 	copier.Copy(&gqlProposal, input)
