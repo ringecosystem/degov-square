@@ -309,11 +309,22 @@ func (s *ProposalService) UpdateFulfillError(proposalID, daoCode string, errorMe
 func (s *ProposalService) MarkFulfillExpired(proposalID, daoCode string) error {
 	newMessage := "[" + time.Now().Format("2006-01-02 15:04:05") + "] [fulfill] Voting period expired, skipping"
 
+	// Get current proposal to prepend message
+	var proposal dbmodels.ProposalTracking
+	if err := s.db.Where("proposal_id = ? AND dao_code = ?", proposalID, daoCode).First(&proposal).Error; err != nil {
+		return err
+	}
+
+	finalMessage := newMessage
+	if proposal.Message != "" {
+		finalMessage = newMessage + "\n----\n" + proposal.Message
+	}
+
 	return s.db.Model(&dbmodels.ProposalTracking{}).
 		Where("proposal_id = ? AND dao_code = ?", proposalID, daoCode).
 		Updates(map[string]interface{}{
 			"fulfill_errored": 1,
-			"message":         gorm.Expr("CASE WHEN message IS NULL OR message = '' THEN ? ELSE CONCAT(?, '\n----\n', message) END", newMessage, newMessage),
+			"message":         finalMessage,
 			"utime":           time.Now(),
 		}).Error
 }
@@ -323,11 +334,22 @@ func (s *ProposalService) MarkFulfillExpired(proposalID, daoCode string) error {
 func (s *ProposalService) MarkFulfillNoDelegators(proposalID, daoCode string) error {
 	newMessage := "[" + time.Now().Format("2006-01-02 15:04:05") + "] [fulfill] No delegators found for agent, skipping"
 
+	// Get current proposal to prepend message
+	var proposal dbmodels.ProposalTracking
+	if err := s.db.Where("proposal_id = ? AND dao_code = ?", proposalID, daoCode).First(&proposal).Error; err != nil {
+		return err
+	}
+
+	finalMessage := newMessage
+	if proposal.Message != "" {
+		finalMessage = newMessage + "\n----\n" + proposal.Message
+	}
+
 	return s.db.Model(&dbmodels.ProposalTracking{}).
 		Where("proposal_id = ? AND dao_code = ?", proposalID, daoCode).
 		Updates(map[string]interface{}{
 			"fulfill_errored": 1,
-			"message":         gorm.Expr("CASE WHEN message IS NULL OR message = '' THEN ? ELSE CONCAT(?, '\n----\n', message) END", newMessage, newMessage),
+			"message":         finalMessage,
 			"utime":           time.Now(),
 		}).Error
 }
