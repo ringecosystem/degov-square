@@ -20,6 +20,11 @@ run:
 serve: build
 	./bin/degov-server
 
+# serve with logging to file
+serve-with-log: build
+	@mkdir -p _tmp/logs
+	./bin/degov-server 2>&1 | tee _tmp/logs/serve-$$(date +%Y%m%d-%H%M%S).log.txt
+
 test:
 	go test ./...
 

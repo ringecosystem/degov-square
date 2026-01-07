@@ -47,6 +47,7 @@ build
 dist
 target
 bin
+logs
 .data
 *.local.*
 _tmp

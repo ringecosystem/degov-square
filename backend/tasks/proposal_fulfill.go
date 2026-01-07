@@ -9,10 +9,12 @@ import (
 
 	dbmodels "github.com/ringecosystem/degov-square/database/models"
 	"github.com/ringecosystem/degov-square/internal"
-	"github.com/ringecosystem/degov-square/internal/config"
 	"github.com/ringecosystem/degov-square/services"
 	"github.com/ringecosystem/degov-square/types"
 )
+
+// FeatureFulfill is the feature name for AI-based voting
+const FeatureFulfill = "fulfill"
 
 // ProposalFulfillTask handles AI-based voting on proposals
 type ProposalFulfillTask struct {
@@ -20,26 +22,17 @@ type ProposalFulfillTask struct {
 	daoConfigService *services.DaoConfigService
 	proposalService  *services.ProposalService
 	openRouterClient *internal.OpenRouterClient
-	supportedDAOs    []string // nil means all DAOs
 }
 
 // NewProposalFulfillTask creates a new proposal fulfill task
 func NewProposalFulfillTask() *ProposalFulfillTask {
-	cfg := config.GetConfig()
-	supportedDAOs := cfg.GetTaskProposalFulfillDAOs()
-
-	if len(supportedDAOs) > 0 {
-		slog.Info("[proposal-fulfill] Task initialized with specific DAOs", "daos", supportedDAOs)
-	} else {
-		slog.Info("[proposal-fulfill] Task initialized for all DAOs")
-	}
+	slog.Info("[proposal-fulfill] Task initialized, will query DAOs with 'fulfill' feature from database")
 
 	return &ProposalFulfillTask{
 		daoService:       services.NewDaoService(),
 		daoConfigService: services.NewDaoConfigService(),
 		proposalService:  services.NewProposalService(),
 		openRouterClient: internal.NewOpenRouterClient(),
-		supportedDAOs:    supportedDAOs,
 	}
 }
 
@@ -50,16 +43,47 @@ func (t *ProposalFulfillTask) Name() string {
 
 // Execute performs the proposal fulfill task
 func (t *ProposalFulfillTask) Execute() error {
-	return t.fulfillProposals()
+	slog.Info("[proposal-fulfill] ========== Execute() START ==========")
+	err := t.fulfillProposals()
+	slog.Info("[proposal-fulfill] ========== Execute() END ==========", "error", err)
+	return err
 }
 
 // fulfillProposals processes unfulfilled proposals
 func (t *ProposalFulfillTask) fulfillProposals() error {
-	// Get unfulfilled proposals (filtered by supported DAOs if configured)
-	proposals, err := t.proposalService.ListUnfulfilledProposals(t.supportedDAOs)
+	// Get DAOs with fulfill feature enabled from database
+	supportedDAOs, err := t.daoService.ListDAOCodesWithFeature(FeatureFulfill)
 	if err != nil {
-		slog.Error("Failed to list unfulfilled proposals", "error", err)
+		slog.Error("[proposal-fulfill] Failed to get DAOs with fulfill feature", "error", err)
 		return err
+	}
+
+	slog.Info("[proposal-fulfill] fulfillProposals() called", "supportedDAOs", supportedDAOs)
+
+	if len(supportedDAOs) == 0 {
+		slog.Info("[proposal-fulfill] No DAOs have fulfill feature enabled, skipping task")
+		return nil
+	}
+
+	// Get unfulfilled proposals (filtered by supported DAOs)
+	proposals, err := t.proposalService.ListUnfulfilledProposals(supportedDAOs)
+	if err != nil {
+		slog.Error("[proposal-fulfill] Failed to list unfulfilled proposals", "error", err)
+		return err
+	}
+
+	slog.Info("[proposal-fulfill] Query returned proposals", "count", len(proposals))
+
+	// Log each proposal found
+	for i, p := range proposals {
+		slog.Info("[proposal-fulfill] Found proposal",
+			"index", i,
+			"proposal_id", p.ProposalID,
+			"dao_code", p.DaoCode,
+			"state", p.State,
+			"fulfilled", p.Fulfilled,
+			"fulfill_errored", p.FulfillErrored,
+			"times_fulfill", p.TimesFulfill)
 	}
 
 	if len(proposals) == 0 {
@@ -70,11 +94,14 @@ func (t *ProposalFulfillTask) fulfillProposals() error {
 	slog.Info("[proposal-fulfill] Found unfulfilled proposals", "count", len(proposals))
 
 	// Filter proposals that are ready (past midpoint)
+	slog.Info("[proposal-fulfill] Calling filterReadyProposals...")
 	readyProposals, err := t.filterReadyProposals(proposals)
 	if err != nil {
 		slog.Error("[proposal-fulfill] Failed to filter ready proposals", "error", err)
 		return err
 	}
+
+	slog.Info("[proposal-fulfill] filterReadyProposals returned", "ready_count", len(readyProposals))
 
 	if len(readyProposals) == 0 {
 		slog.Info("[proposal-fulfill] No proposals past midpoint yet, skipping this cycle")
@@ -120,13 +147,18 @@ type readyProposalItem struct {
 func (t *ProposalFulfillTask) filterReadyProposals(proposals []*dbmodels.ProposalTracking) ([]readyProposalItem, error) {
 	var ready []readyProposalItem
 
+	slog.Info("[proposal-fulfill] filterReadyProposals() called", "proposal_count", len(proposals))
+
 	// Get agent address for delegation check
 	agentAddress := internal.GetAgentAddress()
+	slog.Info("[proposal-fulfill] Agent address", "address", agentAddress)
 	if agentAddress == "" {
 		slog.Warn("[proposal-fulfill] Agent address not configured, skipping delegation check")
 	}
 
 	for _, proposal := range proposals {
+		slog.Info("[proposal-fulfill] Processing proposal", "proposal_id", proposal.ProposalID, "dao_code", proposal.DaoCode)
+
 		// Get DAO config
 		daoConfig, err := t.daoConfigService.StandardConfig(proposal.DaoCode)
 		if err != nil {
@@ -135,6 +167,7 @@ func (t *ProposalFulfillTask) filterReadyProposals(proposals []*dbmodels.Proposa
 				"error", err)
 			continue
 		}
+		slog.Info("[proposal-fulfill] Got DAO config", "dao_code", proposal.DaoCode, "indexer", daoConfig.Indexer.Endpoint)
 
 		// Create indexer to query proposal details
 		indexer := internal.NewDegovIndexer(daoConfig.Indexer.Endpoint)
@@ -142,7 +175,9 @@ func (t *ProposalFulfillTask) filterReadyProposals(proposals []*dbmodels.Proposa
 		// Check if agent has delegators (other than itself)
 		if agentAddress != "" {
 			ctx := context.Background()
+			slog.Info("[proposal-fulfill] Checking delegators", "agent_address", agentAddress)
 			hasDelegators, err := indexer.HasDelegatorsOtherThanSelf(ctx, agentAddress)
+			slog.Info("[proposal-fulfill] Delegator check result", "has_delegators", hasDelegators, "error", err)
 			if err != nil {
 				slog.Warn("[proposal-fulfill] Failed to check delegators",
 					"proposal_id", proposal.ProposalID,
@@ -165,10 +200,13 @@ func (t *ProposalFulfillTask) filterReadyProposals(proposals []*dbmodels.Proposa
 						"error", updateErr)
 				}
 				continue
+			} else {
+				slog.Info("[proposal-fulfill] Agent has delegators, proceeding", "agent_address", agentAddress)
 			}
 		}
 
 		// Query proposal to get vote window
+		slog.Info("[proposal-fulfill] Querying proposal from indexer", "proposal_id", proposal.ProposalID)
 		proposalData, err := indexer.InspectProposal(proposal.ProposalID)
 		if err != nil {
 			slog.Warn("[proposal-fulfill] Failed to query proposal",
@@ -176,6 +214,11 @@ func (t *ProposalFulfillTask) filterReadyProposals(proposals []*dbmodels.Proposa
 				"error", err)
 			continue
 		}
+		slog.Info("[proposal-fulfill] Got proposal data",
+			"proposal_id", proposal.ProposalID,
+			"vote_start", proposalData.VoteStart,
+			"vote_end", proposalData.VoteEnd,
+			"clock_mode", proposalData.ClockMode)
 
 		// Check if past midpoint but not expired
 		if proposalData != nil && proposalData.VoteStart != "" && proposalData.VoteEnd != "" {
@@ -187,11 +230,27 @@ func (t *ProposalFulfillTask) filterReadyProposals(proposals []*dbmodels.Proposa
 				nowSeconds := time.Now().Unix()
 				voteEndSeconds := voteEnd
 
+				slog.Info("[proposal-fulfill] Vote window (raw)",
+					"vote_start", voteStart,
+					"vote_end", voteEnd,
+					"midpoint_raw", midpoint,
+					"clock_mode", proposalData.ClockMode)
+
 				// Check clock mode - if timestamp mode, values are in milliseconds
 				if proposalData.ClockMode == "mode=timestamp" {
 					midpoint = midpoint / 1000
 					voteEndSeconds = voteEnd / 1000
+					slog.Info("[proposal-fulfill] Converted to seconds (timestamp mode)",
+						"midpoint", midpoint,
+						"vote_end_seconds", voteEndSeconds)
 				}
+
+				slog.Info("[proposal-fulfill] Time comparison",
+					"now_seconds", nowSeconds,
+					"midpoint", midpoint,
+					"vote_end_seconds", voteEndSeconds,
+					"past_midpoint", nowSeconds >= midpoint,
+					"before_end", nowSeconds <= voteEndSeconds)
 
 				// Check if voting has ended - mark as expired and skip
 				if nowSeconds > voteEndSeconds {
@@ -231,12 +290,14 @@ func (t *ProposalFulfillTask) filterReadyProposals(proposals []*dbmodels.Proposa
 				"proposal_id", proposal.ProposalID)
 		}
 
+		slog.Info("[proposal-fulfill] Proposal is READY for voting", "proposal_id", proposal.ProposalID, "dao_code", proposal.DaoCode)
 		ready = append(ready, readyProposalItem{
 			proposal:  proposal,
 			daoConfig: daoConfig,
 		})
 	}
 
+	slog.Info("[proposal-fulfill] filterReadyProposals completed", "ready_count", len(ready))
 	return ready, nil
 }
 

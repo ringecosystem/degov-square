@@ -56,8 +56,9 @@ type Dao struct {
 	Seq                   int        `gorm:"column:seq;not null;default:0" json:"seq"`
 	Endpoint              string     `gorm:"column:endpoint;type:varchar(255);not null" json:"endpoint"` // Website endpoint
 	State                 DaoState   `gorm:"column:state;type:varchar(50);not null" json:"state"`
-	Tags                  string     `gorm:"column:tags;type:text" json:"tags,omitempty"`       // Optional tags field
-	Domains               string     `gorm:"column:domains;type:text" json:"domains,omitempty"` // Optional domains field
+	Tags                  string     `gorm:"column:tags;type:text" json:"tags,omitempty"`         // Optional tags field
+	Domains               string     `gorm:"column:domains;type:text" json:"domains,omitempty"`   // Optional domains field
+	Features              string     `gorm:"column:features;type:text" json:"features,omitempty"` // Optional features field (JSON array, e.g., ["fulfill"])
 	ConfigLink            string     `gorm:"column:config_link;type:varchar(255);not null" json:"config_link"`
 	TimeSyncd             *time.Time `gorm:"column:time_syncd" json:"time_syncd,omitempty"`
 	MetricsCountProposals int        `gorm:"column:metrics_count_proposals;not null;default:0" json:"metrics_count_proposals"`

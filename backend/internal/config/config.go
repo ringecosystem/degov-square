@@ -240,22 +240,6 @@ func (c *Config) GetTaskProposalFulfillInterval() time.Duration {
 	return c.viper.GetDuration("TASK_PROPOSAL_FULFILL_INTERVAL")
 }
 
-// GetTaskProposalFulfillDAOs returns list of DAO codes that support fulfill
-// Format: comma-separated DAO codes, e.g., "darwinia,crab,kton"
-// If empty or "*", all DAOs are supported
-func (c *Config) GetTaskProposalFulfillDAOs() []string {
-	value := c.viper.GetString("TASK_PROPOSAL_FULFILL_DAOS")
-	if value == "" || value == "*" {
-		return nil // nil means all DAOs
-	}
-	daos := strings.Split(value, ",")
-	// Trim whitespace from each DAO code
-	for i := range daos {
-		daos[i] = strings.TrimSpace(daos[i])
-	}
-	return daos
-}
-
 func (c *Config) GetTaskNotificationEventEnabled() bool {
 	return c.viper.GetBool("TASK_NOTIFICATION_EVENT_ENABLED")
 }

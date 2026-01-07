@@ -252,8 +252,11 @@ func (s *ProposalService) ListUnfulfilledProposals(supportedDAOs []string) ([]*d
 		Find(&proposals).Error
 
 	if err != nil {
+		slog.Error("[proposal-service] Query error", "error", err)
 		return nil, err
 	}
+
+	slog.Info("[proposal-service] ListUnfulfilledProposals result", "count", len(proposals))
 	return proposals, nil
 }
 
