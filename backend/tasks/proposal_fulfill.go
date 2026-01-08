@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
-	"math/rand"
+	"math/rand/v2"
 	"time"
 
 	dbmodels "github.com/ringecosystem/degov-square/database/models"
@@ -369,7 +369,7 @@ func (t *ProposalFulfillTask) fulfillProposal(proposal *dbmodels.ProposalTrackin
 			// Exponential backoff: baseDelay * 2^attempt with jitter
 			backoff := baseDelay * time.Duration(1<<attempt)
 			// Add jitter: random value between 0 and 50% of backoff
-			jitter := time.Duration(rand.Int63n(int64(backoff / 2)))
+			jitter := time.Duration(rand.Int64N(int64(backoff / 2)))
 			delay := backoff + jitter
 			slog.Debug("[proposal-fulfill] Retrying with backoff",
 				"proposal_id", proposal.ProposalID,
