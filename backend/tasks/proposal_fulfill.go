@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"strconv"
 	"time"
 
 	dbmodels "github.com/ringecosystem/degov-square/database/models"
@@ -487,9 +488,10 @@ func (t *ProposalFulfillTask) queryAllVotes(ctx context.Context, indexer *intern
 	return allVotes, nil
 }
 
-// parseInt64 parses a string to int64
+// parseInt64 parses a string to int64, supporting both decimal and hexadecimal (0x prefix) formats
 func parseInt64(s string) (int64, error) {
-	var result int64
-	_, err := fmt.Sscanf(s, "%d", &result)
-	return result, err
+	if len(s) > 2 && (s[:2] == "0x" || s[:2] == "0X") {
+		return strconv.ParseInt(s[2:], 16, 64)
+	}
+	return strconv.ParseInt(s, 10, 64)
 }
