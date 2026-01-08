@@ -308,7 +308,7 @@ func (s *ProposalService) UpdateFulfillError(proposalID, daoCode string, errorMe
 
 	timesFulfill := proposal.TimesFulfill + 1
 	fulfillErrored := 0
-	if timesFulfill > 3 {
+	if timesFulfill >= 4 {
 		fulfillErrored = 1
 	}
 
