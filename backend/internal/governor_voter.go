@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/ecdsa"
 	"fmt"
+	"math"
 	"math/big"
 	"strings"
 
@@ -164,7 +165,7 @@ func (g *GovernorVoter) CastVoteWithReason(ctx context.Context, contractAddress 
 	// Check for overflow by ensuring multiplication won't exceed max uint64
 	buffer := uint64(0)
 	if gasBufferPercent > 0 {
-		maxGasForBuffer := ^uint64(0) / uint64(gasBufferPercent)
+		maxGasForBuffer := math.MaxUint64 / uint64(gasBufferPercent)
 		if gasLimit <= maxGasForBuffer {
 			buffer = gasLimit * uint64(gasBufferPercent) / 100
 		} else {
@@ -174,7 +175,7 @@ func (g *GovernorVoter) CastVoteWithReason(ctx context.Context, contractAddress 
 	}
 	
 	// Add buffer with overflow check
-	if gasLimit > ^uint64(0)-buffer {
+	if gasLimit > math.MaxUint64-buffer {
 		return "", fmt.Errorf("gas limit calculation overflow: base=%d buffer=%d", gasLimit, buffer)
 	}
 	gasLimit = gasLimit + buffer
