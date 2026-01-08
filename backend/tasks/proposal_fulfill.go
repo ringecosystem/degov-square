@@ -369,7 +369,7 @@ func (t *ProposalFulfillTask) fulfillProposal(proposal *dbmodels.ProposalTrackin
 			// Exponential backoff: baseDelay * 2^attempt with jitter
 			backoff := baseDelay * time.Duration(1<<attempt)
 			// Add jitter: random value between 0 and 50% of backoff
-			maxJitter := max(int64(backoff/2), 1)
+			maxJitter := max(int64(backoff)/2, 1)
 			jitter := time.Duration(rand.Int64N(maxJitter))
 			delay := backoff + jitter
 			slog.Debug("[proposal-fulfill] Retrying with backoff",
