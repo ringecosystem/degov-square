@@ -63,9 +63,6 @@ The task waits until the voting period midpoint before casting a vote. This allo
 TASK_PROPOSAL_FULFILL_ENABLED=false
 TASK_PROPOSAL_FULFILL_INTERVAL=30s
 
-# Supported DAOs (comma-separated, empty or "*" means all DAOs)
-TASK_PROPOSAL_FULFILL_DAOS=darwinia,crab
-
 # OpenRouter AI Configuration
 OPENROUTER_API_KEY=sk-or-v1-...
 OPENROUTER_MODEL=google/gemini-2.0-flash-001
