@@ -236,6 +236,30 @@ func (s *ProposalService) SummaryProposalStates(input gqlmodels.SummaryProposalS
 func (s *ProposalService) ListUnfulfilledProposals(supportedDAOs []string) ([]*dbmodels.ProposalTracking, error) {
 	var proposals []*dbmodels.ProposalTracking
 
+	// slog.Info("[proposal-service] ListUnfulfilledProposals called",
+	// 	"supportedDAOs", supportedDAOs,
+	// 	"expected_state", dbmodels.ProposalStateActive)
+	// // First, let's check what proposals exist for these DAOs (for debugging)
+	// var allProposals []*dbmodels.ProposalTracking
+	// debugQuery := s.db.Model(&dbmodels.ProposalTracking{})
+	// if len(supportedDAOs) > 0 {
+	// 	debugQuery = debugQuery.Where("dao_code IN ?", supportedDAOs)
+	// }
+	// debugQuery.Find(&allProposals)
+	// slog.Info("[proposal-service] All proposals in DB for DAOs",
+	// 	"count", len(allProposals),
+	// 	"supportedDAOs", supportedDAOs)
+	// for i, p := range allProposals {
+	// 	slog.Info("[proposal-service] Existing proposal",
+	// 		"index", i,
+	// 		"proposal_id", p.ProposalID,
+	// 		"dao_code", p.DaoCode,
+	// 		"state", p.State,
+	// 		"fulfilled", p.Fulfilled,
+	// 		"fulfill_errored", p.FulfillErrored,
+	// 		"times_fulfill", p.TimesFulfill)
+	// }
+
 	query := s.db.Where(`
 		state = ?
 		AND fulfilled = 0
