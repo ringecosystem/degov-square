@@ -368,7 +368,8 @@ func (t *ProposalFulfillTask) fulfillProposal(proposal *dbmodels.ProposalTrackin
 		if attempt < maxRetries-1 {
 			// Exponential backoff: baseDelay * 2^attempt with jitter
 			backoff := baseDelay * time.Duration(1<<attempt)
-			// Add jitter: random value between 0 and 50% of backoff
+			// Add jitter: random value between 0 and 50% of backoff (in nanoseconds)
+			// time.Duration is int64 in nanoseconds, so int64(backoff)/2 gives us 50%
 			maxJitter := max(int64(backoff)/2, 1)
 			jitter := time.Duration(rand.Int64N(maxJitter))
 			delay := backoff + jitter
