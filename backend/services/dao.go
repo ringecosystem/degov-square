@@ -70,6 +70,43 @@ func (s *DaoService) Inspect(baseInput types.BasicInput[string]) (*gqlmodels.Dao
 	return dao, nil
 }
 
+// GetByCode returns a DAO by its code (simple version without chips)
+func (s *DaoService) GetByCode(code string) (*gqlmodels.Dao, error) {
+	var dbDao dbmodels.Dao
+	err := s.db.Where("code = ?", code).First(&dbDao).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return s.convertToGqlDao(dbDao), nil
+}
+
+// ListDAOCodesWithFeature returns DAO codes that have a specific feature enabled
+// Features are stored as JSON array in the database, e.g., ["fulfill", "notify"]
+func (s *DaoService) ListDAOCodesWithFeature(feature string) ([]string, error) {
+	var daos []dbmodels.Dao
+	// Query DAOs where features JSON array contains the specified feature
+	// Using PostgreSQL JSON containment operator
+	err := s.db.Where("state = ? AND features IS NOT NULL AND features::jsonb @> ?",
+		dbmodels.DaoStateActive,
+		`["`+feature+`"]`).
+		Find(&daos).Error
+	if err != nil {
+		slog.Error("[dao-service] Failed to query DAOs with feature", "feature", feature, "error", err)
+		return nil, err
+	}
+
+	codes := make([]string, len(daos))
+	for i, dao := range daos {
+		codes[i] = dao.Code
+	}
+
+	slog.Info("[dao-service] Found DAOs with feature", "feature", feature, "count", len(codes), "codes", codes)
+	return codes, nil
+}
+
 func (s *DaoService) SingleDaoChips(code string) ([]*gqlmodels.DaoChip, error) {
 	return s.MultipleDaoChips([]string{code})
 }
@@ -277,6 +314,7 @@ func (s *DaoService) RefreshDaoAndConfig(input types.RefreshDaoAndConfigInput) e
 
 	tagsJson := utils.ToJSON(input.Tags)
 	domainsJson := utils.ToJSON(input.Domains)
+	featuresJson := utils.ToJSON(input.Features)
 	if result.Error == gorm.ErrRecordNotFound {
 		// Insert new DAO
 		dao := &dbmodels.Dao{
@@ -291,6 +329,7 @@ func (s *DaoService) RefreshDaoAndConfig(input types.RefreshDaoAndConfigInput) e
 			State:               input.State,
 			Domains:             domainsJson,
 			Tags:                tagsJson,
+			Features:            featuresJson,
 			ConfigLink:          input.ConfigLink,
 			TimeSyncd:           utils.TimePtrNow(),
 			OffsetTrackingBlock: 0, // Default to 0 for new DAOs
@@ -323,6 +362,7 @@ func (s *DaoService) RefreshDaoAndConfig(input types.RefreshDaoAndConfigInput) e
 		existingDao.State = input.State
 		existingDao.Domains = domainsJson
 		existingDao.Tags = tagsJson
+		existingDao.Features = featuresJson
 		existingDao.ConfigLink = input.ConfigLink
 		existingDao.UTime = utils.TimePtrNow()
 		existingDao.TimeSyncd = utils.TimePtrNow()

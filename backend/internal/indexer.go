@@ -393,3 +393,51 @@ func (d *DegovIndexer) QueryExpiringProposals() ([]Proposal, error) {
 
 	return allProposals, nil
 }
+
+// Delegate represents a delegation record
+type Delegate struct {
+	ID           string `json:"id"`
+	Power        string `json:"power"`
+	FromDelegate string `json:"fromDelegate"`
+	ToDelegate   string `json:"toDelegate"`
+}
+
+// DelegatesResponse represents the GraphQL response for delegates query
+type DelegatesResponse struct {
+	Delegates []Delegate `json:"delegates"`
+}
+
+// QueryDelegatorsTo queries all delegators who delegated to the given address (excluding self-delegation)
+// Returns true if there are delegators other than the address itself
+func (d *DegovIndexer) QueryDelegatorsTo(ctx context.Context, toAddress string) ([]Delegate, error) {
+	query := `
+		query QueryDelegates($toDelegate: String!, $fromDelegate: String!) {
+			delegates(where: {toDelegate_eq: $toDelegate, fromDelegate_not_eq: $fromDelegate}) {
+				id
+				power
+				fromDelegate
+				toDelegate
+			}
+		}
+	`
+
+	req := graphql.NewRequest(query)
+	req.Var("toDelegate", toAddress)
+	req.Var("fromDelegate", toAddress)
+
+	var response DelegatesResponse
+	if err := d.client.Run(ctx, req, &response); err != nil {
+		return nil, fmt.Errorf("failed to query delegates: %w", err)
+	}
+
+	return response.Delegates, nil
+}
+
+// HasDelegatorsOtherThanSelf checks if there are any delegators to the given address (excluding self)
+func (d *DegovIndexer) HasDelegatorsOtherThanSelf(ctx context.Context, toAddress string) (bool, error) {
+	delegates, err := d.QueryDelegatorsTo(ctx, toAddress)
+	if err != nil {
+		return false, err
+	}
+	return len(delegates) > 0, nil
+}

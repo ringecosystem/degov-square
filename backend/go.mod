@@ -17,6 +17,7 @@ require (
 	github.com/microcosm-cc/bluemonday v1.0.27
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/rs/cors v1.11.1
+	github.com/sashabaranov/go-openai v1.41.2
 	github.com/sendgrid/sendgrid-go v3.16.1+incompatible
 	github.com/spf13/viper v1.21.0
 	github.com/spruceid/siwe-go v0.2.1

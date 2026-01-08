@@ -30,8 +30,16 @@ type ProposalTracking struct {
 	TimeNextTrack      *time.Time    `gorm:"column:time_next_track" json:"time_next_track,omitempty"`         // Next tracking time
 	Message            string        `gorm:"column:message;type:text" json:"message,omitempty"`               // Additional message or notes
 	OffsetTrackingVote int           `gorm:"column:offset_tracking_vote;default:0" json:"offset_tracking_vote"`
-	CTime              time.Time     `gorm:"column:ctime;default:now()" json:"ctime"`
-	UTime              *time.Time    `gorm:"column:utime" json:"utime,omitempty"`
+
+	// Fulfill fields for AI agent voting
+	Fulfilled        int        `gorm:"column:fulfilled;default:0" json:"fulfilled"`                 // 0: not fulfilled, 1: fulfilled
+	FulfilledExplain *string    `gorm:"column:fulfilled_explain;type:text" json:"fulfilled_explain"` // AI decision explanation
+	FulfilledAt      *time.Time `gorm:"column:fulfilled_at" json:"fulfilled_at,omitempty"`           // Time when fulfilled
+	TimesFulfill     int        `gorm:"column:times_fulfill;default:0" json:"times_fulfill"`         // Number of fulfill attempts
+	FulfillErrored   int        `gorm:"column:fulfill_errored;default:0" json:"fulfill_errored"`     // 0: no error, 1: errored after max retries
+
+	CTime time.Time  `gorm:"column:ctime;default:now()" json:"ctime"`
+	UTime *time.Time `gorm:"column:utime" json:"utime,omitempty"`
 }
 
 func (ProposalTracking) TableName() string {

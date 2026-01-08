@@ -58,6 +58,14 @@ func GetTaskDefinitions() []TaskDefinition {
 		},
 		{
 			Config: TaskConfig{
+				Name:     "proposal-fulfill",
+				Interval: cfg.GetTaskProposalFulfillInterval(),
+				Enabled:  cfg.GetTaskProposalFulfillEnabled(),
+			},
+			Constructor: func() Task { return NewProposalFulfillTask() },
+		},
+		{
+			Config: TaskConfig{
 				Name:     "notification-event",
 				Interval: cfg.GetTaskNotificationEventInterval(),
 				Enabled:  cfg.GetTaskNotificationEventEnabled(),

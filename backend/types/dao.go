@@ -6,6 +6,7 @@ type RefreshDaoAndConfigInput struct {
 	Code                  string            `json:"code"`
 	Domains               []string          `json:"domains"`
 	Tags                  []string          `json:"tags"`
+	Features              []string          `json:"features"`
 	ConfigLink            string            `json:"configLink"`
 	Config                DaoConfig         `json:"config"`
 	State                 dbmodels.DaoState `json:"state"`

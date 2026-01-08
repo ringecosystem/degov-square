@@ -36,10 +36,11 @@ type DaoSyncTask struct {
 
 // DaoRegistryConfig represents the structure of individual DAO configuration
 type DaoRegistryConfig struct {
-	Tags    []string          `yaml:"tags,omitempty"`  // Optional tags field
-	State   dbmodels.DaoState `yaml:"state,omitempty"` // Optional state field
-	Config  string            `yaml:"config"`
-	Domains []string          `yaml:"domains,omitempty"` // Optional domains field
+	Tags     []string          `yaml:"tags,omitempty"`  // Optional tags field
+	State    dbmodels.DaoState `yaml:"state,omitempty"` // Optional state field
+	Config   string            `yaml:"config"`
+	Domains  []string          `yaml:"domains,omitempty"`  // Optional domains field
+	Features []string          `yaml:"features,omitempty"` // Optional features field (e.g., "fulfill")
 }
 
 type DaoRegistryConfigResult struct {
@@ -160,6 +161,7 @@ func (t *DaoSyncTask) processSingleDao(remoteLink GithubConfigLink, daoInfo DaoR
 		Code:       daoConfig.Config.Code,
 		Domains:    daoInfo.Domains,
 		Tags:       daoInfo.Tags,
+		Features:   daoInfo.Features,
 		State:      state,
 		ConfigLink: configURL,
 		Config:     *daoConfig.Config,
