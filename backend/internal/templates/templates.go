@@ -8,4 +8,5 @@ import (
 //
 //go:embed template/*.html
 //go:embed template/*.md
+//go:embed prompts/*.md
 var TemplateFS embed.FS

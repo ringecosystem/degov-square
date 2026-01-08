@@ -22,17 +22,26 @@ type ProposalFulfillTask struct {
 	daoConfigService *services.DaoConfigService
 	proposalService  *services.ProposalService
 	openRouterClient *internal.OpenRouterClient
+	fulfillAnalyzer  *services.FulfillAnalyzer
 }
 
 // NewProposalFulfillTask creates a new proposal fulfill task
 func NewProposalFulfillTask() *ProposalFulfillTask {
 	slog.Info("[proposal-fulfill] Task initialized, will query DAOs with 'fulfill' feature from database")
 
+	openRouterClient := internal.NewOpenRouterClient()
+	fulfillAnalyzer, err := services.NewFulfillAnalyzer(openRouterClient)
+	if err != nil {
+		slog.Error("[proposal-fulfill] Failed to create fulfill analyzer", "error", err)
+		// Continue with nil analyzer - will fail gracefully when used
+	}
+
 	return &ProposalFulfillTask{
 		daoService:       services.NewDaoService(),
 		daoConfigService: services.NewDaoConfigService(),
 		proposalService:  services.NewProposalService(),
-		openRouterClient: internal.NewOpenRouterClient(),
+		openRouterClient: openRouterClient,
+		fulfillAnalyzer:  fulfillAnalyzer,
 	}
 }
 
@@ -303,6 +312,11 @@ func (t *ProposalFulfillTask) filterReadyProposals(proposals []*dbmodels.Proposa
 
 // fulfillProposal processes a single proposal with AI analysis and voting
 func (t *ProposalFulfillTask) fulfillProposal(proposal *dbmodels.ProposalTracking, daoConfig *types.DaoConfig) error {
+	// Check if analyzer is available
+	if t.fulfillAnalyzer == nil {
+		return fmt.Errorf("fulfill analyzer not initialized")
+	}
+
 	// Create indexer
 	indexer := internal.NewDegovIndexer(daoConfig.Indexer.Endpoint)
 
@@ -318,15 +332,15 @@ func (t *ProposalFulfillTask) fulfillProposal(proposal *dbmodels.ProposalTrackin
 		"vote_count", len(voteCasts))
 
 	// Convert votes to AI format
-	voteCastInfos := make([]internal.VoteCastInfo, len(voteCasts))
+	voteCastInfos := make([]services.VoteCastInfo, len(voteCasts))
 	for i, vote := range voteCasts {
 		timestamp := time.Now()
 		if ts, err := parseInt64(vote.BlockTimestamp); err == nil {
 			timestamp = time.Unix(ts/1000, (ts%1000)*1000000)
 		}
 
-		voteCastInfos[i] = internal.VoteCastInfo{
-			Support:        internal.VoteSupportText(vote.Support),
+		voteCastInfos[i] = services.VoteCastInfo{
+			Support:        services.VoteSupportText(vote.Support),
 			Reason:         vote.Reason,
 			Weight:         vote.Weight,
 			BlockTimestamp: timestamp,
@@ -334,9 +348,9 @@ func (t *ProposalFulfillTask) fulfillProposal(proposal *dbmodels.ProposalTrackin
 	}
 
 	// Analyze votes with AI
-	var analysisResult *internal.AnalysisResult
+	var analysisResult *services.AnalysisResult
 	for attempt := 0; attempt < 3; attempt++ {
-		analysisResult, err = t.openRouterClient.AnalyzeVotes(voteCastInfos)
+		analysisResult, err = t.fulfillAnalyzer.AnalyzeVotes(ctx, voteCastInfos)
 		if err == nil {
 			break
 		}
@@ -369,7 +383,7 @@ func (t *ProposalFulfillTask) fulfillProposal(proposal *dbmodels.ProposalTrackin
 	defer voter.Close()
 
 	// Cast vote
-	support := internal.VoteSupportToNumber(analysisResult.FinalResult)
+	support := services.VoteSupportToNumber(analysisResult.FinalResult)
 	txHash, err := voter.CastVoteWithReason(
 		ctx,
 		daoConfig.Contracts.Governor,
