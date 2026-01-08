@@ -159,19 +159,25 @@ func (g *GovernorVoter) CastVoteWithReason(ctx context.Context, contractAddress 
 	if gasBufferPercent > 100 {
 		gasBufferPercent = 100
 	}
-	// Calculate buffer with overflow protection using big.Int for safety
-	gasLimitBig := new(big.Int).SetUint64(gasLimit)
-	bufferBig := new(big.Int).Mul(gasLimitBig, big.NewInt(int64(gasBufferPercent)))
-	bufferBig.Div(bufferBig, big.NewInt(100))
-	gasLimitBig.Add(gasLimitBig, bufferBig)
 	
-	// Check if result fits in uint64
-	if gasLimitBig.IsUint64() {
-		gasLimit = gasLimitBig.Uint64()
-	} else {
-		// If overflow, use maximum safe value
-		gasLimit = ^uint64(0) // max uint64
+	// Calculate buffer: gasLimit * bufferPercent / 100
+	// Check for overflow by ensuring multiplication won't exceed max uint64
+	buffer := uint64(0)
+	if gasBufferPercent > 0 {
+		maxGasForBuffer := ^uint64(0) / uint64(gasBufferPercent)
+		if gasLimit <= maxGasForBuffer {
+			buffer = gasLimit * uint64(gasBufferPercent) / 100
+		} else {
+			// Unlikely overflow case - calculate using division first
+			buffer = (gasLimit / 100) * uint64(gasBufferPercent)
+		}
 	}
+	
+	// Add buffer with overflow check
+	if gasLimit > ^uint64(0)-buffer {
+		return "", fmt.Errorf("gas limit calculation overflow: base=%d buffer=%d", gasLimit, buffer)
+	}
+	gasLimit = gasLimit + buffer
 
 	// Get gas price
 	gasPrice, err := g.client.SuggestGasPrice(ctx)
