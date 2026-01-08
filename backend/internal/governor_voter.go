@@ -151,8 +151,9 @@ func (g *GovernorVoter) CastVoteWithReason(ctx context.Context, contractAddress 
 		return "", fmt.Errorf("failed to estimate gas: %w", err)
 	}
 
-	// Add 20% buffer to gas limit
-	gasLimit = gasLimit * 120 / 100
+	// Add configurable buffer to gas limit
+	gasBufferPercent := config.GetGasBufferPercent()
+	gasLimit = gasLimit * uint64(100+gasBufferPercent) / 100
 
 	// Get gas price
 	gasPrice, err := g.client.SuggestGasPrice(ctx)

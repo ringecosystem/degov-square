@@ -69,6 +69,10 @@ OPENROUTER_MODEL=google/gemini-2.0-flash-001
 
 # DeGov Agent Private Key (for on-chain voting)
 DEGOV_AGENT_PRIVATE_KEY=0x...
+
+# Gas buffer percentage for voting transactions (default: 20)
+# Adjusts estimated gas by adding this percentage as a buffer
+DEGOV_AGENT_GAS_BUFFER_PERCENT=20
 ```
 
 #### Database Fields

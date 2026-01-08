@@ -121,6 +121,9 @@ func setDefaults(v *viper.Viper) {
 	// sendgrid
 	v.SetDefault("SENDGRID_FROM_USER", "DeGov Notifications")
 	v.SetDefault("SENDGRID_FROM_EMAIL", "notifications@degov.ai")
+
+	// Governor voter defaults
+	v.SetDefault("DEGOV_AGENT_GAS_BUFFER_PERCENT", 20)
 }
 
 // Server configuration methods
@@ -342,6 +345,11 @@ func GetInt(key string) int {
 
 func GetDuration(key string) time.Duration {
 	return GetConfig().GetDuration(key)
+}
+
+// GetGasBufferPercent returns the gas buffer percentage for governor voting
+func GetGasBufferPercent() int {
+	return GetConfig().GetInt("DEGOV_AGENT_GAS_BUFFER_PERCENT")
 }
 
 func GetEmailStyle() types.EmailStyle {
