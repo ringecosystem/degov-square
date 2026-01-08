@@ -320,6 +320,40 @@ func (t *ProposalFulfillTask) fulfillProposal(proposal *dbmodels.ProposalTrackin
 	// Create indexer
 	indexer := internal.NewDegovIndexer(daoConfig.Indexer.Endpoint)
 
+	// Get agent address for idempotency check
+	agentAddress := internal.GetAgentAddress()
+	if agentAddress == "" {
+		return fmt.Errorf("agent address not configured")
+	}
+
+	// Check if agent has already voted on this proposal (idempotency check)
+	existingVote, err := indexer.QueryVoteByVoter(proposal.ProposalID, agentAddress)
+	if err == nil && existingVote != nil {
+		slog.Info("[proposal-fulfill] Agent has already voted on this proposal, updating status only",
+			"proposal_id", proposal.ProposalID,
+			"dao_code", proposal.DaoCode,
+			"existing_vote_tx", existingVote.TransactionHash,
+			"support", existingVote.Support)
+
+		// Update proposal as fulfilled with existing vote info
+		fulfilledExplain := map[string]interface{}{
+			"note":    "Vote already cast on-chain, recovered from indexer",
+			"tx_hash": existingVote.TransactionHash,
+			"support": existingVote.Support,
+			"reason":  existingVote.Reason,
+		}
+		explainJSON, _ := json.Marshal(fulfilledExplain)
+
+		if updateErr := t.proposalService.UpdateProposalFulfilled(
+			proposal.ProposalID,
+			proposal.DaoCode,
+			string(explainJSON),
+		); updateErr != nil {
+			return fmt.Errorf("failed to update proposal status for existing vote: %w", updateErr)
+		}
+		return nil
+	}
+
 	// Query on-chain votes
 	ctx := context.Background()
 	voteCasts, err := t.queryAllVotes(ctx, indexer, proposal.ProposalID)
