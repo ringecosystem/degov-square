@@ -153,7 +153,14 @@ func (g *GovernorVoter) CastVoteWithReason(ctx context.Context, contractAddress 
 
 	// Add configurable buffer to gas limit
 	gasBufferPercent := config.GetGasBufferPercent()
-	gasLimit = gasLimit * uint64(100+gasBufferPercent) / 100
+	if gasBufferPercent < 0 {
+		gasBufferPercent = 0
+	}
+	if gasBufferPercent > 100 {
+		gasBufferPercent = 100
+	}
+	// Calculate with overflow protection
+	gasLimit = gasLimit + (gasLimit * uint64(gasBufferPercent) / 100)
 
 	// Get gas price
 	gasPrice, err := g.client.SuggestGasPrice(ctx)
