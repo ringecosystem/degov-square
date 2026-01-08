@@ -4,6 +4,8 @@ import (
 	"context"
 	"crypto/ecdsa"
 	"fmt"
+	"log/slog"
+	"math"
 	"math/big"
 	"strings"
 
@@ -151,8 +153,38 @@ func (g *GovernorVoter) CastVoteWithReason(ctx context.Context, contractAddress 
 		return "", fmt.Errorf("failed to estimate gas: %w", err)
 	}
 
-	// Add 20% buffer to gas limit
-	gasLimit = gasLimit * 120 / 100
+	// Add configurable buffer to gas limit
+	gasBufferPercent := config.GetGasBufferPercent()
+	if gasBufferPercent < 0 {
+		slog.Warn("Gas buffer percentage is negative, clamping to 0", "configured_value", gasBufferPercent)
+		gasBufferPercent = 0
+	}
+	if gasBufferPercent > 100 {
+		slog.Warn("Gas buffer percentage exceeds maximum, clamping to 100", "configured_value", gasBufferPercent)
+		gasBufferPercent = 100
+	}
+	
+	// Calculate buffer safely
+	// Since gasBufferPercent is capped at 100%, we calculate: gasLimit + (gasLimit * percent / 100)
+	// This is equivalent to: gasLimit * (100 + percent) / 100, but avoids potential overflow
+	if gasBufferPercent > 0 {
+		// Check if we can safely calculate the buffer
+		if gasLimit <= math.MaxUint64/uint64(gasBufferPercent) {
+			buffer := gasLimit * uint64(gasBufferPercent) / 100
+			gasLimit = gasLimit + buffer
+		} else {
+			// Very unlikely case: use big.Int for safety
+			gasLimitBig := new(big.Int).SetUint64(gasLimit)
+			bufferBig := new(big.Int).Mul(gasLimitBig, big.NewInt(int64(gasBufferPercent)))
+			bufferBig.Div(bufferBig, big.NewInt(100))
+			gasLimitBig.Add(gasLimitBig, bufferBig)
+			
+			if !gasLimitBig.IsUint64() {
+				return "", fmt.Errorf("gas limit calculation overflow: estimated gas too high")
+			}
+			gasLimit = gasLimitBig.Uint64()
+		}
+	}
 
 	// Get gas price
 	gasPrice, err := g.client.SuggestGasPrice(ctx)
