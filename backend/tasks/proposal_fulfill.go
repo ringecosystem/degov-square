@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"math/rand/v2"
 	"time"
 
 	dbmodels "github.com/ringecosystem/degov-square/database/models"
@@ -381,9 +382,13 @@ func (t *ProposalFulfillTask) fulfillProposal(proposal *dbmodels.ProposalTrackin
 		}
 	}
 
-	// Analyze votes with AI
+	// Analyze votes with AI with exponential backoff and jitter
+	const (
+		maxRetries = 3
+		baseDelay  = time.Second
+	)
 	var analysisResult *services.AnalysisResult
-	for attempt := 0; attempt < 3; attempt++ {
+	for attempt := 0; attempt < maxRetries; attempt++ {
 		analysisResult, err = t.fulfillAnalyzer.AnalyzeVotes(ctx, voteCastInfos)
 		if err == nil {
 			break
@@ -394,13 +399,23 @@ func (t *ProposalFulfillTask) fulfillProposal(proposal *dbmodels.ProposalTrackin
 			"attempt", attempt+1,
 			"error", err)
 
-		if attempt < 2 {
-			time.Sleep(3 * time.Second)
+		if attempt < maxRetries-1 {
+			// Exponential backoff: baseDelay * 2^attempt with jitter
+			backoff := baseDelay * time.Duration(1<<attempt)
+			// Add jitter: random value between 0 and 50% of backoff (in nanoseconds)
+			// time.Duration is int64 in nanoseconds, so int64(backoff)/2 gives us 50%
+			maxJitter := max(int64(backoff)/2, 1)
+			jitter := time.Duration(rand.Int64N(maxJitter))
+			delay := backoff + jitter
+			slog.Debug("[proposal-fulfill] Retrying with backoff",
+				"proposal_id", proposal.ProposalID,
+				"delay", delay)
+			time.Sleep(delay)
 		}
 	}
 
 	if err != nil {
-		return fmt.Errorf("failed to generate AI response after 3 attempts: %w", err)
+		return fmt.Errorf("failed to generate AI response after %d attempts: %w", maxRetries, err)
 	}
 
 	// Get RPC URL
