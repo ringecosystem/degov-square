@@ -157,10 +157,6 @@ func startServer() {
 	mux.Handle("/dao/config", middlewareChain.Then(http.HandlerFunc(daoRoute.ConfigHandler)))
 	mux.Handle("/dao/config/{dao}", middlewareChain.Then(http.HandlerFunc(daoRoute.ConfigHandler)))
 
-	// Create Vote route handler (compatible with degovx API)
-	voteRoute := routes.NewVoteRoute()
-	mux.Handle("/degov/vote/{chain}/{id}", middlewareChain.Then(http.HandlerFunc(voteRoute.VoteHandler)))
-
 	corsHandler := cors.New(cors.Options{
 		AllowedOrigins:   []string{"*"},
 		AllowedMethods:   []string{"GET", "POST", "OPTIONS"},

@@ -8,6 +8,7 @@ package graph
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/jinzhu/copier"
 	dbmodels "github.com/ringecosystem/degov-square/database/models"
@@ -181,6 +182,56 @@ func (r *queryResolver) SummaryProposalStates(ctx context.Context, input gqlmode
 // TreasuryAssets is the resolver for the treasuryAssets field.
 func (r *queryResolver) TreasuryAssets(ctx context.Context, input *gqlmodels.TreasuryAssetsInput) ([]*gqlmodels.TreasuryAsset, error) {
 	return r.treasuryService.LoadTreasuryAssets(input)
+}
+
+// VoteTracking is the resolver for the voteTracking field.
+func (r *queryResolver) VoteTracking(ctx context.Context, input gqlmodels.VoteTrackingInput) (*gqlmodels.VoteTracking, error) {
+	// Convert types for service call
+	chainID := int(input.ChainID)
+	var fulfilledFilter *int
+	if input.Fulfilled != nil {
+		f := int(*input.Fulfilled)
+		fulfilledFilter = &f
+	}
+
+	// Find proposal by chain and proposal ID
+	proposal, err := r.proposalService.FindByChainAndProposalID(chainID, input.ProposalID, fulfilledFilter)
+	if err != nil || proposal == nil {
+		return nil, nil // Return nil instead of error for not found
+	}
+
+	// Get DAO info
+	dao, _ := r.daoService.GetByCode(proposal.DaoCode)
+
+	// Build response
+	var utime *time.Time
+	if proposal.UTime != nil {
+		utime = proposal.UTime
+	}
+
+	result := &gqlmodels.VoteTracking{
+		ID:               proposal.ID,
+		DaoCode:          proposal.DaoCode,
+		ProposalID:       proposal.ProposalID,
+		ChainID:          int32(proposal.ChainId),
+		State:            string(proposal.State),
+		Errored:          int32(proposal.FulfillErrored),
+		Fulfilled:        int32(proposal.Fulfilled),
+		FulfilledExplain: proposal.FulfilledExplain,
+		Ctime:            proposal.CTime,
+		Utime:            utime,
+	}
+
+	if dao != nil {
+		result.Dao = &gqlmodels.VoteTrackingDao{
+			ID:   dao.ID,
+			Code: dao.Code,
+			Name: dao.Name,
+			Logo: dao.Logo,
+		}
+	}
+
+	return result, nil
 }
 
 // Mutation returns MutationResolver implementation.

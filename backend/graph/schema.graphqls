@@ -204,6 +204,34 @@ type SummaryProposalStates {
   count: Int!
 }
 
+# Vote tracking for AI agent voting
+type VoteTracking {
+  id: ID!
+  daoCode: String!
+  proposalId: String!
+  chainId: Int!
+  state: String!
+  errored: Int!
+  fulfilled: Int!
+  fulfilledExplain: String
+  ctime: Time!
+  utime: Time
+  dao: VoteTrackingDao
+}
+
+type VoteTrackingDao {
+  id: ID!
+  code: String!
+  name: String!
+  logo: String
+}
+
+input VoteTrackingInput {
+  chainId: Int!
+  proposalId: String!
+  fulfilled: Int
+}
+
 
 ### === inputs
 
@@ -307,6 +335,9 @@ type Query {
 
   # treasury
   treasuryAssets(input: TreasuryAssetsInput): [TreasuryAsset!]! @auth(required: false)
+
+  # vote tracking (for AI agent voting status)
+  voteTracking(input: VoteTrackingInput!): VoteTracking @auth(required: false)
 }
 
 type Mutation {
