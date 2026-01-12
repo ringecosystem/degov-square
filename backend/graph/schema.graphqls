@@ -309,6 +309,12 @@ input SummaryProposalStatesInput {
   daoCode: String!
 }
 
+input ProposalSummaryInput {
+  proposalId: String!
+  chainId: Int!
+  indexer: String!
+}
+
 ### ==== graphql
 
 type Query {
@@ -338,6 +344,10 @@ type Query {
 
   # vote tracking (for AI agent voting status)
   voteTracking(input: VoteTrackingInput!): VoteTracking @auth(required: false)
+
+  # degov agent
+  botAddress: String! @auth(required: false)
+  proposalSummary(input: ProposalSummaryInput!): String! @auth(required: false)
 }
 
 type Mutation {
