@@ -1,15 +1,18 @@
 package services
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
 	"log/slog"
+	"text/template"
 	"time"
 
 	"github.com/ringecosystem/degov-square/database"
 	dbmodels "github.com/ringecosystem/degov-square/database/models"
 	"github.com/ringecosystem/degov-square/internal"
+	"github.com/ringecosystem/degov-square/internal/templates"
 	"github.com/ringecosystem/degov-square/internal/utils"
 	"gorm.io/gorm"
 )
@@ -19,14 +22,35 @@ type ProposalSummaryService struct {
 	db               *gorm.DB
 	openRouterClient *internal.OpenRouterClient
 	daoConfigService *DaoConfigService
+	systemPrompt     string
+	userTemplate     *template.Template
 }
 
 // NewProposalSummaryService creates a new ProposalSummaryService instance
 func NewProposalSummaryService() *ProposalSummaryService {
+	// Load system prompt from template
+	systemPromptBytes, err := templates.TemplateFS.ReadFile("prompts/proposal-summary.system.md")
+	if err != nil {
+		slog.Error("[proposal-summary] Failed to load system prompt template", "error", err)
+	}
+
+	// Load user prompt template
+	userPromptBytes, err := templates.TemplateFS.ReadFile("prompts/proposal-summary.user.md")
+	if err != nil {
+		slog.Error("[proposal-summary] Failed to load user prompt template", "error", err)
+	}
+
+	userTemplate, err := template.New("proposal-summary-user").Parse(string(userPromptBytes))
+	if err != nil {
+		slog.Error("[proposal-summary] Failed to parse user prompt template", "error", err)
+	}
+
 	return &ProposalSummaryService{
 		db:               database.GetDB(),
 		openRouterClient: internal.NewOpenRouterClient(),
 		daoConfigService: NewDaoConfigService(),
+		systemPrompt:     string(systemPromptBytes),
+		userTemplate:     userTemplate,
 	}
 }
 
@@ -109,38 +133,21 @@ func (s *ProposalSummaryService) GetOrGenerateSummary(input ProposalSummaryInput
 
 // generateSummary uses AI to generate a summary of the proposal description
 func (s *ProposalSummaryService) generateSummary(description string) (string, error) {
-	systemPrompt := `You are a community governance research consultant providing neutral summary analysis. Summarize articles concisely, based only on their content, avoiding personal opinions. Explain the summary in a way that is easily understandable for community members, regardless of their familiarity with the topic.
-
-Guidelines:
-
-- **Objective**: Present facts only, neutrally.
-- **Structured**: Use clear headings and bullet points.
-- **Concise**: Maximum 200 words.
-- **Accessible**: Use simple language for all community members.
-
-Use this template:
-
-**Summary**
-
-[Concise summary of the article]
-
-**Key Points**
-
-- [Key point 1]
-- [Key point 2]
-- [Key point 3]`
-
-	userPrompt := fmt.Sprintf(`%s
-
-----
-Generate a comprehensive summary of the proposal based on the description provided.`, description)
+	// Build user prompt from template
+	var userPromptBuf bytes.Buffer
+	err := s.userTemplate.Execute(&userPromptBuf, map[string]string{
+		"Description": description,
+	})
+	if err != nil {
+		return "", fmt.Errorf("failed to execute user prompt template: %w", err)
+	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
 	response, err := s.openRouterClient.ChatCompletion(ctx, internal.ChatCompletionRequest{
-		SystemPrompt: systemPrompt,
-		UserPrompt:   userPrompt,
+		SystemPrompt: s.systemPrompt,
+		UserPrompt:   userPromptBuf.String(),
 		Temperature:  0.3,
 		MaxTokens:    1024,
 	})
