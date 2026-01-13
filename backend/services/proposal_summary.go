@@ -96,7 +96,7 @@ func (s *ProposalSummaryService) GetOrGenerateSummary(input ProposalSummaryInput
 	}
 
 	if proposal == nil {
-		return "", fmt.Errorf("proposal with ID %s on chain %d not found", input.ProposalID, input.ChainID)
+		return "", fmt.Errorf("proposal with ID %s on chain %d not found", input.ProposalID, chainID)
 	}
 
 	// Generate summary using AI
