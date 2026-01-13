@@ -345,7 +345,9 @@ type Query {
   voteTracking(input: VoteTrackingInput!): VoteTracking @auth(required: false)
 
   # degov agent
+  # Returns the on-chain address used by the DeGov agent/bot for automated actions and integrations.
   botAddress: String! @auth(required: false)
+  # Returns a natural-language summary of a proposal, for use by agents or UIs that need a concise description.
   proposalSummary(input: ProposalSummaryInput!): String! @auth(required: false)
 }
 
