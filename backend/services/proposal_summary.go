@@ -122,6 +122,13 @@ func (s *ProposalSummaryService) GetOrGenerateSummary(input ProposalSummaryInput
 
 	slog.Info("[proposal-summary] Saving summary to database", "proposal_id", input.ProposalID, "dao_code", input.DaoCode)
 	if err := s.db.Create(&newSummary).Error; err != nil {
+		// Handle potential race condition: another request may have inserted the summary concurrently
+		// Check if it's a unique constraint violation by querying for existing record
+		var existingRecord dbmodels.ProposalSummary
+		if queryErr := s.db.Where("proposal_id = ? AND chain_id = ?", input.ProposalID, chainID).First(&existingRecord).Error; queryErr == nil {
+			slog.Info("[proposal-summary] Summary was created by concurrent request, returning existing", "proposal_id", input.ProposalID, "id", existingRecord.ID)
+			return existingRecord.Summary, nil
+		}
 		slog.Error("[proposal-summary] Failed to save summary to database", "error", err, "proposal_id", input.ProposalID)
 		// Still return the generated summary even if saving fails
 	} else {
