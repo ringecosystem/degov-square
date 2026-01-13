@@ -311,8 +311,7 @@ input SummaryProposalStatesInput {
 
 input ProposalSummaryInput {
   proposalId: String!
-  chainId: Int!
-  indexer: String!
+  daoCode: String!
 }
 
 ### ==== graphql

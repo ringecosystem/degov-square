@@ -245,8 +245,7 @@ func (r *queryResolver) BotAddress(ctx context.Context) (string, error) {
 func (r *queryResolver) ProposalSummary(ctx context.Context, input gqlmodels.ProposalSummaryInput) (string, error) {
 	return r.proposalSummaryService.GetOrGenerateSummary(services.ProposalSummaryInput{
 		ProposalID: input.ProposalID,
-		ChainID:    int(input.ChainID),
-		Indexer:    input.Indexer,
+		DaoCode:    input.DaoCode,
 	})
 }
 

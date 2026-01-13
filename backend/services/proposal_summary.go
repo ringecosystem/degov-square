@@ -10,6 +10,7 @@ import (
 	"github.com/ringecosystem/degov-square/database"
 	dbmodels "github.com/ringecosystem/degov-square/database/models"
 	"github.com/ringecosystem/degov-square/internal"
+	"github.com/ringecosystem/degov-square/internal/utils"
 	"gorm.io/gorm"
 )
 
@@ -17,6 +18,7 @@ import (
 type ProposalSummaryService struct {
 	db               *gorm.DB
 	openRouterClient *internal.OpenRouterClient
+	daoConfigService *DaoConfigService
 }
 
 // NewProposalSummaryService creates a new ProposalSummaryService instance
@@ -24,32 +26,46 @@ func NewProposalSummaryService() *ProposalSummaryService {
 	return &ProposalSummaryService{
 		db:               database.GetDB(),
 		openRouterClient: internal.NewOpenRouterClient(),
+		daoConfigService: NewDaoConfigService(),
 	}
 }
 
 // ProposalSummaryInput represents the input for generating a proposal summary
 type ProposalSummaryInput struct {
 	ProposalID string `json:"id"`
-	ChainID    int    `json:"chain"`
-	Indexer    string `json:"indexer"`
+	DaoCode    string `json:"daoCode"`
 }
 
 // GetOrGenerateSummary returns cached summary or generates a new one
 func (s *ProposalSummaryService) GetOrGenerateSummary(input ProposalSummaryInput) (string, error) {
+	// Get DAO config to obtain indexer endpoint and chain ID
+	daoConfig, err := s.daoConfigService.StandardConfig(input.DaoCode)
+	if err != nil {
+		return "", fmt.Errorf("failed to get dao config for %s: %w", input.DaoCode, err)
+	}
+
+	chainID := daoConfig.Chain.ID
+	indexerEndpoint := daoConfig.Indexer.Endpoint
+
+	slog.Info("[proposal-summary] Looking for cached summary", "proposal_id", input.ProposalID, "chain_id", chainID, "dao_code", input.DaoCode)
+
 	// Check if summary already exists
 	var existingSummary dbmodels.ProposalSummary
-	err := s.db.Where("proposal_id = ? AND chain_id = ?", input.ProposalID, input.ChainID).First(&existingSummary).Error
+	err = s.db.Where("proposal_id = ? AND chain_id = ?", input.ProposalID, chainID).First(&existingSummary).Error
 	if err == nil {
-		slog.Debug("[proposal-summary] Returning cached summary", "proposal_id", input.ProposalID)
+		slog.Info("[proposal-summary] Returning cached summary", "proposal_id", input.ProposalID, "id", existingSummary.ID)
 		return existingSummary.Summary, nil
 	}
 
 	if !errors.Is(err, gorm.ErrRecordNotFound) {
+		slog.Error("[proposal-summary] Database query error", "error", err)
 		return "", fmt.Errorf("failed to query existing summary: %w", err)
 	}
 
+	slog.Info("[proposal-summary] No cached summary found, generating new one", "proposal_id", input.ProposalID)
+
 	// Fetch proposal from indexer
-	indexer := internal.NewDegovIndexer(input.Indexer)
+	indexer := internal.NewDegovIndexer(indexerEndpoint)
 	proposal, err := indexer.InspectProposal(input.ProposalID)
 	if err != nil {
 		return "", fmt.Errorf("failed to fetch proposal: %w", err)
@@ -66,22 +82,26 @@ func (s *ProposalSummaryService) GetOrGenerateSummary(input ProposalSummaryInput
 	}
 
 	// Save to database
-	id := fmt.Sprintf("%d-%s", input.ChainID, input.ProposalID)
 	now := time.Now()
+	daoCode := input.DaoCode
 	newSummary := dbmodels.ProposalSummary{
-		ID:          id,
-		ChainId:     input.ChainID,
+		ID:          utils.NextIDString(),
+		DaoCode:     &daoCode,
+		ChainId:     chainID,
 		ProposalID:  input.ProposalID,
-		Indexer:     &input.Indexer,
+		Indexer:     &indexerEndpoint,
 		Description: proposal.Description,
 		Summary:     summary,
 		CTime:       now,
 		UTime:       &now,
 	}
 
+	slog.Info("[proposal-summary] Saving summary to database", "proposal_id", input.ProposalID, "dao_code", input.DaoCode)
 	if err := s.db.Create(&newSummary).Error; err != nil {
-		slog.Warn("[proposal-summary] Failed to save summary to database", "error", err)
+		slog.Error("[proposal-summary] Failed to save summary to database", "error", err, "proposal_id", input.ProposalID)
 		// Still return the generated summary even if saving fails
+	} else {
+		slog.Info("[proposal-summary] Summary saved successfully", "id", newSummary.ID, "proposal_id", input.ProposalID)
 	}
 
 	return summary, nil
