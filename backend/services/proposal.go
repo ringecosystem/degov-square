@@ -230,6 +230,28 @@ func (s *ProposalService) SummaryProposalStates(input gqlmodels.SummaryProposalS
 	return results, nil
 }
 
+// GetProposalState returns the state of a specific proposal
+func (s *ProposalService) GetProposalState(input gqlmodels.ProposalStateInput) (*gqlmodels.ProposalState, error) {
+	var proposal dbmodels.ProposalTracking
+	
+	err := s.db.
+		Where("dao_code = ? AND proposal_id = ?", input.DaoCode, input.ProposalID).
+		Select("state").
+		First(&proposal).
+		Error
+	
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil // Return nil if not found (GraphQL will return null)
+		}
+		return nil, err
+	}
+	
+	// Convert dbmodels.ProposalState to gqlmodels.ProposalState
+	state := gqlmodels.ProposalState(proposal.State)
+	return &state, nil
+}
+
 // ListUnfulfilledProposals returns proposals that need AI fulfill processing
 // Only returns proposals that are Active, not fulfilled, not errored, and under retry limit
 // If supportedDAOs is provided (non-nil), only proposals from those DAOs are returned
