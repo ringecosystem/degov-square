@@ -181,6 +181,11 @@ func (r *queryResolver) SummaryProposalStates(ctx context.Context, input gqlmode
 	return r.proposalService.SummaryProposalStates(input)
 }
 
+// ProposalState is the resolver for the proposalState field.
+func (r *queryResolver) ProposalState(ctx context.Context, input gqlmodels.ProposalStateInput) (*gqlmodels.ProposalState, error) {
+	return r.proposalService.GetProposalState(input)
+}
+
 // TreasuryAssets is the resolver for the treasuryAssets field.
 func (r *queryResolver) TreasuryAssets(ctx context.Context, input *gqlmodels.TreasuryAssetsInput) ([]*gqlmodels.TreasuryAsset, error) {
 	return r.treasuryService.LoadTreasuryAssets(input)

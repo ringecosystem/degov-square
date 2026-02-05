@@ -309,6 +309,11 @@ input SummaryProposalStatesInput {
   daoCode: String!
 }
 
+input ProposalStateInput {
+  daoCode: String!
+  proposalId: String!
+}
+
 input ProposalSummaryInput {
   proposalId: String!
   daoCode: String!
@@ -337,6 +342,7 @@ type Query {
 
   # proposal queries
   summaryProposalStates(input: SummaryProposalStatesInput!): [SummaryProposalStates!]! @auth(required: false)
+  proposalState(input: ProposalStateInput!): ProposalState @auth(required: false)
 
   # treasury
   treasuryAssets(input: TreasuryAssetsInput): [TreasuryAsset!]! @auth(required: false)
