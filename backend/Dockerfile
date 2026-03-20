@@ -1,4 +1,4 @@
-FROM golang:1.25-rc-alpine AS builder
+FROM golang:1.25.0-alpine AS builder
 ARG APP_VERSION
 
 WORKDIR /code
@@ -13,8 +13,7 @@ RUN go mod download
 COPY . .
 
 # Build the application
-RUN go get github.com/99designs/gqlgen \
-  && go generate ./... \
+RUN GOFLAGS=-mod=mod go generate ./... \
   && go build -ldflags="-X main.Version=${APP_VERSION}" -o bin/degov-server cmd/main.go
 
 # Final stage
