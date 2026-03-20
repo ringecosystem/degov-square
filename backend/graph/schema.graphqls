@@ -204,7 +204,7 @@ type SummaryProposalStates {
   count: Int!
 }
 
-# Vote tracking for AI agent voting
+# Deprecated legacy vote tracking response kept for frontend compatibility
 type VoteTracking {
   id: ID!
   daoCode: String!
@@ -347,13 +347,12 @@ type Query {
   # treasury
   treasuryAssets(input: TreasuryAssetsInput): [TreasuryAsset!]! @auth(required: false)
 
-  # vote tracking (for AI agent voting status)
+  # Legacy vote-tracking query kept for reading historical agent-voting records.
   voteTracking(input: VoteTrackingInput!): VoteTracking @auth(required: false)
 
-  # degov agent
-  # Returns the on-chain address used by the DeGov agent/bot for automated actions and integrations.
-  botAddress: String! @auth(required: false)
-  # Returns a natural-language summary of a proposal, for use by agents or UIs that need a concise description.
+  # Deprecated: degov-agent account integration has been removed. Always returns an empty string.
+  botAddress: String! @auth(required: false) @deprecated(reason: "degov-agent account integration has been removed")
+  # Returns a natural-language summary of a proposal.
   proposalSummary(input: ProposalSummaryInput!): String! @auth(required: false)
 }
 

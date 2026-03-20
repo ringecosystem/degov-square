@@ -28,13 +28,11 @@ type ProposalSummaryService struct {
 
 // NewProposalSummaryService creates a new ProposalSummaryService instance
 func NewProposalSummaryService() *ProposalSummaryService {
-	// Load system prompt from template
 	systemPromptBytes, err := templates.TemplateFS.ReadFile("prompts/proposal-summary.system.md")
 	if err != nil {
 		slog.Error("[proposal-summary] Failed to load system prompt template", "error", err)
 	}
 
-	// Load user prompt template
 	userPromptBytes, err := templates.TemplateFS.ReadFile("prompts/proposal-summary.user.md")
 	if err != nil {
 		slog.Error("[proposal-summary] Failed to load user prompt template", "error", err)
@@ -62,7 +60,6 @@ type ProposalSummaryInput struct {
 
 // GetOrGenerateSummary returns cached summary or generates a new one
 func (s *ProposalSummaryService) GetOrGenerateSummary(input ProposalSummaryInput) (string, error) {
-	// Get DAO config to obtain indexer endpoint and chain ID
 	daoConfig, err := s.daoConfigService.StandardConfig(input.DaoCode)
 	if err != nil {
 		return "", fmt.Errorf("failed to get dao config for %s: %w", input.DaoCode, err)
@@ -73,7 +70,6 @@ func (s *ProposalSummaryService) GetOrGenerateSummary(input ProposalSummaryInput
 
 	slog.Info("[proposal-summary] Looking for cached summary", "proposal_id", input.ProposalID, "chain_id", chainID, "dao_code", input.DaoCode)
 
-	// Check if summary already exists
 	var existingSummary dbmodels.ProposalSummary
 	err = s.db.Where("proposal_id = ? AND chain_id = ?", input.ProposalID, chainID).First(&existingSummary).Error
 	if err == nil {
@@ -88,7 +84,6 @@ func (s *ProposalSummaryService) GetOrGenerateSummary(input ProposalSummaryInput
 
 	slog.Info("[proposal-summary] No cached summary found, generating new one", "proposal_id", input.ProposalID)
 
-	// Fetch proposal from indexer
 	indexer := internal.NewDegovIndexer(indexerEndpoint)
 	proposal, err := indexer.InspectProposal(input.ProposalID)
 	if err != nil {
@@ -99,13 +94,11 @@ func (s *ProposalSummaryService) GetOrGenerateSummary(input ProposalSummaryInput
 		return "", fmt.Errorf("proposal with ID %s on chain %d not found", input.ProposalID, chainID)
 	}
 
-	// Generate summary using AI
 	summary, err := s.generateSummary(proposal.Description)
 	if err != nil {
 		return "", fmt.Errorf("failed to generate summary: %w", err)
 	}
 
-	// Save to database
 	now := time.Now()
 	daoCode := input.DaoCode
 	newSummary := dbmodels.ProposalSummary{
@@ -122,15 +115,12 @@ func (s *ProposalSummaryService) GetOrGenerateSummary(input ProposalSummaryInput
 
 	slog.Info("[proposal-summary] Saving summary to database", "proposal_id", input.ProposalID, "dao_code", input.DaoCode)
 	if err := s.db.Create(&newSummary).Error; err != nil {
-		// Handle potential race condition: another request may have inserted the summary concurrently
-		// Check if it's a unique constraint violation by querying for existing record
 		var existingRecord dbmodels.ProposalSummary
 		if queryErr := s.db.Where("proposal_id = ? AND chain_id = ?", input.ProposalID, chainID).First(&existingRecord).Error; queryErr == nil {
 			slog.Info("[proposal-summary] Summary was created by concurrent request, returning existing", "proposal_id", input.ProposalID, "id", existingRecord.ID)
 			return existingRecord.Summary, nil
 		}
 		slog.Error("[proposal-summary] Failed to save summary to database", "error", err, "proposal_id", input.ProposalID)
-		// Still return the generated summary even if saving fails
 	} else {
 		slog.Info("[proposal-summary] Summary saved successfully", "id", newSummary.ID, "proposal_id", input.ProposalID)
 	}
@@ -140,7 +130,6 @@ func (s *ProposalSummaryService) GetOrGenerateSummary(input ProposalSummaryInput
 
 // generateSummary uses AI to generate a summary of the proposal description
 func (s *ProposalSummaryService) generateSummary(description string) (string, error) {
-	// Build user prompt from template
 	var userPromptBuf bytes.Buffer
 	err := s.userTemplate.Execute(&userPromptBuf, map[string]string{
 		"Description": description,
