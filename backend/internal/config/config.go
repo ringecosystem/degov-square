@@ -111,8 +111,6 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("TASK_VOTE_END_TRACKING_INTERVAL", "4m")
 	v.SetDefault("TASK_PROPOSAL_TRACKING_ENABLED", true)
 	v.SetDefault("TASK_PROPOSAL_TRACKING_INTERVAL", "3m")
-	v.SetDefault("TASK_PROPOSAL_FULFILL_ENABLED", false)
-	v.SetDefault("TASK_PROPOSAL_FULFILL_INTERVAL", "2m")
 	v.SetDefault("TASK_NOTIFICATION_EVENT_ENABLED", true)
 	v.SetDefault("TASK_NOTIFICATION_EVENT_INTERVAL", "10s")
 	v.SetDefault("TASK_NOTIFICATION_DISPATCHER_ENABLED", true)
@@ -122,8 +120,6 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("SENDGRID_FROM_USER", "DeGov Notifications")
 	v.SetDefault("SENDGRID_FROM_EMAIL", "notifications@degov.ai")
 
-	// Governor voter defaults
-	v.SetDefault("DEGOV_AGENT_GAS_BUFFER_PERCENT", 20)
 }
 
 // Server configuration methods
@@ -235,14 +231,6 @@ func (c *Config) GetTaskProposalTrackingInterval() time.Duration {
 	return c.viper.GetDuration("TASK_PROPOSAL_TRACKING_INTERVAL")
 }
 
-func (c *Config) GetTaskProposalFulfillEnabled() bool {
-	return c.viper.GetBool("TASK_PROPOSAL_FULFILL_ENABLED")
-}
-
-func (c *Config) GetTaskProposalFulfillInterval() time.Duration {
-	return c.viper.GetDuration("TASK_PROPOSAL_FULFILL_INTERVAL")
-}
-
 func (c *Config) GetTaskNotificationEventEnabled() bool {
 	return c.viper.GetBool("TASK_NOTIFICATION_EVENT_ENABLED")
 }
@@ -345,11 +333,6 @@ func GetInt(key string) int {
 
 func GetDuration(key string) time.Duration {
 	return GetConfig().GetDuration(key)
-}
-
-// GetGasBufferPercent returns the gas buffer percentage for governor voting
-func GetGasBufferPercent() int {
-	return GetConfig().GetInt("DEGOV_AGENT_GAS_BUFFER_PERCENT")
 }
 
 func GetEmailStyle() types.EmailStyle {

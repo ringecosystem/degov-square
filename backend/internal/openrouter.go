@@ -40,7 +40,6 @@ type ChatCompletionRequest struct {
 
 // ChatCompletion sends a chat completion request and returns the response content
 func (c *OpenRouterClient) ChatCompletion(ctx context.Context, req ChatCompletionRequest) (string, error) {
-	// Set defaults
 	if req.Temperature == 0 {
 		req.Temperature = 0.3
 	}

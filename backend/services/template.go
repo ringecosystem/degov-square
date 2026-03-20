@@ -251,14 +251,6 @@ func (s *TemplateService) GenerateTemplateByNotificationRecord(record *dbmodels.
 		} else {
 			emailProposal.ProposerEnsName = ensName
 		}
-		degovAgent := internal.NewDegovAgent()
-		agentVote, err := degovAgent.QueryVote(int(dao.ChainID), proposal.ProposalID)
-		if err != nil {
-			slog.Warn("[degov-agent] failed to query vote", "error", err)
-		} else {
-			tweetLink := fmt.Sprintf("https://x.com/%s/status/%s", agentVote.TwitterUser.Username, agentVote.ID)
-			emailProposal.TweetLink = &tweetLink
-		}
 	case dbmodels.SubscribeFeatureProposalStateChanged:
 		title = fmt.Sprintf("[%s] Proposal Status Update: %s", dao.Name, proposal.Title)
 	case dbmodels.SubscribeFeatureVoteEnd:
