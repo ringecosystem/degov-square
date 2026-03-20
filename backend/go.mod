@@ -1,6 +1,6 @@
 module github.com/ringecosystem/degov-square
 
-go 1.25.0
+go 1.25
 
 require (
 	github.com/99designs/gqlgen v0.17.87
