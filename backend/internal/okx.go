@@ -19,7 +19,7 @@ import (
 	"github.com/ringecosystem/degov-square/internal/utils"
 )
 
-const OKX_API_ENDPOINT = "https://www.okx.com"
+const DefaultOKXAPIEndpoint = "https://web3.okx.com"
 
 type OkxPeriod string
 
@@ -206,6 +206,7 @@ type WalletTimeWithPrice struct {
 
 // OkxAPI represents OKX API client
 type OkxAPI struct {
+	BaseURL       string
 	OKXProject    string
 	OKXAccessKey  string
 	OKXSecretKey  string
@@ -213,6 +214,7 @@ type OkxAPI struct {
 }
 
 type OkxOptions struct {
+	BaseURL    string
 	Project    string
 	AccessKey  string
 	SecretKey  string
@@ -221,7 +223,13 @@ type OkxOptions struct {
 
 // NewOkxAPI creates a new OKX API client
 func NewOkxAPI(options OkxOptions) *OkxAPI {
+	baseURL := options.BaseURL
+	if baseURL == "" {
+		baseURL = DefaultOKXAPIEndpoint
+	}
+
 	return &OkxAPI{
+		BaseURL:       strings.TrimRight(baseURL, "/"),
 		OKXProject:    options.Project,
 		OKXAccessKey:  options.AccessKey,
 		OKXSecretKey:  options.SecretKey,
@@ -349,7 +357,7 @@ func (api *OkxAPI) Prices(options []OkxPriceOptions) ([]PriceOutput, error) {
 	})
 
 	bodyBytes, _ := json.Marshal(body)
-	req, err := http.NewRequest("POST", OKX_API_ENDPOINT+apiPath, bytes.NewBuffer(bodyBytes))
+	req, err := http.NewRequest("POST", api.BaseURL+apiPath, bytes.NewBuffer(bodyBytes))
 	if err != nil {
 		return nil, err
 	}
@@ -370,23 +378,7 @@ func (api *OkxAPI) Prices(options []OkxPriceOptions) ([]PriceOutput, error) {
 		return nil, err
 	}
 
-	var okxResp OkxResp[[]OkxPrice]
-	if err := json.Unmarshal(responseBody, &okxResp); err != nil {
-		return nil, err
-	}
-
-	outputs := make([]PriceOutput, len(okxResp.Data))
-	for i, item := range okxResp.Data {
-		outputs[i] = PriceOutput{
-			ChainID:         item.ChainIndex,
-			TokenAddress:    item.TokenAddress,
-			Price:           item.Price,
-			Time:            item.Time,
-			DisplayDecimals: calculateDisplayDecimals(item.Price),
-		}
-	}
-
-	return outputs, nil
+	return api.parsePricesResponse(responseBody)
 }
 
 // Balances gets wallet token balances
@@ -403,7 +395,7 @@ func (api *OkxAPI) Balances(options OkxBalanceOptions) ([]WalletTokenBalance, er
 		Method: "GET",
 	})
 
-	req, err := http.NewRequest("GET", OKX_API_ENDPOINT+apiPath, nil)
+	req, err := http.NewRequest("GET", api.BaseURL+apiPath, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -424,23 +416,30 @@ func (api *OkxAPI) Balances(options OkxBalanceOptions) ([]WalletTokenBalance, er
 		return nil, err
 	}
 
+	return api.parseBalancesResponse(responseBody)
+}
+
+func (api *OkxAPI) parseBalancesResponse(responseBody []byte) ([]WalletTokenBalance, error) {
 	var okxResp OkxResp[[]OkxBalance]
 	if err := json.Unmarshal(responseBody, &okxResp); err != nil {
 		return nil, err
 	}
 
-	if okxResp.Code != "0" || len(okxResp.Data) == 0 {
+	if okxResp.Code != "0" {
+		return nil, fmt.Errorf("OKX API error: %s - %s", okxResp.Code, okxResp.Msg)
+	}
+
+	if len(okxResp.Data) == 0 {
 		return []WalletTokenBalance{}, nil
 	}
 
-	okxTokenAssets := okxResp.Data[0].TokenAssets
+	return api.convertOkxTokenAssets(okxResp.Data[0].TokenAssets), nil
+}
+
+func (api *OkxAPI) convertOkxTokenAssets(okxTokenAssets []OkxTokenAssets) []WalletTokenBalance {
 	walletTokens := []WalletTokenBalance{}
 
 	for _, ota := range okxTokenAssets {
-		// Note: In the original TypeScript code, there are calls to HelixboxToken.chain()
-		// and HelixboxToken.find() which would need to be implemented in Go
-		// For now, we'll create a simplified version
-
 		balance, _ := strconv.ParseFloat(ota.Balance, 64)
 		tokenPrice, _ := strconv.ParseFloat(ota.TokenPrice, 64)
 		balanceUSD := balance * tokenPrice
@@ -459,7 +458,6 @@ func (api *OkxAPI) Balances(options OkxBalanceOptions) ([]WalletTokenBalance, er
 
 		// Get logo URI for the token
 		logoURI := api.getLogoURI(ota.ChainIndex, tokenAddress)
-		// This is a simplified version - you'll need to implement the HelixboxToken logic
 		walletToken := WalletTokenBalance{
 			ID:      tokenAddress, // Simplified - should use proper token ID
 			Symbol:  ota.Symbol,
@@ -483,7 +481,31 @@ func (api *OkxAPI) Balances(options OkxBalanceOptions) ([]WalletTokenBalance, er
 		walletTokens = append(walletTokens, walletToken)
 	}
 
-	return walletTokens, nil
+	return walletTokens
+}
+
+func (api *OkxAPI) parsePricesResponse(responseBody []byte) ([]PriceOutput, error) {
+	var okxResp OkxResp[[]OkxPrice]
+	if err := json.Unmarshal(responseBody, &okxResp); err != nil {
+		return nil, err
+	}
+
+	if okxResp.Code != "0" {
+		return nil, fmt.Errorf("OKX API error: %s - %s", okxResp.Code, okxResp.Msg)
+	}
+
+	outputs := make([]PriceOutput, len(okxResp.Data))
+	for i, item := range okxResp.Data {
+		outputs[i] = PriceOutput{
+			ChainID:         item.ChainIndex,
+			TokenAddress:    item.TokenAddress,
+			Price:           item.Price,
+			Time:            item.Time,
+			DisplayDecimals: calculateDisplayDecimals(item.Price),
+		}
+	}
+
+	return outputs, nil
 }
 
 // History gets wallet transaction history
@@ -512,7 +534,7 @@ func (api *OkxAPI) History(options OkxHistoryOptions) ([]WalletHistory, error) {
 		Method: "GET",
 	})
 
-	req, err := http.NewRequest("GET", OKX_API_ENDPOINT+apiPath, nil)
+	req, err := http.NewRequest("GET", api.BaseURL+apiPath, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -533,9 +555,17 @@ func (api *OkxAPI) History(options OkxHistoryOptions) ([]WalletHistory, error) {
 		return nil, err
 	}
 
+	return api.parseHistoryResponse(responseBody)
+}
+
+func (api *OkxAPI) parseHistoryResponse(responseBody []byte) ([]WalletHistory, error) {
 	var okxResp OkxResp[[]OkxTransactionsByAddress]
 	if err := json.Unmarshal(responseBody, &okxResp); err != nil {
 		return nil, err
+	}
+
+	if okxResp.Code != "0" {
+		return nil, fmt.Errorf("OKX API error: %s - %s", okxResp.Code, okxResp.Msg)
 	}
 
 	if len(okxResp.Data) == 0 {
@@ -546,10 +576,8 @@ func (api *OkxAPI) History(options OkxHistoryOptions) ([]WalletHistory, error) {
 	for i, data := range okxResp.Data {
 		transactions := make([]WalletTransaction, len(data.TransactionList))
 		for j, tl := range data.TransactionList {
-			// Note: In the original TypeScript code, there's a call to HelixboxChain.get()
-			// which would need to be implemented in Go
 			transaction := WalletTransaction{
-				Chain:        nil, // Would need to implement HelixboxChain.get()
+				Chain:        nil,
 				TxHash:       tl.TxHash,
 				MethodID:     tl.MethodID,
 				Nonce:        tl.Nonce,
@@ -638,7 +666,7 @@ func (api *OkxAPI) HistoricalPrice(options OkxHistoricalPriceOptions) ([]WalletH
 		Method: "GET",
 	})
 
-	req, err := http.NewRequest("GET", OKX_API_ENDPOINT+apiPath, nil)
+	req, err := http.NewRequest("GET", api.BaseURL+apiPath, nil)
 	if err != nil {
 		return nil, err
 	}
