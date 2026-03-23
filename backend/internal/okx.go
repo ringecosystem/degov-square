@@ -424,23 +424,30 @@ func (api *OkxAPI) Balances(options OkxBalanceOptions) ([]WalletTokenBalance, er
 		return nil, err
 	}
 
+	return api.parseBalancesResponse(responseBody)
+}
+
+func (api *OkxAPI) parseBalancesResponse(responseBody []byte) ([]WalletTokenBalance, error) {
 	var okxResp OkxResp[[]OkxBalance]
 	if err := json.Unmarshal(responseBody, &okxResp); err != nil {
 		return nil, err
 	}
 
-	if okxResp.Code != "0" || len(okxResp.Data) == 0 {
+	if okxResp.Code != "0" {
+		return nil, fmt.Errorf("OKX API error: %s - %s", okxResp.Code, okxResp.Msg)
+	}
+
+	if len(okxResp.Data) == 0 {
 		return []WalletTokenBalance{}, nil
 	}
 
-	okxTokenAssets := okxResp.Data[0].TokenAssets
+	return api.convertOkxTokenAssets(okxResp.Data[0].TokenAssets), nil
+}
+
+func (api *OkxAPI) convertOkxTokenAssets(okxTokenAssets []OkxTokenAssets) []WalletTokenBalance {
 	walletTokens := []WalletTokenBalance{}
 
 	for _, ota := range okxTokenAssets {
-		// Note: In the original TypeScript code, there are calls to HelixboxToken.chain()
-		// and HelixboxToken.find() which would need to be implemented in Go
-		// For now, we'll create a simplified version
-
 		balance, _ := strconv.ParseFloat(ota.Balance, 64)
 		tokenPrice, _ := strconv.ParseFloat(ota.TokenPrice, 64)
 		balanceUSD := balance * tokenPrice
@@ -459,7 +466,6 @@ func (api *OkxAPI) Balances(options OkxBalanceOptions) ([]WalletTokenBalance, er
 
 		// Get logo URI for the token
 		logoURI := api.getLogoURI(ota.ChainIndex, tokenAddress)
-		// This is a simplified version - you'll need to implement the HelixboxToken logic
 		walletToken := WalletTokenBalance{
 			ID:      tokenAddress, // Simplified - should use proper token ID
 			Symbol:  ota.Symbol,
@@ -483,7 +489,7 @@ func (api *OkxAPI) Balances(options OkxBalanceOptions) ([]WalletTokenBalance, er
 		walletTokens = append(walletTokens, walletToken)
 	}
 
-	return walletTokens, nil
+	return walletTokens
 }
 
 // History gets wallet transaction history

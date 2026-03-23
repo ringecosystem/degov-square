@@ -1,6 +1,7 @@
 package services
 
 import (
+	"fmt"
 	"log/slog"
 	"strconv"
 	"time"
@@ -55,7 +56,8 @@ func (s *TreasuryService) LoadTreasuryAssets(input *gqlmodels.TreasuryAssetsInpu
 		Address: input.Address,
 	})
 	if err != nil {
-		return nil, err
+		slog.Error("Failed to load treasury assets from OKX", "chain", input.Chain, "address", input.Address, "error", err)
+		return nil, fmt.Errorf("failed to load treasury assets from OKX: %w", err)
 	}
 
 	now := time.Now()
