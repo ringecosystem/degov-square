@@ -24,6 +24,7 @@ type TreasuryService struct {
 func NewTreasuryService() *TreasuryService {
 	cfg := config.GetConfig()
 	okx := internal.NewOkxAPI(internal.OkxOptions{
+		BaseURL:    cfg.GetStringWithDefault("OKX_API_ENDPOINT", internal.DefaultOKXAPIEndpoint),
 		Project:    cfg.GetStringRequired("OKX_PROJECT"),
 		AccessKey:  cfg.GetStringRequired("OKX_ACCESS_KEY"),
 		SecretKey:  cfg.GetStringRequired("OKX_SECRET_KEY"),

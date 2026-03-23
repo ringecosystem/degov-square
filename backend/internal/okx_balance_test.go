@@ -65,3 +65,43 @@ func TestBalancesParsesSuccessfulResponse(t *testing.T) {
 		t.Fatalf("expected native token to be true")
 	}
 }
+
+func TestPricesReturnsErrorOnOkxError(t *testing.T) {
+	responseBody := []byte(`{
+		"code": "50125",
+		"msg": "Your API key or regions have no access to current services",
+		"data": []
+	}`)
+
+	var api OkxAPI
+	prices, err := api.parsePricesResponse(responseBody)
+	if err == nil {
+		t.Fatalf("expected OKX API error, got nil")
+	}
+	if prices != nil {
+		t.Fatalf("expected nil prices on error, got %#v", prices)
+	}
+	if !strings.Contains(err.Error(), "50125") {
+		t.Fatalf("expected error to include OKX code, got %q", err.Error())
+	}
+}
+
+func TestHistoryReturnsErrorOnOkxError(t *testing.T) {
+	responseBody := []byte(`{
+		"code": "50125",
+		"msg": "Your API key or regions have no access to current services",
+		"data": []
+	}`)
+
+	var api OkxAPI
+	history, err := api.parseHistoryResponse(responseBody)
+	if err == nil {
+		t.Fatalf("expected OKX API error, got nil")
+	}
+	if history != nil {
+		t.Fatalf("expected nil history on error, got %#v", history)
+	}
+	if !strings.Contains(err.Error(), "50125") {
+		t.Fatalf("expected error to include OKX code, got %q", err.Error())
+	}
+}
