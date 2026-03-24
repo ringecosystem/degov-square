@@ -10,9 +10,9 @@ jobs:
     name: Deploy
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: darwinia-network/devops/actions/smart-vercel@main
+      - uses: ./.github/actions/smart-vercel
         name: Deploy degov
         with:
           node_version: 22
