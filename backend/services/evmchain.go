@@ -6,7 +6,10 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"net/url"
+	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/ringecosystem/degov-square/database"
@@ -17,20 +20,41 @@ import (
 	"gorm.io/gorm"
 )
 
+type explorerProvider string
+
+const (
+	explorerProviderEtherscanV2 explorerProvider = "etherscan-v2"
+	explorerProviderBlockscout  explorerProvider = "blockscout"
+)
+
 type etherscanAbiResponse struct {
 	Status  string `json:"status"`
 	Message string `json:"message"`
 	Result  string `json:"result"`
 }
-type etherscanSourceCodeResult struct {
-	Proxy          string `json:"Proxy"`
-	ABI            string `json:"ABI"`
-	Implementation string `json:"Implementation"`
+type explorerSourceCodeResult struct {
+	Proxy                 string `json:"Proxy"`
+	IsProxy               string `json:"IsProxy"`
+	ABI                   string `json:"ABI"`
+	Implementation        string `json:"Implementation"`
+	ImplementationAddress string `json:"ImplementationAddress"`
 }
-type etherscanSourceCodeResponse struct {
-	Status  string                      `json:"status"`
-	Message string                      `json:"message"`
-	Result  []etherscanSourceCodeResult `json:"result"`
+
+func (r explorerSourceCodeResult) IsProxyContract() bool {
+	return r.Proxy == "1" || r.IsProxy == "1" || strings.EqualFold(r.IsProxy, "true")
+}
+
+func (r explorerSourceCodeResult) ImplementationValue() string {
+	if r.Implementation != "" {
+		return r.Implementation
+	}
+	return r.ImplementationAddress
+}
+
+type explorerSourceCodeResponse struct {
+	Status  string                     `json:"status"`
+	Message string                     `json:"message"`
+	Result  []explorerSourceCodeResult `json:"result"`
 }
 type swissKnifeResponse struct {
 	Status string `json:"status"`
@@ -45,6 +69,23 @@ type EvmChainService struct {
 	db         *gorm.DB
 	httpClient *http.Client
 }
+
+type explorerAPIConfig struct {
+	Provider explorerProvider
+	APIURL   string
+	APIKey   string
+}
+
+type explorerChainMapCache struct {
+	mu                sync.Mutex
+	blockscoutURLsRaw string
+	blockscoutKeysRaw string
+	blockscoutURLs    map[int]string
+	blockscoutKeys    map[int]string
+	err               error
+}
+
+var cachedExplorerChainMaps explorerChainMapCache
 
 func NewEvmChainService() *EvmChainService {
 	return &EvmChainService{
@@ -193,35 +234,219 @@ func (s *EvmChainService) getAbiFromDB(chainId int, address string) (*dbmodels.C
 }
 
 func (s *EvmChainService) getAbiFromExplorer(chainId int, address string) (*dbmodels.ContractsAbi, error) {
-	cfg := config.GetConfig()
-	apiUrl := cfg.GetString("ETHERSCAN_API_URL")
-	apiKey := cfg.GetString("ETHERSCAN_API_KEY")
-	if apiUrl == "" {
-		return nil, fmt.Errorf("ETHERSCAN_API_URL is not set in environment variables")
+	explorerConfig, err := resolveExplorerAPIConfig(chainId)
+	if err != nil {
+		return nil, err
 	}
-	sourceCodeUrl := fmt.Sprintf("%s/v2/api?apikey=%s&chainid=%d&module=contract&action=getsourcecode&address=%s", apiUrl, apiKey, chainId, address)
-	resp, err := s.httpClient.Get(sourceCodeUrl)
+
+	switch explorerConfig.Provider {
+	case explorerProviderBlockscout:
+		return s.getAbiFromBlockscout(chainId, address, explorerConfig)
+	case explorerProviderEtherscanV2:
+		return s.getAbiFromEtherscanV2(chainId, address, explorerConfig)
+	default:
+		return nil, fmt.Errorf("unsupported explorer provider %q", explorerConfig.Provider)
+	}
+}
+
+func resolveExplorerAPIConfig(chainId int) (*explorerAPIConfig, error) {
+	cfg := config.GetConfig()
+
+	blockscoutURLs, blockscoutKeys, err := loadCachedExplorerChainMaps(cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	if apiURL, ok := blockscoutURLs[chainId]; ok && apiURL != "" {
+		return &explorerAPIConfig{
+			Provider: explorerProviderBlockscout,
+			APIURL:   normalizeBlockscoutAPIURL(apiURL),
+			APIKey:   strings.TrimSpace(blockscoutKeys[chainId]),
+		}, nil
+	}
+
+	apiURL := strings.TrimRight(strings.TrimSpace(cfg.GetString("ETHERSCAN_API_URL")), "/")
+	apiKey := strings.TrimSpace(cfg.GetString("ETHERSCAN_API_KEY"))
+	if apiURL == "" {
+		return nil, fmt.Errorf("no explorer API configured for chain %d", chainId)
+	}
+
+	return &explorerAPIConfig{
+		Provider: explorerProviderEtherscanV2,
+		APIURL:   apiURL,
+		APIKey:   apiKey,
+	}, nil
+}
+
+func loadCachedExplorerChainMaps(cfg *config.Config) (map[int]string, map[int]string, error) {
+	blockscoutURLsRaw := strings.TrimSpace(cfg.GetString("BLOCKSCOUT_API_URLS"))
+	blockscoutKeysRaw := strings.TrimSpace(cfg.GetString("BLOCKSCOUT_API_KEYS"))
+
+	cachedExplorerChainMaps.mu.Lock()
+	defer cachedExplorerChainMaps.mu.Unlock()
+
+	if cachedExplorerChainMaps.blockscoutURLsRaw == blockscoutURLsRaw &&
+		cachedExplorerChainMaps.blockscoutKeysRaw == blockscoutKeysRaw {
+		return cachedExplorerChainMaps.blockscoutURLs, cachedExplorerChainMaps.blockscoutKeys, cachedExplorerChainMaps.err
+	}
+
+	blockscoutURLs, err := loadChainStringMap(blockscoutURLsRaw)
+	if err != nil {
+		cachedExplorerChainMaps.blockscoutURLsRaw = blockscoutURLsRaw
+		cachedExplorerChainMaps.blockscoutKeysRaw = blockscoutKeysRaw
+		cachedExplorerChainMaps.blockscoutURLs = nil
+		cachedExplorerChainMaps.blockscoutKeys = nil
+		cachedExplorerChainMaps.err = fmt.Errorf("failed to parse BLOCKSCOUT_API_URLS: %w", err)
+		return nil, nil, cachedExplorerChainMaps.err
+	}
+
+	blockscoutKeys, err := loadChainStringMap(blockscoutKeysRaw)
+	if err != nil {
+		cachedExplorerChainMaps.blockscoutURLsRaw = blockscoutURLsRaw
+		cachedExplorerChainMaps.blockscoutKeysRaw = blockscoutKeysRaw
+		cachedExplorerChainMaps.blockscoutURLs = blockscoutURLs
+		cachedExplorerChainMaps.blockscoutKeys = nil
+		cachedExplorerChainMaps.err = fmt.Errorf("failed to parse BLOCKSCOUT_API_KEYS: %w", err)
+		return nil, nil, cachedExplorerChainMaps.err
+	}
+
+	cachedExplorerChainMaps.blockscoutURLsRaw = blockscoutURLsRaw
+	cachedExplorerChainMaps.blockscoutKeysRaw = blockscoutKeysRaw
+	cachedExplorerChainMaps.blockscoutURLs = blockscoutURLs
+	cachedExplorerChainMaps.blockscoutKeys = blockscoutKeys
+	cachedExplorerChainMaps.err = nil
+
+	return blockscoutURLs, blockscoutKeys, nil
+}
+
+func loadChainStringMap(raw string) (map[int]string, error) {
+	if strings.TrimSpace(raw) == "" {
+		return map[int]string{}, nil
+	}
+
+	var valueByChain map[string]string
+	if err := json.Unmarshal([]byte(raw), &valueByChain); err != nil {
+		return nil, err
+	}
+
+	result := make(map[int]string, len(valueByChain))
+	for rawChainID, value := range valueByChain {
+		chainID, err := strconv.Atoi(strings.TrimSpace(rawChainID))
+		if err != nil {
+			return nil, fmt.Errorf("invalid chain id %q", rawChainID)
+		}
+		result[chainID] = strings.TrimSpace(value)
+	}
+	return result, nil
+}
+
+func normalizeBlockscoutAPIURL(raw string) string {
+	trimmed := strings.TrimRight(strings.TrimSpace(raw), "/")
+	if trimmed == "" {
+		return ""
+	}
+	if strings.HasSuffix(trimmed, "/api") {
+		return trimmed
+	}
+	return trimmed + "/api"
+}
+
+func buildExplorerQuery(baseURL string, params url.Values) string {
+	return fmt.Sprintf("%s?%s", strings.TrimRight(baseURL, "?"), params.Encode())
+}
+
+func hasVerifiedExplorerABI(raw string) bool {
+	trimmed := strings.TrimSpace(raw)
+	return trimmed != "" && trimmed != "[]" && trimmed != "Contract source code not verified"
+}
+
+func (s *EvmChainService) getAbiFromEtherscanV2(chainId int, address string, explorerConfig *explorerAPIConfig) (*dbmodels.ContractsAbi, error) {
+	sourceCodeParams := url.Values{
+		"chainid": []string{strconv.Itoa(chainId)},
+		"module":  []string{"contract"},
+		"action":  []string{"getsourcecode"},
+		"address": []string{address},
+	}
+	if explorerConfig.APIKey != "" {
+		sourceCodeParams.Set("apikey", explorerConfig.APIKey)
+	}
+
+	sourceCodeURL := buildExplorerQuery(explorerConfig.APIURL+"/v2/api", sourceCodeParams)
+	abiParams := url.Values{
+		"chainid": []string{strconv.Itoa(chainId)},
+		"module":  []string{"contract"},
+		"action":  []string{"getabi"},
+		"address": []string{address},
+	}
+	if explorerConfig.APIKey != "" {
+		abiParams.Set("apikey", explorerConfig.APIKey)
+	}
+
+	abiURL := buildExplorerQuery(explorerConfig.APIURL+"/v2/api", abiParams)
+	return s.getAbiFromExplorerEndpoints(chainId, address, sourceCodeURL, abiURL, explorerConfig)
+}
+
+func (s *EvmChainService) getAbiFromBlockscout(chainId int, address string, explorerConfig *explorerAPIConfig) (*dbmodels.ContractsAbi, error) {
+	sourceCodeParams := url.Values{
+		"module":  []string{"contract"},
+		"action":  []string{"getsourcecode"},
+		"address": []string{address},
+	}
+	if explorerConfig.APIKey != "" {
+		sourceCodeParams.Set("apikey", explorerConfig.APIKey)
+	}
+
+	sourceCodeURL := buildExplorerQuery(explorerConfig.APIURL, sourceCodeParams)
+	abiParams := url.Values{
+		"module":  []string{"contract"},
+		"action":  []string{"getabi"},
+		"address": []string{address},
+	}
+	if explorerConfig.APIKey != "" {
+		abiParams.Set("apikey", explorerConfig.APIKey)
+	}
+
+	abiURL := buildExplorerQuery(explorerConfig.APIURL, abiParams)
+	return s.getAbiFromExplorerEndpoints(chainId, address, sourceCodeURL, abiURL, explorerConfig)
+}
+
+func (s *EvmChainService) getAbiFromExplorerEndpoints(chainId int, address string, sourceCodeURL string, abiURL string, explorerConfig *explorerAPIConfig) (*dbmodels.ContractsAbi, error) {
+	resp, err := s.httpClient.Get(sourceCodeURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to call explorer source code API: %w", err)
 	}
 	defer resp.Body.Close()
 	body, _ := io.ReadAll(resp.Body)
-	var sourceCodeResp etherscanSourceCodeResponse
+	var sourceCodeResp explorerSourceCodeResponse
 	if err := json.Unmarshal(body, &sourceCodeResp); err != nil {
 		return nil, fmt.Errorf("failed to parse explorer source code response: %w", err)
 	}
-	if sourceCodeResp.Status == "1" && len(sourceCodeResp.Result) > 0 && sourceCodeResp.Result[0].Proxy == "1" && sourceCodeResp.Result[0].Implementation != "" {
-		slog.Info("Explorer identified contract as a proxy", "address", address, "implementation", sourceCodeResp.Result[0].Implementation)
-		return &dbmodels.ContractsAbi{
-			ChainId:        chainId,
-			Address:        address,
-			Type:           dbmodels.ContractsAbiTypeProxy,
-			Abi:            sourceCodeResp.Result[0].ABI,
-			Implementation: strings.ToLower(sourceCodeResp.Result[0].Implementation),
-		}, nil
+	if sourceCodeResp.Status == "1" && len(sourceCodeResp.Result) > 0 {
+		result := sourceCodeResp.Result[0]
+		implementationAddress := strings.ToLower(result.ImplementationValue())
+		if result.IsProxyContract() && implementationAddress != "" {
+			slog.Info("Explorer identified contract as a proxy", "address", address, "implementation", implementationAddress)
+			return &dbmodels.ContractsAbi{
+				ChainId:        chainId,
+				Address:        address,
+				Type:           dbmodels.ContractsAbiTypeProxy,
+				Abi:            result.ABI,
+				Implementation: implementationAddress,
+			}, nil
+		}
+
+		if hasVerifiedExplorerABI(result.ABI) {
+			slog.Info("Explorer found ABI in source code response", "address", address, "provider", explorerConfig.Provider)
+			return &dbmodels.ContractsAbi{
+				ChainId: chainId,
+				Address: address,
+				Type:    dbmodels.ContractsAbiTypeImplementation,
+				Abi:     result.ABI,
+			}, nil
+		}
 	}
-	abiUrl := fmt.Sprintf("%s/v2/api?apikey=%s&chainid=%d&module=contract&action=getabi&address=%s", apiUrl, apiKey, chainId, address)
-	resp, err = s.httpClient.Get(abiUrl)
+
+	resp, err = s.httpClient.Get(abiURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to call explorer ABI API: %w", err)
 	}
@@ -231,8 +456,8 @@ func (s *EvmChainService) getAbiFromExplorer(chainId int, address string) (*dbmo
 	if err := json.Unmarshal(body, &abiResp); err != nil {
 		return nil, fmt.Errorf("failed to parse explorer ABI response: %w", err)
 	}
-	if abiResp.Status == "1" && abiResp.Result != "Contract source code not verified" && abiResp.Result != "" {
-		slog.Info("Explorer found ABI for contract", "address", address)
+	if abiResp.Status == "1" && hasVerifiedExplorerABI(abiResp.Result) {
+		slog.Info("Explorer found ABI for contract", "address", address, "provider", explorerConfig.Provider)
 		return &dbmodels.ContractsAbi{
 			ChainId: chainId,
 			Address: address,
