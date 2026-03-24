@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/ringecosystem/degov-square/database"
@@ -74,6 +75,17 @@ type explorerAPIConfig struct {
 	APIURL   string
 	APIKey   string
 }
+
+type explorerChainMapCache struct {
+	mu                sync.Mutex
+	blockscoutURLsRaw string
+	blockscoutKeysRaw string
+	blockscoutURLs    map[int]string
+	blockscoutKeys    map[int]string
+	err               error
+}
+
+var cachedExplorerChainMaps explorerChainMapCache
 
 func NewEvmChainService() *EvmChainService {
 	return &EvmChainService{
@@ -240,13 +252,9 @@ func (s *EvmChainService) getAbiFromExplorer(chainId int, address string) (*dbmo
 func resolveExplorerAPIConfig(chainId int) (*explorerAPIConfig, error) {
 	cfg := config.GetConfig()
 
-	blockscoutURLs, err := loadChainStringMap(cfg.GetString("BLOCKSCOUT_API_URLS"))
+	blockscoutURLs, blockscoutKeys, err := loadCachedExplorerChainMaps(cfg)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse BLOCKSCOUT_API_URLS: %w", err)
-	}
-	blockscoutKeys, err := loadChainStringMap(cfg.GetString("BLOCKSCOUT_API_KEYS"))
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse BLOCKSCOUT_API_KEYS: %w", err)
+		return nil, err
 	}
 
 	if apiURL, ok := blockscoutURLs[chainId]; ok && apiURL != "" {
@@ -257,17 +265,58 @@ func resolveExplorerAPIConfig(chainId int) (*explorerAPIConfig, error) {
 		}, nil
 	}
 
-	apiUrl := strings.TrimRight(strings.TrimSpace(cfg.GetString("ETHERSCAN_API_URL")), "/")
+	apiURL := strings.TrimRight(strings.TrimSpace(cfg.GetString("ETHERSCAN_API_URL")), "/")
 	apiKey := strings.TrimSpace(cfg.GetString("ETHERSCAN_API_KEY"))
-	if apiUrl == "" {
+	if apiURL == "" {
 		return nil, fmt.Errorf("no explorer API configured for chain %d", chainId)
 	}
 
 	return &explorerAPIConfig{
 		Provider: explorerProviderEtherscanV2,
-		APIURL:   apiUrl,
+		APIURL:   apiURL,
 		APIKey:   apiKey,
 	}, nil
+}
+
+func loadCachedExplorerChainMaps(cfg *config.Config) (map[int]string, map[int]string, error) {
+	blockscoutURLsRaw := strings.TrimSpace(cfg.GetString("BLOCKSCOUT_API_URLS"))
+	blockscoutKeysRaw := strings.TrimSpace(cfg.GetString("BLOCKSCOUT_API_KEYS"))
+
+	cachedExplorerChainMaps.mu.Lock()
+	defer cachedExplorerChainMaps.mu.Unlock()
+
+	if cachedExplorerChainMaps.blockscoutURLsRaw == blockscoutURLsRaw &&
+		cachedExplorerChainMaps.blockscoutKeysRaw == blockscoutKeysRaw {
+		return cachedExplorerChainMaps.blockscoutURLs, cachedExplorerChainMaps.blockscoutKeys, cachedExplorerChainMaps.err
+	}
+
+	blockscoutURLs, err := loadChainStringMap(blockscoutURLsRaw)
+	if err != nil {
+		cachedExplorerChainMaps.blockscoutURLsRaw = blockscoutURLsRaw
+		cachedExplorerChainMaps.blockscoutKeysRaw = blockscoutKeysRaw
+		cachedExplorerChainMaps.blockscoutURLs = nil
+		cachedExplorerChainMaps.blockscoutKeys = nil
+		cachedExplorerChainMaps.err = fmt.Errorf("failed to parse BLOCKSCOUT_API_URLS: %w", err)
+		return nil, nil, cachedExplorerChainMaps.err
+	}
+
+	blockscoutKeys, err := loadChainStringMap(blockscoutKeysRaw)
+	if err != nil {
+		cachedExplorerChainMaps.blockscoutURLsRaw = blockscoutURLsRaw
+		cachedExplorerChainMaps.blockscoutKeysRaw = blockscoutKeysRaw
+		cachedExplorerChainMaps.blockscoutURLs = blockscoutURLs
+		cachedExplorerChainMaps.blockscoutKeys = nil
+		cachedExplorerChainMaps.err = fmt.Errorf("failed to parse BLOCKSCOUT_API_KEYS: %w", err)
+		return nil, nil, cachedExplorerChainMaps.err
+	}
+
+	cachedExplorerChainMaps.blockscoutURLsRaw = blockscoutURLsRaw
+	cachedExplorerChainMaps.blockscoutKeysRaw = blockscoutKeysRaw
+	cachedExplorerChainMaps.blockscoutURLs = blockscoutURLs
+	cachedExplorerChainMaps.blockscoutKeys = blockscoutKeys
+	cachedExplorerChainMaps.err = nil
+
+	return blockscoutURLs, blockscoutKeys, nil
 }
 
 func loadChainStringMap(raw string) (map[int]string, error) {
@@ -322,7 +371,7 @@ func (s *EvmChainService) getAbiFromEtherscanV2(chainId int, address string, exp
 		sourceCodeParams.Set("apikey", explorerConfig.APIKey)
 	}
 
-	sourceCodeUrl := buildExplorerQuery(explorerConfig.APIURL+"/v2/api", sourceCodeParams)
+	sourceCodeURL := buildExplorerQuery(explorerConfig.APIURL+"/v2/api", sourceCodeParams)
 	abiParams := url.Values{
 		"chainid": []string{strconv.Itoa(chainId)},
 		"module":  []string{"contract"},
@@ -334,7 +383,7 @@ func (s *EvmChainService) getAbiFromEtherscanV2(chainId int, address string, exp
 	}
 
 	abiURL := buildExplorerQuery(explorerConfig.APIURL+"/v2/api", abiParams)
-	return s.getAbiFromExplorerEndpoints(chainId, address, sourceCodeUrl, abiURL, explorerConfig)
+	return s.getAbiFromExplorerEndpoints(chainId, address, sourceCodeURL, abiURL, explorerConfig)
 }
 
 func (s *EvmChainService) getAbiFromBlockscout(chainId int, address string, explorerConfig *explorerAPIConfig) (*dbmodels.ContractsAbi, error) {

@@ -56,6 +56,37 @@ func TestResolveExplorerAPIConfig_FallsBackToEtherscan(t *testing.T) {
 	}
 }
 
+func TestResolveExplorerAPIConfig_RefreshesCachedBlockscoutOverrides(t *testing.T) {
+	t.Setenv("ETHERSCAN_API_URL", "https://api.etherscan.io")
+	t.Setenv("BLOCKSCOUT_API_URLS", `{"1135":"https://blockscout-a.lisk.com"}`)
+	t.Setenv("BLOCKSCOUT_API_KEYS", `{"1135":"lisk-key-a"}`)
+
+	firstConfig, err := resolveExplorerAPIConfig(1135)
+	if err != nil {
+		t.Fatalf("resolveExplorerAPIConfig returned error for first override: %v", err)
+	}
+	if firstConfig.APIURL != "https://blockscout-a.lisk.com/api" {
+		t.Fatalf("expected first normalized blockscout api url, got %q", firstConfig.APIURL)
+	}
+	if firstConfig.APIKey != "lisk-key-a" {
+		t.Fatalf("expected first blockscout api key, got %q", firstConfig.APIKey)
+	}
+
+	t.Setenv("BLOCKSCOUT_API_URLS", `{"1135":"https://blockscout-b.lisk.com/api"}`)
+	t.Setenv("BLOCKSCOUT_API_KEYS", `{"1135":"lisk-key-b"}`)
+
+	secondConfig, err := resolveExplorerAPIConfig(1135)
+	if err != nil {
+		t.Fatalf("resolveExplorerAPIConfig returned error for updated override: %v", err)
+	}
+	if secondConfig.APIURL != "https://blockscout-b.lisk.com/api" {
+		t.Fatalf("expected updated blockscout api url, got %q", secondConfig.APIURL)
+	}
+	if secondConfig.APIKey != "lisk-key-b" {
+		t.Fatalf("expected updated blockscout api key, got %q", secondConfig.APIKey)
+	}
+}
+
 func TestGetAbiFromExplorer_BlockscoutProxy(t *testing.T) {
 	address := "0x58a61b1807a7bda541855daaeaee89b1dda48568"
 	requests := make([]string, 0, 2)
@@ -163,6 +194,66 @@ func TestGetAbiFromExplorer_BlockscoutImplementationUsesSourceCodeABI(t *testing
 		!strings.Contains(requests[0], "module=contract") ||
 		!strings.Contains(requests[0], "address="+address) {
 		t.Fatalf("unexpected blockscout request %q", requests[0])
+	}
+}
+
+func TestGetAbiFromExplorer_EtherscanV2ImplementationUsesSourceCodeABI(t *testing.T) {
+	address := "0x323a76393544d5ecca80cd6ef2a560c6a395b7e3"
+	requests := 0
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requests++
+
+		if r.URL.Path != "/v2/api" {
+			t.Fatalf("expected etherscan request path /v2/api, got %q", r.URL.Path)
+		}
+
+		query := r.URL.Query()
+		if query.Get("chainid") != "1" {
+			t.Fatalf("expected chainid=1, got %q", query.Get("chainid"))
+		}
+		if query.Get("module") != "contract" {
+			t.Fatalf("expected module=contract, got %q", query.Get("module"))
+		}
+		if query.Get("address") != address {
+			t.Fatalf("expected address=%s, got %q", address, query.Get("address"))
+		}
+		if query.Get("apikey") != "etherscan-key" {
+			t.Fatalf("expected apikey=etherscan-key, got %q", query.Get("apikey"))
+		}
+
+		switch query.Get("action") {
+		case "getsourcecode":
+			_, _ = w.Write([]byte(`{"status":"1","message":"OK","result":[{"Proxy":"0","ABI":"[{\"type\":\"function\",\"name\":\"execute\"}]"}]}`))
+		case "getabi":
+			t.Fatalf("getabi should not be called when Etherscan getsourcecode already contains a verified ABI")
+		default:
+			t.Fatalf("unexpected action %q", query.Get("action"))
+		}
+	}))
+	defer server.Close()
+
+	t.Setenv("BLOCKSCOUT_API_URLS", "")
+	t.Setenv("BLOCKSCOUT_API_KEYS", "")
+	t.Setenv("ETHERSCAN_API_URL", server.URL)
+	t.Setenv("ETHERSCAN_API_KEY", "etherscan-key")
+
+	service := &EvmChainService{httpClient: server.Client()}
+	contract, err := service.getAbiFromExplorer(1, address)
+	if err != nil {
+		t.Fatalf("getAbiFromExplorer returned error: %v", err)
+	}
+	if contract == nil {
+		t.Fatal("expected contract info, got nil")
+	}
+	if contract.Type != dbmodels.ContractsAbiTypeImplementation {
+		t.Fatalf("expected implementation contract type, got %q", contract.Type)
+	}
+	if contract.Abi != `[{"type":"function","name":"execute"}]` {
+		t.Fatalf("expected ABI from sourcecode response, got %q", contract.Abi)
+	}
+	if requests != 1 {
+		t.Fatalf("expected only one etherscan request, got %d", requests)
 	}
 }
 
