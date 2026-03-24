@@ -306,6 +306,11 @@ func buildExplorerQuery(baseURL string, params url.Values) string {
 	return fmt.Sprintf("%s?%s", strings.TrimRight(baseURL, "?"), params.Encode())
 }
 
+func hasVerifiedExplorerABI(raw string) bool {
+	trimmed := strings.TrimSpace(raw)
+	return trimmed != "" && trimmed != "[]" && trimmed != "Contract source code not verified"
+}
+
 func (s *EvmChainService) getAbiFromEtherscanV2(chainId int, address string, explorerConfig *explorerAPIConfig) (*dbmodels.ContractsAbi, error) {
 	sourceCodeParams := url.Values{
 		"chainid": []string{strconv.Itoa(chainId)},
@@ -380,6 +385,16 @@ func (s *EvmChainService) getAbiFromExplorerEndpoints(chainId int, address strin
 				Implementation: implementationAddress,
 			}, nil
 		}
+
+		if hasVerifiedExplorerABI(result.ABI) {
+			slog.Info("Explorer found ABI in source code response", "address", address, "provider", explorerConfig.Provider)
+			return &dbmodels.ContractsAbi{
+				ChainId: chainId,
+				Address: address,
+				Type:    dbmodels.ContractsAbiTypeImplementation,
+				Abi:     result.ABI,
+			}, nil
+		}
 	}
 
 	resp, err = s.httpClient.Get(abiURL)
@@ -392,7 +407,7 @@ func (s *EvmChainService) getAbiFromExplorerEndpoints(chainId int, address strin
 	if err := json.Unmarshal(body, &abiResp); err != nil {
 		return nil, fmt.Errorf("failed to parse explorer ABI response: %w", err)
 	}
-	if abiResp.Status == "1" && abiResp.Result != "Contract source code not verified" && abiResp.Result != "" && abiResp.Result != "[]" {
+	if abiResp.Status == "1" && hasVerifiedExplorerABI(abiResp.Result) {
 		slog.Info("Explorer found ABI for contract", "address", address, "provider", explorerConfig.Provider)
 		return &dbmodels.ContractsAbi{
 			ChainId: chainId,
