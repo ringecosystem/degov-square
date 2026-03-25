@@ -18,7 +18,7 @@ serve-with-log: build
     ./bin/degov-server 2>&1 | tee _tmp/logs/serve-$(date +%Y%m%d-%H%M%S).log.txt
 
 test: generate
-    go test $(go list ./... | grep -v '/tests$$')
+    go test $(go list ./... | grep -v '/tests$')
 
 test-okx: generate
     go test ./tests/...
