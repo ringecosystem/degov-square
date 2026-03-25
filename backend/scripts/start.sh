@@ -8,5 +8,4 @@ WORK_PATH=${BIN_PATH}/../
 
 cd ${WORK_PATH}
 
-make serve $@
-
+just serve

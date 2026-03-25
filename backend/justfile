@@ -1,0 +1,54 @@
+default:
+    @just --list
+
+help:
+    @just --list
+
+build:
+    go build -o bin/degov-server cmd/main.go
+
+run:
+    go run cmd/main.go
+
+serve: build
+    ./bin/degov-server
+
+serve-with-log: build
+    mkdir -p _tmp/logs
+    ./bin/degov-server 2>&1 | tee _tmp/logs/serve-$(date +%Y%m%d-%H%M%S).log.txt
+
+test: generate
+    go test $(go list ./... | grep -v '/tests$')
+
+test-okx: generate
+    go test ./tests/...
+
+clean:
+    rm -rf bin/
+    rm -rf .data/
+
+docker-up:
+    docker-compose up -d
+
+docker-down:
+    docker-compose down
+
+generate:
+    go get github.com/99designs/gqlgen@$(go list -m github.com/99designs/gqlgen | cut -d ' ' -f 2)
+    go generate ./...
+    go mod tidy
+
+deps:
+    go mod tidy
+    go mod download
+
+setup: generate deps docker-up
+    @echo "Setting up development environment..."
+    @sleep 2
+    @echo "Development environment ready!"
+    @echo "Run 'just run' to start the application"
+
+reset: docker-down clean setup serve
+    @echo "Resetting development environment..."
+    @sleep 2
+    @echo "Development environment reset!"
