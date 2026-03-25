@@ -1,8 +1,11 @@
 package tests
 
 import (
+	"errors"
 	"log/slog"
+	"os"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -15,8 +18,11 @@ import (
 func init() {
 	err := godotenv.Load("../.env")
 	if err != nil {
-		slog.Warn("No .env file found, using default environment variables")
-		panic(err)
+		if errors.Is(err, os.ErrNotExist) {
+			slog.Warn("No .env file found, using environment variables only")
+		} else {
+			slog.Warn("Failed to load .env file, using environment variables only", "error", err)
+		}
 	}
 
 	err = config.InitConfig()
@@ -26,20 +32,38 @@ func init() {
 	}
 }
 
-func okx() *internal.OkxAPI {
+func okx(t *testing.T) *internal.OkxAPI {
+	t.Helper()
+
 	cfg := config.GetConfig()
+	requiredKeys := []string{
+		"OKX_PROJECT",
+		"OKX_ACCESS_KEY",
+		"OKX_SECRET_KEY",
+		"OKX_PASSPHRASE",
+	}
+	missingKeys := make([]string, 0, len(requiredKeys))
+	for _, key := range requiredKeys {
+		if cfg.GetString(key) == "" {
+			missingKeys = append(missingKeys, key)
+		}
+	}
+	if len(missingKeys) > 0 {
+		t.Skipf("skipping OKX integration test; missing %s", strings.Join(missingKeys, ", "))
+	}
+
 	okx := internal.NewOkxAPI(internal.OkxOptions{
 		BaseURL:    config.GetStringWithDefault("OKX_API_ENDPOINT", internal.DefaultOKXAPIEndpoint),
-		Project:    cfg.GetStringRequired("OKX_PROJECT"),
-		AccessKey:  cfg.GetStringRequired("OKX_ACCESS_KEY"),
-		SecretKey:  cfg.GetStringRequired("OKX_SECRET_KEY"),
-		Passphrase: cfg.GetStringRequired("OKX_PASSPHRASE"),
+		Project:    cfg.GetString("OKX_PROJECT"),
+		AccessKey:  cfg.GetString("OKX_ACCESS_KEY"),
+		SecretKey:  cfg.GetString("OKX_SECRET_KEY"),
+		Passphrase: cfg.GetString("OKX_PASSPHRASE"),
 	})
 	return okx
 }
 
 func TestBalances(t *testing.T) {
-	okx := okx()
+	okx := okx(t)
 
 	balances, err := okx.Balances(internal.OkxBalanceOptions{
 		Chains:  []string{"1"},
@@ -77,7 +101,7 @@ func TestBalances(t *testing.T) {
 }
 
 func TestPrices(t *testing.T) {
-	okx := okx()
+	okx := okx(t)
 
 	// Test getting price for USDT on Ethereum
 	price, err := okx.Price(internal.OkxPriceOptions{
@@ -113,7 +137,7 @@ func TestPrices(t *testing.T) {
 }
 
 func TestHistory(t *testing.T) {
-	okx := okx()
+	okx := okx(t)
 
 	history, err := okx.History(internal.OkxHistoryOptions{
 		Address: "0xc18360217d8f7ab5e7c516566761ea12ce7f9d72",
@@ -143,7 +167,7 @@ func TestHistory(t *testing.T) {
 }
 
 func TestHistoricalPrice(t *testing.T) {
-	okx := okx()
+	okx := okx(t)
 
 	now := time.Now()
 	histories, err := okx.HistoricalPrice(internal.OkxHistoricalPriceOptions{
