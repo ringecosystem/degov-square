@@ -150,11 +150,6 @@ func (t *DaoSyncTask) processSingleDao(remoteLink GithubConfigLink, daoInfo DaoR
 	activeDaoCodes[daoConfig.Config.Code] = true
 
 	indexer := internal.NewDegovIndexer(daoConfig.Config.Indexer.Endpoint)
-	scope := internal.ProposalScope{
-		ChainID:         daoConfig.Config.Chain.ID,
-		DaoCode:         daoConfig.Config.Code,
-		GovernorAddress: daoConfig.Config.Contracts.Governor,
-	}
 
 	var state = dbmodels.DaoStateActive
 	if daoInfo.State != "" {
@@ -174,7 +169,7 @@ func (t *DaoSyncTask) processSingleDao(remoteLink GithubConfigLink, daoInfo DaoR
 	}
 
 	// Try to get metrics data
-	metrics, err := indexer.QueryGlobalDataMetrics(scope)
+	metrics, err := indexer.QueryGlobalDataMetrics()
 	if err != nil {
 		slog.Warn("Failed to query data metrics", "dao", daoConfig.Config.Code, "error", err)
 		// Metrics fields will be nil, indicating no update needed

@@ -49,13 +49,8 @@ func (t *TrackingVoteEndTask) trackingVoteEnd() error {
 		}
 
 		indexer := internal.NewDegovIndexer(daoConfig.Indexer.Endpoint)
-		scope := internal.ProposalScope{
-			ChainID:         daoConfig.Chain.ID,
-			DaoCode:         dao.Code,
-			GovernorAddress: daoConfig.Contracts.Governor,
-		}
 
-		proposals, err := indexer.QueryExpiringProposals(scope)
+		proposals, err := indexer.QueryExpiringProposals()
 
 		if err != nil {
 			// return nil, fmt.Errorf("failed to query votes: %w", err)

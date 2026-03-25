@@ -3,7 +3,6 @@ package internal
 import (
 	"context"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/machinebox/graphql"
@@ -30,37 +29,26 @@ type DataMetricsResponse struct {
 
 // Proposal represents the structure of a governance proposal.
 type Proposal struct {
-	ID                             string  `json:"id"`
-	ChainID                        *int    `json:"chainId"`
-	DaoCode                        string  `json:"daoCode"`
-	GovernorAddress                string  `json:"governorAddress"`
-	ProposalID                     string  `json:"proposalId"`
-	Title                          string  `json:"title"`
-	Quorum                         string  `json:"quorum"`
-	VoteStartTimestamp             string  `json:"voteStartTimestamp"`
-	VoteEndTimestamp               string  `json:"voteEndTimestamp"`
-	VoteStart                      string  `json:"voteStart"`
-	VoteEnd                        string  `json:"voteEnd"`
-	Decimals                       string  `json:"decimals"`
-	BlockInterval                  string  `json:"blockInterval"`
-	ClockMode                      string  `json:"clockMode"`
-	Proposer                       string  `json:"proposer"`
-	BlockNumber                    string  `json:"blockNumber"`
-	BlockTimestamp                 string  `json:"blockTimestamp"`
-	TransactionHash                string  `json:"transactionHash"`
-	ProposalDeadline               string  `json:"proposalDeadline"`
-	ProposalEta                    string  `json:"proposalEta"`
-	QueueReadyAt                   string  `json:"queueReadyAt"`
-	QueueExpiresAt                 string  `json:"queueExpiresAt"`
-	TimelockAddress                string  `json:"timelockAddress"`
-	TimelockGracePeriod            string  `json:"timelockGracePeriod"`
-	MetricsVotesCount              *int    `json:"metricsVotesCount"`
-	MetricsVotesWithParamsCount    *int    `json:"metricsVotesWithParamsCount"`
-	MetricsVotesWithoutParamsCount *int    `json:"metricsVotesWithoutParamsCount"`
-	MetricsVotesWeightAbstainSum   *string `json:"metricsVotesWeightAbstainSum"`
-	MetricsVotesWeightAgainstSum   *string `json:"metricsVotesWeightAgainstSum"`
-	MetricsVotesWeightForSum       *string `json:"metricsVotesWeightForSum"`
-	Description                    string  `json:"description"`
+	ID                           string  `json:"id"`
+	ProposalID                   string  `json:"proposalId"`
+	Title                        string  `json:"title"`
+	Quorum                       string  `json:"quorum"`
+	VoteStartTimestamp           string  `json:"voteStartTimestamp"`
+	VoteEndTimestamp             string  `json:"voteEndTimestamp"`
+	VoteStart                    string  `json:"voteStart"`
+	VoteEnd                      string  `json:"voteEnd"`
+	Decimals                     string  `json:"decimals"`
+	BlockInterval                string  `json:"blockInterval"`
+	ClockMode                    string  `json:"clockMode"`
+	Proposer                     string  `json:"proposer"`
+	BlockNumber                  string  `json:"blockNumber"`
+	BlockTimestamp               string  `json:"blockTimestamp"`
+	TransactionHash              string  `json:"transactionHash"`
+	MetricsVotesCount            *int    `json:"metricsVotesCount"`
+	MetricsVotesWeightAbstainSum *string `json:"metricsVotesWeightAbstainSum"`
+	MetricsVotesWeightAgainstSum *string `json:"metricsVotesWeightAgainstSum"`
+	MetricsVotesWeightForSum     *string `json:"metricsVotesWeightForSum"`
+	Description                  string  `json:"description"`
 }
 
 // ProposalsResponse represents the GraphQL response structure for proposals
@@ -84,28 +72,6 @@ type VoteCastsResponse struct {
 	VoteCasts []VoteCast `json:"voteCasts"`
 }
 
-type ProposalScope struct {
-	ChainID         int
-	DaoCode         string
-	GovernorAddress string
-}
-
-func (s ProposalScope) withScope(where map[string]any) map[string]any {
-	if where == nil {
-		where = map[string]any{}
-	}
-	if s.ChainID != 0 {
-		where["chainId_eq"] = s.ChainID
-	}
-	if s.DaoCode != "" {
-		where["daoCode_eq"] = s.DaoCode
-	}
-	if s.GovernorAddress != "" {
-		where["governorAddress_eq"] = strings.ToLower(s.GovernorAddress)
-	}
-	return where
-}
-
 // DegovIndexer handles GraphQL queries to fetch governance data
 type DegovIndexer struct {
 	client   *graphql.Client
@@ -127,10 +93,10 @@ func (d *DegovIndexer) GetEndpoint() string {
 }
 
 // QueryDataMetrics executes the QueryDataMetrics GraphQL query and returns a single DataMetrics object
-func (d *DegovIndexer) QueryGlobalDataMetrics(scope ProposalScope) (*DataMetrics, error) {
+func (d *DegovIndexer) QueryGlobalDataMetrics() (*DataMetrics, error) {
 	query := `
-		query QueryDataMetrics($where: DataMetricWhereInput) {
-			dataMetrics(where: $where) {
+		query QueryDataMetrics {
+			dataMetrics(where: {id_eq: "global"}) {
 				proposalsCount
 				memberCount
 				powerSum
@@ -146,9 +112,6 @@ func (d *DegovIndexer) QueryGlobalDataMetrics(scope ProposalScope) (*DataMetrics
 	`
 
 	req := graphql.NewRequest(query)
-	req.Var("where", scope.withScope(map[string]any{
-		"id_eq": "global",
-	}))
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
@@ -166,14 +129,11 @@ func (d *DegovIndexer) QueryGlobalDataMetrics(scope ProposalScope) (*DataMetrics
 	return nil, fmt.Errorf("no data metrics found for global id")
 }
 
-func (d *DegovIndexer) InspectProposal(scope ProposalScope, proposalId string) (*Proposal, error) {
+func (d *DegovIndexer) InspectProposal(proposalId string) (*Proposal, error) {
 	query := `
-		query QueryProposal($where: ProposalWhereInput!) {
-			proposals(where: $where) {
+		query QueryProposal($proposalId: String!) {
+			proposals(where: {proposalId_eq: $proposalId}) {
 				id
-				chainId
-				daoCode
-				governorAddress
 				proposalId
 				title
 				quorum
@@ -188,12 +148,6 @@ func (d *DegovIndexer) InspectProposal(scope ProposalScope, proposalId string) (
 				blockNumber
 				blockTimestamp
 				transactionHash
-				proposalDeadline
-				proposalEta
-				queueReadyAt
-				queueExpiresAt
-				timelockAddress
-				timelockGracePeriod
 				description
 
 				metricsVotesCount
@@ -207,9 +161,7 @@ func (d *DegovIndexer) InspectProposal(scope ProposalScope, proposalId string) (
 	`
 
 	req := graphql.NewRequest(query)
-	req.Var("where", scope.withScope(map[string]any{
-		"proposalId_eq": proposalId,
-	}))
+	req.Var("proposalId", proposalId)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
@@ -227,14 +179,11 @@ func (d *DegovIndexer) InspectProposal(scope ProposalScope, proposalId string) (
 }
 
 // QueryProposalsOffset executes the QueryProposalsOffset GraphQL query and returns proposals list
-func (d *DegovIndexer) QueryProposalsOffset(scope ProposalScope, offset int) ([]Proposal, error) {
+func (d *DegovIndexer) QueryProposalsOffset(offset int) ([]Proposal, error) {
 	query := `
-		query QueryProposalsOffset($limit: Int!, $offset: Int!, $where: ProposalWhereInput) {
-			proposals(orderBy: blockNumber_ASC_NULLS_FIRST, limit: $limit, offset: $offset, where: $where) {
+		query QueryProposalsOffset($limit: Int!, $offset: Int!) {
+			proposals(orderBy: blockNumber_ASC_NULLS_FIRST, limit: $limit, offset: $offset) {
 				id
-				chainId
-				daoCode
-				governorAddress
 				proposalId
 				title
 				quorum
@@ -249,12 +198,6 @@ func (d *DegovIndexer) QueryProposalsOffset(scope ProposalScope, offset int) ([]
 				blockNumber
 				blockTimestamp
 				transactionHash
-				proposalDeadline
-				proposalEta
-				queueReadyAt
-				queueExpiresAt
-				timelockAddress
-				timelockGracePeriod
 				description
 
 				metricsVotesCount
@@ -270,7 +213,6 @@ func (d *DegovIndexer) QueryProposalsOffset(scope ProposalScope, offset int) ([]
 	req := graphql.NewRequest(query)
 	req.Var("limit", 30)
 	req.Var("offset", offset)
-	req.Var("where", scope.withScope(nil))
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
@@ -283,10 +225,10 @@ func (d *DegovIndexer) QueryProposalsOffset(scope ProposalScope, offset int) ([]
 	return response.Proposals, nil
 }
 
-func (d *DegovIndexer) QueryVotesOffset(ctx context.Context, scope ProposalScope, offset int, proposalId string) ([]VoteCast, error) {
+func (d *DegovIndexer) QueryVotesOffset(ctx context.Context, offset int, proposalId string) ([]VoteCast, error) {
 	query := `
-		query QueryVotesOffset($limit: Int!, $offset: Int!, $where: VoteCastWhereInput!) {
-			voteCasts(orderBy: blockNumber_ASC_NULLS_FIRST, limit: $limit, offset: $offset, where: $where) {
+		query QueryVotesOffset($limit: Int!, $offset: Int!, $proposalId: String!) {
+			voteCasts(orderBy: blockNumber_ASC_NULLS_FIRST, limit: $limit, offset: $offset, where: {proposalId_eq: $proposalId}) {
 				proposalId
 				reason
 				support
@@ -302,9 +244,7 @@ func (d *DegovIndexer) QueryVotesOffset(ctx context.Context, scope ProposalScope
 	req := graphql.NewRequest(query)
 	req.Var("limit", 30)
 	req.Var("offset", offset)
-	req.Var("where", scope.withScope(map[string]any{
-		"proposalId_eq": proposalId,
-	}))
+	req.Var("proposalId", proposalId)
 
 	var response VoteCastsResponse
 	if err := d.client.Run(ctx, req, &response); err != nil {
@@ -349,10 +289,10 @@ func (d *DegovIndexer) QueryVote(id string) (*VoteCast, error) {
 	return nil, fmt.Errorf("no vote found with id %s", id)
 }
 
-func (d *DegovIndexer) QueryVoteByVoter(scope ProposalScope, proposalId string, voter string) (*VoteCast, error) {
+func (d *DegovIndexer) QueryVoteByVoter(proposalId string, voter string) (*VoteCast, error) {
 	query := `
-		query QueryVoteByVoter($where: VoteCastWhereInput!) {
-			voteCasts(where: $where) {
+		query QueryVoteByVoter($proposalId: String!, $voter: String!) {
+			voteCasts(where: {proposalId_eq: $proposalId, voter_eq: $voter}) {
 				proposalId
 				reason
 				support
@@ -367,10 +307,8 @@ func (d *DegovIndexer) QueryVoteByVoter(scope ProposalScope, proposalId string, 
 	`
 
 	req := graphql.NewRequest(query)
-	req.Var("where", scope.withScope(map[string]any{
-		"proposalId_eq": proposalId,
-		"voter_eq":      voter,
-	}))
+	req.Var("proposalId", proposalId)
+	req.Var("voter", voter)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
@@ -386,19 +324,19 @@ func (d *DegovIndexer) QueryVoteByVoter(scope ProposalScope, proposalId string, 
 	return nil, fmt.Errorf("no vote found for proposalId %s and voter %s", proposalId, voter)
 }
 
-func (d *DegovIndexer) QueryExpiringProposals(scope ProposalScope) ([]Proposal, error) {
+func (d *DegovIndexer) QueryExpiringProposals() ([]Proposal, error) {
 	query := `
-	query QueryExpiringProposals($limit: Int!, $offset: Int!, $where: ProposalWhereInput!) {
+	query QueryExpiringProposals($limit: Int!, $offset: Int!, $start: BigInt!, $end: BigInt!) {
 	  proposals(
 	    limit: $limit
 	    offset: $offset
 	    orderBy: blockTimestamp_ASC_NULLS_FIRST
-	    where: $where
+	    where: {
+	      voteEndTimestamp_gte: $start
+	      voteEndTimestamp_lt: $end
+	    }
 	  ) {
 	    id
-	    chainId
-	    daoCode
-	    governorAddress
 	    proposalId
 	    title
 	    quorum
@@ -413,12 +351,6 @@ func (d *DegovIndexer) QueryExpiringProposals(scope ProposalScope) ([]Proposal, 
 	    blockNumber
 	    blockTimestamp
 	    transactionHash
-	    proposalDeadline
-	    proposalEta
-	    queueReadyAt
-	    queueExpiresAt
-	    timelockAddress
-	    timelockGracePeriod
 	    metricsVotesCount
 	    metricsVotesWeightAbstainSum
 	    metricsVotesWeightAgainstSum
@@ -444,10 +376,8 @@ func (d *DegovIndexer) QueryExpiringProposals(scope ProposalScope) ([]Proposal, 
 
 		req.Var("limit", limit)
 		req.Var("offset", offset)
-		req.Var("where", scope.withScope(map[string]any{
-			"voteEndTimestamp_gte": startTimestamp,
-			"voteEndTimestamp_lt":  endTimestamp,
-		}))
+		req.Var("start", startTimestamp)
+		req.Var("end", endTimestamp)
 
 		var response ProposalsResponse
 
