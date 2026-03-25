@@ -188,6 +188,11 @@ func (s *TemplateService) GenerateTemplateByNotificationRecord(record *dbmodels.
 	}
 
 	degovIndexer := internal.NewDegovIndexer(daoConfig.Indexer.Endpoint)
+	scope := internal.ProposalScope{
+		ChainID:         daoConfig.Chain.ID,
+		DaoCode:         dao.Code,
+		GovernorAddress: daoConfig.Contracts.Governor,
+	}
 
 	var emailVote emailVoteInfo
 
@@ -198,7 +203,7 @@ func (s *TemplateService) GenerateTemplateByNotificationRecord(record *dbmodels.
 		ProposalDb: proposal,
 	}
 
-	proposalIndexer, err := degovIndexer.InspectProposal(proposal.ProposalID)
+	proposalIndexer, err := degovIndexer.InspectProposal(scope, proposal.ProposalID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to inspect full proposal: %w", err)
 	}
@@ -221,7 +226,7 @@ func (s *TemplateService) GenerateTemplateByNotificationRecord(record *dbmodels.
 	}
 
 	if record.Type == dbmodels.SubscribeFeatureVoteEnd {
-		voteIndexer, err := degovIndexer.QueryVoteByVoter(proposal.ProposalID, record.UserAddress)
+		voteIndexer, err := degovIndexer.QueryVoteByVoter(scope, proposal.ProposalID, record.UserAddress)
 		if err != nil {
 			slog.Warn("failed to get vote for this user", "user_address", record.UserAddress, "error", err)
 		} else {

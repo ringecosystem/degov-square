@@ -87,6 +87,11 @@ func (t *TrackingProposalTask) trackingProposal() error {
 
 func (t *TrackingProposalTask) storeProposals(dao *gqlmodels.Dao, daoConfig *types.DaoConfig) error {
 	indexer := internal.NewDegovIndexer(daoConfig.Indexer.Endpoint)
+	scope := internal.ProposalScope{
+		ChainID:         daoConfig.Chain.ID,
+		DaoCode:         dao.Code,
+		GovernorAddress: daoConfig.Contracts.Governor,
+	}
 
 	offsetTrackingProposal := int(dao.OffsetTrackingProposal)
 
@@ -99,7 +104,7 @@ func (t *TrackingProposalTask) storeProposals(dao *gqlmodels.Dao, daoConfig *typ
 	for {
 
 		// Query proposals after the last tracked block (correct parameter order)
-		proposals, err := indexer.QueryProposalsOffset(lastOffsetTrackingProposal)
+		proposals, err := indexer.QueryProposalsOffset(scope, lastOffsetTrackingProposal)
 
 		if err != nil {
 			return fmt.Errorf("failed to query proposals: %w", err)

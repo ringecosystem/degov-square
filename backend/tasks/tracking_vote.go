@@ -114,10 +114,15 @@ func (t *TrackingVoteTask) fetchAllAndProcessVotes(input trackingVoteInput) ([]p
 		lastOffsetVote = proposal.OffsetTrackingVote
 		processedVotes = make([]processedVote, 0)
 	)
+	scope := internal.ProposalScope{
+		ChainID:         input.daoConfig.Chain.ID,
+		DaoCode:         input.dao.Code,
+		GovernorAddress: input.daoConfig.Contracts.Governor,
+	}
 
 	for {
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-		votes, err := indexer.QueryVotesOffset(ctx, lastOffsetVote, proposal.ProposalID)
+		votes, err := indexer.QueryVotesOffset(ctx, scope, lastOffsetVote, proposal.ProposalID)
 		cancel()
 
 		if err != nil {

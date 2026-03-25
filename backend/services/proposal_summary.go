@@ -71,7 +71,12 @@ func (s *ProposalSummaryService) GetOrGenerateSummary(input ProposalSummaryInput
 	slog.Info("[proposal-summary] Looking for cached summary", "proposal_id", input.ProposalID, "chain_id", chainID, "dao_code", input.DaoCode)
 
 	var existingSummary dbmodels.ProposalSummary
-	err = s.db.Where("proposal_id = ? AND chain_id = ?", input.ProposalID, chainID).First(&existingSummary).Error
+	err = s.db.Where(
+		"proposal_id = ? AND chain_id = ? AND dao_code = ?",
+		input.ProposalID,
+		chainID,
+		input.DaoCode,
+	).First(&existingSummary).Error
 	if err == nil {
 		slog.Info("[proposal-summary] Returning cached summary", "proposal_id", input.ProposalID, "id", existingSummary.ID)
 		return existingSummary.Summary, nil
@@ -85,7 +90,11 @@ func (s *ProposalSummaryService) GetOrGenerateSummary(input ProposalSummaryInput
 	slog.Info("[proposal-summary] No cached summary found, generating new one", "proposal_id", input.ProposalID)
 
 	indexer := internal.NewDegovIndexer(indexerEndpoint)
-	proposal, err := indexer.InspectProposal(input.ProposalID)
+	proposal, err := indexer.InspectProposal(internal.ProposalScope{
+		ChainID:         chainID,
+		DaoCode:         input.DaoCode,
+		GovernorAddress: daoConfig.Contracts.Governor,
+	}, input.ProposalID)
 	if err != nil {
 		return "", fmt.Errorf("failed to fetch proposal: %w", err)
 	}
@@ -116,7 +125,12 @@ func (s *ProposalSummaryService) GetOrGenerateSummary(input ProposalSummaryInput
 	slog.Info("[proposal-summary] Saving summary to database", "proposal_id", input.ProposalID, "dao_code", input.DaoCode)
 	if err := s.db.Create(&newSummary).Error; err != nil {
 		var existingRecord dbmodels.ProposalSummary
-		if queryErr := s.db.Where("proposal_id = ? AND chain_id = ?", input.ProposalID, chainID).First(&existingRecord).Error; queryErr == nil {
+		if queryErr := s.db.Where(
+			"proposal_id = ? AND chain_id = ? AND dao_code = ?",
+			input.ProposalID,
+			chainID,
+			input.DaoCode,
+		).First(&existingRecord).Error; queryErr == nil {
 			slog.Info("[proposal-summary] Summary was created by concurrent request, returning existing", "proposal_id", input.ProposalID, "id", existingRecord.ID)
 			return existingRecord.Summary, nil
 		}
