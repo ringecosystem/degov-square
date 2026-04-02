@@ -11,7 +11,7 @@ import (
 
 // DataMetrics represents the data metrics structure from GraphQL response
 type DataMetrics struct {
-	ProposalsCount          int    `json:"proposalsCount"`
+	ProposalsCount          *int   `json:"proposalsCount"`
 	MemberCount             int    `json:"memberCount"`
 	PowerSum                string `json:"powerSum"`
 	VotesCount              int    `json:"votesCount"`
@@ -26,6 +26,14 @@ type DataMetrics struct {
 // DataMetricsResponse represents the GraphQL response structure
 type DataMetricsResponse struct {
 	DataMetrics []DataMetrics `json:"dataMetrics"`
+}
+
+type ProposalConnection struct {
+	TotalCount int `json:"totalCount"`
+}
+
+type ProposalConnectionResponse struct {
+	ProposalsConnection ProposalConnection `json:"proposalsConnection"`
 }
 
 // Proposal represents the structure of a governance proposal.
@@ -158,12 +166,48 @@ func (d *DegovIndexer) QueryGlobalDataMetrics(scope ProposalScope) (*DataMetrics
 		return nil, fmt.Errorf("failed to execute QueryDataMetrics: %w", err)
 	}
 
-	// Return the first item if available, otherwise return nil
-	if len(response.DataMetrics) > 0 {
-		return &response.DataMetrics[0], nil
+	metrics := DataMetrics{}
+	hasGlobalMetrics := len(response.DataMetrics) > 0
+	if hasGlobalMetrics {
+		metrics = response.DataMetrics[0]
 	}
 
-	return nil, fmt.Errorf("no data metrics found for global id")
+	if !hasGlobalMetrics || metrics.ProposalsCount == nil {
+		proposalsCount, err := d.QueryProposalsCount(scope)
+		if err != nil {
+			if hasGlobalMetrics {
+				return &metrics, nil
+			}
+			return nil, err
+		}
+
+		metrics.ProposalsCount = &proposalsCount
+	}
+
+	return &metrics, nil
+}
+
+func (d *DegovIndexer) QueryProposalsCount(scope ProposalScope) (int, error) {
+	query := `
+		query QueryProposalsCount($where: ProposalWhereInput) {
+			proposalsConnection(orderBy: [id_ASC], where: $where) {
+				totalCount
+			}
+		}
+	`
+
+	req := graphql.NewRequest(query)
+	req.Var("where", scope.withScope(nil))
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	var response ProposalConnectionResponse
+	if err := d.client.Run(ctx, req, &response); err != nil {
+		return 0, fmt.Errorf("failed to execute QueryProposalsCount: %w", err)
+	}
+
+	return response.ProposalsConnection.TotalCount, nil
 }
 
 func (d *DegovIndexer) InspectProposal(scope ProposalScope, proposalId string) (*Proposal, error) {

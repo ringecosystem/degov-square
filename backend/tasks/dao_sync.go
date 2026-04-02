@@ -180,7 +180,7 @@ func (t *DaoSyncTask) processSingleDao(remoteLink GithubConfigLink, daoInfo DaoR
 		// Metrics fields will be nil, indicating no update needed
 	} else if metrics != nil {
 		// Set metrics data if available
-		input.MetricsCountProposals = &metrics.ProposalsCount
+		input.MetricsCountProposals = metrics.ProposalsCount
 		input.MetricsCountMembers = &metrics.MemberCount
 		input.MetricsSumPower = &metrics.PowerSum
 		input.MetricsCountVote = &metrics.VotesCount

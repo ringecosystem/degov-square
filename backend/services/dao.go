@@ -45,6 +45,7 @@ func (s *DaoService) convertToGqlDao(dbDao dbmodels.Dao) *gqlmodels.Dao {
 	copier.Copy(&gqlDao, &dbDao)
 	gqlDao.Tags = tags
 	gqlDao.Domains = domains
+	gqlDao.OffsetTrackingProposal = int32(dbDao.OffsetTrackingBlock)
 	return &gqlDao
 }
 
