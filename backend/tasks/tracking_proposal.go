@@ -270,6 +270,13 @@ func (t *TrackingProposalTask) updateProposalsStates(dao *gqlmodels.Dao, daoConf
 			continue
 		}
 
+		if err := t.proposalService.ResetProposalTrackingStatus(proposal.ProposalID, dao.Code); err != nil {
+			slog.Warn("Failed to reset proposal tracking retry metadata",
+				"dao_code", dao.Code,
+				"proposal_id", proposal.ProposalID,
+				"error", err)
+		}
+
 		// Check if state has changed
 		if newState != proposal.State {
 			// Update proposal state in database

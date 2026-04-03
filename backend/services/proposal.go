@@ -81,21 +81,19 @@ func (s *ProposalService) StoreProposalTracking(input types.ProposalTrackingInpu
 func (s *ProposalService) TrackingStateProposals(input types.TrackingStateProposalsInput) ([]*dbmodels.ProposalTracking, error) {
 	var proposals []*dbmodels.ProposalTracking
 
-	timesTrack := 10
-	if input.TimesTrack != nil {
-		timesTrack = *input.TimesTrack
-	}
-
-	// Query proposals with specific states, tracking limits, and time conditions
-	err := s.db.Where(`dao_code = ?
+	query := s.db.Where(`dao_code = ?
 		AND state IN ?
-		AND times_track < ?
 		AND (time_next_track IS NULL OR time_next_track <= ?)`,
 		input.DaoCode,
 		input.States,
-		timesTrack,
 		time.Now(),
-	).
+	)
+
+	if input.TimesTrack != nil && *input.TimesTrack > 0 {
+		query = query.Where("times_track < ?", *input.TimesTrack)
+	}
+
+	err := query.
 		Order("proposal_created_at asc").
 		Find(&proposals).Error
 
@@ -110,8 +108,23 @@ func (s *ProposalService) UpdateProposalState(proposalID, daoCode string, newSta
 	return s.db.Model(&dbmodels.ProposalTracking{}).
 		Where("proposal_id = ? AND dao_code = ?", proposalID, daoCode).
 		Updates(map[string]interface{}{
-			"state": newState,
-			"utime": time.Now(),
+			"state":           newState,
+			"times_track":     0,
+			"time_next_track": nil,
+			"message":         "",
+			"utime":           time.Now(),
+		}).Error
+}
+
+// ResetProposalTrackingStatus clears transient retry metadata after a successful state read.
+func (s *ProposalService) ResetProposalTrackingStatus(proposalID, daoCode string) error {
+	return s.db.Model(&dbmodels.ProposalTracking{}).
+		Where("proposal_id = ? AND dao_code = ?", proposalID, daoCode).
+		Updates(map[string]interface{}{
+			"times_track":     0,
+			"time_next_track": nil,
+			"message":         "",
+			"utime":           time.Now(),
 		}).Error
 }
 
