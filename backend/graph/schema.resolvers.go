@@ -8,6 +8,7 @@ package graph
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/jinzhu/copier"
@@ -140,6 +141,46 @@ func (r *queryResolver) DaoConfig(ctx context.Context, input *gqlmodels.GetDaoCo
 func (r *queryResolver) EvmAbi(ctx context.Context, input gqlmodels.EvmAbiInput) ([]*gqlmodels.EvmAbiOutput, error) {
 	// panic(fmt.Errorf("not implemented: EvmAbi - evmAbi"))
 	return r.evmChainService.GetAbi(input)
+}
+
+// Ens is the resolver for the ens field.
+func (r *queryResolver) Ens(ctx context.Context, input gqlmodels.EnsInput) (*gqlmodels.EnsOutput, error) {
+	address := ""
+	if input.Address != nil {
+		address = strings.TrimSpace(*input.Address)
+	}
+
+	name := ""
+	if input.Name != nil {
+		name = strings.TrimSpace(*input.Name)
+	}
+
+	if (address == "" && name == "") || (address != "" && name != "") {
+		return nil, fmt.Errorf("ens query requires exactly one of address or name")
+	}
+
+	if address != "" {
+		resolvedName, err := r.userService.GetENSName(address)
+		if err != nil {
+			return nil, err
+		}
+
+		normalizedAddress := strings.ToLower(address)
+		return &gqlmodels.EnsOutput{
+			Address: &normalizedAddress,
+			Name:    resolvedName,
+		}, nil
+	}
+
+	resolvedAddress, err := r.userService.GetENSAddress(name)
+	if err != nil {
+		return nil, err
+	}
+
+	return &gqlmodels.EnsOutput{
+		Address: resolvedAddress,
+		Name:    &name,
+	}, nil
 }
 
 // ListNotificationChannels is the resolver for the listNotificationChannels field.

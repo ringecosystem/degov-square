@@ -102,6 +102,11 @@ type EvmAbiOutput {
   type: AbiType!
 }
 
+type EnsOutput {
+  address: String
+  name: String
+}
+
 type Proposal {
   id: ID!
   title: String!
@@ -259,6 +264,11 @@ input EvmAbiInput {
   contract: String!
 }
 
+input EnsInput {
+  address: String
+  name: String
+}
+
 input BaseNotificationChannelInput {
   type: NotificationChannelType!
   value: String!
@@ -332,6 +342,7 @@ type Query {
 
   # Tool queries
   evmAbi(input: EvmAbiInput!): [EvmAbiOutput!] @auth(required: false)
+  ens(input: EnsInput!): EnsOutput @auth(required: false)
 
   # notifications
   listNotificationChannels: [NotificationChannel!] @auth
