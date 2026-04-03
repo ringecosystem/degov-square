@@ -7,14 +7,24 @@ WORKDIR /code
 COPY go.mod go.sum ./
 
 # Download dependencies
-RUN go mod download
+RUN go mod download \
+  && go get github.com/99designs/gqlgen@$(go list -m -f '{{.Version}}' github.com/99designs/gqlgen)
 
-# Copy source code
-COPY . .
+# Copy the build inputs without overwriting the bootstrapped module files.
+COPY gqlgen.yml ./
+COPY cmd ./cmd
+COPY database ./database
+COPY graph ./graph
+COPY internal ./internal
+COPY migrations ./migrations
+COPY routes ./routes
+COPY services ./services
+COPY tasks ./tasks
+COPY tests ./tests
+COPY types ./types
 
 # Build the application
-RUN go get github.com/99designs/gqlgen@$(go list -m github.com/99designs/gqlgen | cut -d ' ' -f 2) \
-  && GOFLAGS=-mod=mod go generate ./... \
+RUN GOFLAGS=-mod=mod go generate ./... \
   && go build -ldflags="-X main.Version=${APP_VERSION}" -o bin/degov-server cmd/main.go
 
 # Final stage
