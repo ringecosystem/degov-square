@@ -7,21 +7,10 @@ WORKDIR /code
 COPY go.mod go.sum ./
 
 # Download dependencies
-RUN go mod download \
-  && go get github.com/99designs/gqlgen@$(go list -m -f '{{.Version}}' github.com/99designs/gqlgen)
+RUN go mod download
 
-# Copy the build inputs without overwriting the bootstrapped module files.
-COPY gqlgen.yml ./
-COPY cmd ./cmd
-COPY database ./database
-COPY graph ./graph
-COPY internal ./internal
-COPY migrations ./migrations
-COPY routes ./routes
-COPY services ./services
-COPY tasks ./tasks
-COPY tests ./tests
-COPY types ./types
+# Copy source code
+COPY . .
 
 # Build the application
 RUN GOFLAGS=-mod=mod go generate ./... \
