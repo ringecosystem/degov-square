@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
+import type { StateStorage } from 'zustand/middleware';
 
 interface AuthState {
   localAddress: string | null;
@@ -17,6 +18,12 @@ interface AuthActions {
 }
 
 type AuthStore = AuthState & AuthActions;
+
+const noopStorage: StateStorage = {
+  getItem: () => null,
+  setItem: () => {},
+  removeItem: () => {}
+};
 
 export const useAuthStore = create<AuthStore>()(
   persist(
@@ -39,7 +46,9 @@ export const useAuthStore = create<AuthStore>()(
     }),
     {
       name: 'auth-storage',
-      storage: createJSONStorage(() => localStorage)
+      storage: createJSONStorage(() =>
+        typeof window === 'undefined' ? noopStorage : localStorage
+      )
     }
   )
 );

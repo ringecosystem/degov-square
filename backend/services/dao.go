@@ -14,6 +14,7 @@ import (
 	"github.com/ringecosystem/degov-square/database"
 	dbmodels "github.com/ringecosystem/degov-square/database/models"
 	gqlmodels "github.com/ringecosystem/degov-square/graph/models"
+	"github.com/ringecosystem/degov-square/internal/config"
 	"github.com/ringecosystem/degov-square/internal/utils"
 	"github.com/ringecosystem/degov-square/types"
 )
@@ -478,6 +479,46 @@ func (s *DaoConfigService) StandardConfig(daoCode string) (*types.DaoConfig, err
 	return &daoConfig, nil
 }
 
+func applyDaoConfigOutputOverrides(daoConfig types.DaoConfig, daoCode, mode, nextIndexerEndpointTemplate string) types.DaoConfig {
+	if strings.TrimSpace(daoConfig.Code) == "" {
+		daoConfig.Code = daoCode
+	}
+
+	if strings.ToLower(strings.TrimSpace(mode)) != "next" {
+		return daoConfig
+	}
+
+	daoConfig.Indexer.Endpoint = strings.ReplaceAll(nextIndexerEndpointTemplate, "{code}", daoConfig.Code)
+	return daoConfig
+}
+
+func renderDaoConfig(daoConfig types.DaoConfig, format gqlmodels.ConfigFormat) (string, error) {
+	if format == gqlmodels.ConfigFormatJSON {
+		yamlData, err := yaml.Marshal(daoConfig)
+		if err != nil {
+			return "", errors.New("failed to render DAO configuration")
+		}
+
+		var jsonReady interface{}
+		if err := yaml.Unmarshal(yamlData, &jsonReady); err != nil {
+			return "", errors.New("failed to convert YAML to JSON")
+		}
+
+		jsonData, err := json.MarshalIndent(jsonReady, "", "  ")
+		if err != nil {
+			return "", errors.New("failed to convert YAML to JSON")
+		}
+		return string(jsonData), nil
+	}
+
+	yamlData, err := yaml.Marshal(daoConfig)
+	if err != nil {
+		return "", errors.New("failed to render DAO configuration")
+	}
+
+	return string(yamlData), nil
+}
+
 func (s *DaoConfigService) RawConfig(input gqlmodels.GetDaoConfigInput) (string, error) {
 	daoConfig, err := s.Inspect(input.DaoCode)
 	if err != nil {
@@ -489,24 +530,30 @@ func (s *DaoConfigService) RawConfig(input gqlmodels.GetDaoConfigInput) (string,
 		format = *input.Format
 	}
 
-	if format == gqlmodels.ConfigFormatJSON {
-		// Convert YAML to JSON
-		var yamlData interface{}
-		err := yaml.Unmarshal([]byte(daoConfig.Config), &yamlData)
-		if err != nil {
-			return "", errors.New("failed to convert YAML to JSON")
-		}
+	cfg := config.GetConfig()
+	outputMode := cfg.GetString("DAO_CONFIG_MODE")
+	needsOverride := strings.EqualFold(strings.TrimSpace(outputMode), "next")
 
-		jsonData, err := json.MarshalIndent(yamlData, "", "  ")
-		if err != nil {
-			return "", errors.New("failed to convert YAML to JSON")
-		}
-
-		return string(jsonData), nil
-	} else {
-		// Default to YAML format
+	if format != gqlmodels.ConfigFormatJSON && !needsOverride {
 		return daoConfig.Config, nil
 	}
+
+	var parsedConfig types.DaoConfig
+	if err := yaml.Unmarshal([]byte(daoConfig.Config), &parsedConfig); err != nil {
+		return "", errors.New("failed to parse DAO configuration")
+	}
+
+	parsedConfig = applyDaoConfigOutputOverrides(
+		parsedConfig,
+		input.DaoCode,
+		outputMode,
+		cfg.GetStringWithDefault(
+			"DAO_CONFIG_NEXT_INDEXER_ENDPOINT_TEMPLATE",
+			"https://indexer.next.degov.ai/{code}/graphql",
+		),
+	)
+
+	return renderDaoConfig(parsedConfig, format)
 }
 
 type UserLikedDaoService struct {
