@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"log/slog"
+	"regexp"
 	"strings"
 	"time"
 
@@ -18,6 +19,8 @@ import (
 	"github.com/ringecosystem/degov-square/internal/utils"
 	"github.com/ringecosystem/degov-square/types"
 )
+
+var evmAddressPattern = regexp.MustCompile(`^0x[0-9a-fA-F]{40}$`)
 
 type DaoService struct {
 	db *gorm.DB
@@ -507,7 +510,19 @@ func renderDaoConfig(document map[string]interface{}, format gqlmodels.ConfigFor
 		return "", errors.New("failed to render DAO configuration")
 	}
 
-	return string(yamlData), nil
+	var node yaml.Node
+	if err := yaml.Unmarshal(yamlData, &node); err != nil {
+		return "", errors.New("failed to post-process DAO configuration")
+	}
+
+	quoteAddressScalars(&node)
+
+	quotedYAML, err := yaml.Marshal(&node)
+	if err != nil {
+		return "", errors.New("failed to render DAO configuration")
+	}
+
+	return string(quotedYAML), nil
 }
 
 func (s *DaoConfigService) RawConfig(input gqlmodels.GetDaoConfigInput) (string, error) {
@@ -568,6 +583,20 @@ func getNestedString(document map[string]interface{}, keys ...string) string {
 		return ""
 	}
 	return value
+}
+
+func quoteAddressScalars(node *yaml.Node) {
+	if node == nil {
+		return
+	}
+
+	if node.Kind == yaml.ScalarNode && node.Tag == "!!str" && evmAddressPattern.MatchString(node.Value) {
+		node.Style = yaml.DoubleQuotedStyle
+	}
+
+	for _, child := range node.Content {
+		quoteAddressScalars(child)
+	}
 }
 
 func setNestedValue(document map[string]interface{}, value interface{}, keys ...string) {

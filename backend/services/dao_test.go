@@ -107,3 +107,37 @@ func TestRenderDaoConfigJSONPreservesUnknownFields(t *testing.T) {
 		t.Fatalf("rendered JSON %q does not preserve unknown fields", content)
 	}
 }
+
+func TestRenderDaoConfigYAMLQuotesAddressStrings(t *testing.T) {
+	t.Parallel()
+
+	content, err := renderDaoConfig(map[string]interface{}{
+		"chain": map[string]interface{}{
+			"id": 1,
+		},
+		"contracts": map[string]interface{}{
+			"governor": "0x7ae22bebF28366c328d5558E6Fad935487299DfE",
+			"governorToken": map[string]interface{}{
+				"address":  "0x970C30646E5c95DC77A3D768C4362E113Ed92b5b",
+				"standard": "ERC20",
+			},
+			"timeLock": "0xEd4f981249Dde7Cd3c295fc28CB934D4682d7ef9",
+		},
+	}, gqlmodels.ConfigFormatYaml)
+	if err != nil {
+		t.Fatalf("renderDaoConfig returned error: %v", err)
+	}
+
+	if !strings.Contains(content, `governor: "0x7ae22bebF28366c328d5558E6Fad935487299DfE"`) {
+		t.Fatalf("rendered YAML %q does not quote governor address", content)
+	}
+	if !strings.Contains(content, `address: "0x970C30646E5c95DC77A3D768C4362E113Ed92b5b"`) {
+		t.Fatalf("rendered YAML %q does not quote governorToken.address", content)
+	}
+	if !strings.Contains(content, `timeLock: "0xEd4f981249Dde7Cd3c295fc28CB934D4682d7ef9"`) {
+		t.Fatalf("rendered YAML %q does not quote timeLock", content)
+	}
+	if !strings.Contains(content, "id: 1") {
+		t.Fatalf("rendered YAML %q does not preserve numeric fields", content)
+	}
+}
