@@ -1,12 +1,12 @@
 package services
 
 import (
+	"encoding/json"
 	"strings"
 	"testing"
 
 	dbmodels "github.com/ringecosystem/degov-square/database/models"
 	gqlmodels "github.com/ringecosystem/degov-square/graph/models"
-	"github.com/ringecosystem/degov-square/types"
 )
 
 func TestConvertToGqlDaoMapsOffsetTrackingProposal(t *testing.T) {
@@ -34,19 +34,15 @@ func TestConvertToGqlDaoMapsOffsetTrackingProposal(t *testing.T) {
 func TestApplyDaoConfigOutputOverridesNextModeRewritesIndexerEndpoint(t *testing.T) {
 	t.Parallel()
 
-	daoConfig := applyDaoConfigOutputOverrides(types.DaoConfig{
-		Code: "aixbt-dao",
-		Indexer: struct {
-			Endpoint   string `yaml:"endpoint"`
-			StartBlock int    `yaml:"startBlock"`
-			RPC        string `yaml:"rpc"`
-			Gateway    string `yaml:"gateway"`
-		}{
-			Endpoint: "https://indexer.degov.ai/aixbt-dao/graphql",
+	document := map[string]interface{}{
+		"code": "aixbt-dao",
+		"indexer": map[string]interface{}{
+			"endpoint": "https://indexer.degov.ai/aixbt-dao/graphql",
 		},
-	}, "aixbt-dao", "next", "https://indexer.next.degov.ai/{code}/graphql")
+	}
+	applyDaoConfigOutputOverrides(document, "aixbt-dao", "next", "https://indexer.next.degov.ai/{code}/graphql")
 
-	if got, want := daoConfig.Indexer.Endpoint, "https://indexer.next.degov.ai/aixbt-dao/graphql"; got != want {
+	if got, want := getNestedString(document, "indexer", "endpoint"), "https://indexer.next.degov.ai/aixbt-dao/graphql"; got != want {
 		t.Fatalf("Indexer.Endpoint = %q, want %q", got, want)
 	}
 }
@@ -54,19 +50,15 @@ func TestApplyDaoConfigOutputOverridesNextModeRewritesIndexerEndpoint(t *testing
 func TestApplyDaoConfigOutputOverridesPreservesCanonicalMode(t *testing.T) {
 	t.Parallel()
 
-	daoConfig := applyDaoConfigOutputOverrides(types.DaoConfig{
-		Code: "aixbt-dao",
-		Indexer: struct {
-			Endpoint   string `yaml:"endpoint"`
-			StartBlock int    `yaml:"startBlock"`
-			RPC        string `yaml:"rpc"`
-			Gateway    string `yaml:"gateway"`
-		}{
-			Endpoint: "https://indexer.degov.ai/aixbt-dao/graphql",
+	document := map[string]interface{}{
+		"code": "aixbt-dao",
+		"indexer": map[string]interface{}{
+			"endpoint": "https://indexer.degov.ai/aixbt-dao/graphql",
 		},
-	}, "aixbt-dao", "", "https://indexer.next.degov.ai/{code}/graphql")
+	}
+	applyDaoConfigOutputOverrides(document, "aixbt-dao", "", "https://indexer.next.degov.ai/{code}/graphql")
 
-	if got, want := daoConfig.Indexer.Endpoint, "https://indexer.degov.ai/aixbt-dao/graphql"; got != want {
+	if got, want := getNestedString(document, "indexer", "endpoint"), "https://indexer.degov.ai/aixbt-dao/graphql"; got != want {
 		t.Fatalf("Indexer.Endpoint = %q, want %q", got, want)
 	}
 }
@@ -74,22 +66,44 @@ func TestApplyDaoConfigOutputOverridesPreservesCanonicalMode(t *testing.T) {
 func TestRenderDaoConfigJSONIncludesRewrittenEndpoint(t *testing.T) {
 	t.Parallel()
 
-	content, err := renderDaoConfig(types.DaoConfig{
-		Code: "aixbt-dao",
-		Indexer: struct {
-			Endpoint   string `yaml:"endpoint"`
-			StartBlock int    `yaml:"startBlock"`
-			RPC        string `yaml:"rpc"`
-			Gateway    string `yaml:"gateway"`
-		}{
-			Endpoint: "https://indexer.next.degov.ai/aixbt-dao/graphql",
+	content, err := renderDaoConfig(map[string]interface{}{
+		"code": "aixbt-dao",
+		"indexer": map[string]interface{}{
+			"endpoint": "https://indexer.next.degov.ai/aixbt-dao/graphql",
 		},
 	}, gqlmodels.ConfigFormatJSON)
 	if err != nil {
 		t.Fatalf("renderDaoConfig returned error: %v", err)
 	}
 
-	if want := "\"endpoint\": \"https://indexer.next.degov.ai/aixbt-dao/graphql\""; !strings.Contains(content, want) {
-		t.Fatalf("rendered JSON %q does not contain %q", content, want)
+	var decoded map[string]interface{}
+	if err := json.Unmarshal([]byte(content), &decoded); err != nil {
+		t.Fatalf("json.Unmarshal returned error: %v", err)
+	}
+
+	indexer, ok := decoded["indexer"].(map[string]interface{})
+	if !ok {
+		t.Fatalf("decoded indexer = %#v, want object", decoded["indexer"])
+	}
+	if got, want := indexer["endpoint"], "https://indexer.next.degov.ai/aixbt-dao/graphql"; got != want {
+		t.Fatalf("decoded indexer.endpoint = %#v, want %q", got, want)
+	}
+}
+
+func TestRenderDaoConfigJSONPreservesUnknownFields(t *testing.T) {
+	t.Parallel()
+
+	content, err := renderDaoConfig(map[string]interface{}{
+		"code": "aixbt-dao",
+		"futureField": map[string]interface{}{
+			"enabled": true,
+		},
+	}, gqlmodels.ConfigFormatJSON)
+	if err != nil {
+		t.Fatalf("renderDaoConfig returned error: %v", err)
+	}
+
+	if !strings.Contains(content, "\"futureField\"") {
+		t.Fatalf("rendered JSON %q does not preserve unknown fields", content)
 	}
 }

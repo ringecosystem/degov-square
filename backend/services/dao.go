@@ -479,39 +479,30 @@ func (s *DaoConfigService) StandardConfig(daoCode string) (*types.DaoConfig, err
 	return &daoConfig, nil
 }
 
-func applyDaoConfigOutputOverrides(daoConfig types.DaoConfig, daoCode, mode, nextIndexerEndpointTemplate string) types.DaoConfig {
-	if strings.TrimSpace(daoConfig.Code) == "" {
-		daoConfig.Code = daoCode
-	}
-
+func applyDaoConfigOutputOverrides(document map[string]interface{}, daoCode, mode, nextIndexerEndpointTemplate string) {
 	if strings.ToLower(strings.TrimSpace(mode)) != "next" {
-		return daoConfig
+		return
 	}
 
-	daoConfig.Indexer.Endpoint = strings.ReplaceAll(nextIndexerEndpointTemplate, "{code}", daoConfig.Code)
-	return daoConfig
+	codeValue := strings.TrimSpace(getNestedString(document, "code"))
+	if codeValue == "" {
+		codeValue = daoCode
+		document["code"] = codeValue
+	}
+
+	setNestedValue(document, strings.ReplaceAll(nextIndexerEndpointTemplate, "{code}", codeValue), "indexer", "endpoint")
 }
 
-func renderDaoConfig(daoConfig types.DaoConfig, format gqlmodels.ConfigFormat) (string, error) {
+func renderDaoConfig(document map[string]interface{}, format gqlmodels.ConfigFormat) (string, error) {
 	if format == gqlmodels.ConfigFormatJSON {
-		yamlData, err := yaml.Marshal(daoConfig)
-		if err != nil {
-			return "", errors.New("failed to render DAO configuration")
-		}
-
-		var jsonReady interface{}
-		if err := yaml.Unmarshal(yamlData, &jsonReady); err != nil {
-			return "", errors.New("failed to convert YAML to JSON")
-		}
-
-		jsonData, err := json.MarshalIndent(jsonReady, "", "  ")
+		jsonData, err := json.MarshalIndent(document, "", "  ")
 		if err != nil {
 			return "", errors.New("failed to convert YAML to JSON")
 		}
 		return string(jsonData), nil
 	}
 
-	yamlData, err := yaml.Marshal(daoConfig)
+	yamlData, err := yaml.Marshal(document)
 	if err != nil {
 		return "", errors.New("failed to render DAO configuration")
 	}
@@ -538,13 +529,16 @@ func (s *DaoConfigService) RawConfig(input gqlmodels.GetDaoConfigInput) (string,
 		return daoConfig.Config, nil
 	}
 
-	var parsedConfig types.DaoConfig
-	if err := yaml.Unmarshal([]byte(daoConfig.Config), &parsedConfig); err != nil {
+	var document map[string]interface{}
+	if err := yaml.Unmarshal([]byte(daoConfig.Config), &document); err != nil {
 		return "", errors.New("failed to parse DAO configuration")
 	}
+	if document == nil {
+		document = map[string]interface{}{}
+	}
 
-	parsedConfig = applyDaoConfigOutputOverrides(
-		parsedConfig,
+	applyDaoConfigOutputOverrides(
+		document,
 		input.DaoCode,
 		outputMode,
 		cfg.GetStringWithDefault(
@@ -553,7 +547,53 @@ func (s *DaoConfigService) RawConfig(input gqlmodels.GetDaoConfigInput) (string,
 		),
 	)
 
-	return renderDaoConfig(parsedConfig, format)
+	return renderDaoConfig(document, format)
+}
+
+func getNestedString(document map[string]interface{}, keys ...string) string {
+	var current interface{} = document
+	for _, key := range keys {
+		asMap, ok := current.(map[string]interface{})
+		if !ok {
+			return ""
+		}
+		current, ok = asMap[key]
+		if !ok {
+			return ""
+		}
+	}
+
+	value, ok := current.(string)
+	if !ok {
+		return ""
+	}
+	return value
+}
+
+func setNestedValue(document map[string]interface{}, value interface{}, keys ...string) {
+	if len(keys) == 0 {
+		return
+	}
+
+	current := document
+	for _, key := range keys[:len(keys)-1] {
+		next, ok := current[key]
+		if !ok {
+			nested := map[string]interface{}{}
+			current[key] = nested
+			current = nested
+			continue
+		}
+
+		asMap, ok := next.(map[string]interface{})
+		if !ok {
+			asMap = map[string]interface{}{}
+			current[key] = asMap
+		}
+		current = asMap
+	}
+
+	current[keys[len(keys)-1]] = value
 }
 
 type UserLikedDaoService struct {
