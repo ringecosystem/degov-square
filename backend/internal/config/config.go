@@ -101,6 +101,8 @@ func setDefaults(v *viper.Viper) {
 
 	// Environment defaults
 	v.SetDefault("APP_ENV", "production")
+	v.SetDefault("DAO_CONFIG_MODE", "")
+	v.SetDefault("DAO_CONFIG_NEXT_INDEXER_ENDPOINT_TEMPLATE", "https://indexer.next.degov.ai/{code}/graphql")
 
 	// Task defaults
 	v.SetDefault("TASK_DAO_SYNC_ENABLED", true)

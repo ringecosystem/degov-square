@@ -9,6 +9,7 @@ import (
 
 	"github.com/patrickmn/go-cache"
 	dbmodels "github.com/ringecosystem/degov-square/database/models"
+	"github.com/ringecosystem/degov-square/internal/config"
 	"github.com/ringecosystem/degov-square/services"
 	"github.com/ringecosystem/degov-square/types"
 )
@@ -97,13 +98,13 @@ func (m *DegovMiddleware) findDaoCodeByURL(customSite, origin, referer string) (
 	// match DAO by endpoint
 	for _, dao := range daos {
 		if dao.Endpoint != "" {
-			if strings.EqualFold(dao.Endpoint, targetHost) {
+			if m.hostMatchesMode(dao.Endpoint, targetHost) {
 				return dao.Code, targetHost
 			}
 		}
 		if len(dao.Domains) > 0 {
 			for _, domain := range dao.Domains {
-				if strings.EqualFold(domain, targetHost) {
+				if m.hostMatchesMode(domain, targetHost) {
 					return dao.Code, targetHost
 				}
 			}
@@ -130,6 +131,36 @@ func (m *DegovMiddleware) extractHost(rawURL string) string {
 	}
 
 	return parsedURL.Host
+}
+
+func (m *DegovMiddleware) hostMatchesMode(canonicalHost, requestHost string) bool {
+	if strings.EqualFold(canonicalHost, requestHost) {
+		return true
+	}
+
+	if strings.ToLower(strings.TrimSpace(config.GetString("DAO_CONFIG_MODE"))) != "next" {
+		return false
+	}
+
+	return strings.EqualFold(nextModeHost(canonicalHost), requestHost)
+}
+
+func nextModeHost(host string) string {
+	normalizedHost := strings.ToLower(strings.TrimSpace(host))
+	switch normalizedHost {
+	case "gov.ringdao.com":
+		return "gov.next.degov.ai"
+	case "guild-gov.ringdao.com":
+		return "guild-gov.next.degov.ai"
+	case "gov.ktondao.xyz":
+		return "kton.next.degov.ai"
+	}
+
+	if strings.HasSuffix(normalizedHost, ".degov.ai") {
+		return strings.TrimSuffix(normalizedHost, ".degov.ai") + ".next.degov.ai"
+	}
+
+	return normalizedHost
 }
 
 // from cache, if not found, fetch from database and cache

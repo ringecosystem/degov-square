@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"log/slog"
+	"regexp"
 	"strings"
 	"time"
 
@@ -14,9 +15,12 @@ import (
 	"github.com/ringecosystem/degov-square/database"
 	dbmodels "github.com/ringecosystem/degov-square/database/models"
 	gqlmodels "github.com/ringecosystem/degov-square/graph/models"
+	"github.com/ringecosystem/degov-square/internal/config"
 	"github.com/ringecosystem/degov-square/internal/utils"
 	"github.com/ringecosystem/degov-square/types"
 )
+
+var evmAddressPattern = regexp.MustCompile(`^0x[0-9a-fA-F]{40}$`)
 
 type DaoService struct {
 	db *gorm.DB
@@ -478,6 +482,49 @@ func (s *DaoConfigService) StandardConfig(daoCode string) (*types.DaoConfig, err
 	return &daoConfig, nil
 }
 
+func applyDaoConfigOutputOverrides(document map[string]interface{}, daoCode, mode, nextIndexerEndpointTemplate string) {
+	if strings.ToLower(strings.TrimSpace(mode)) != "next" {
+		return
+	}
+
+	codeValue := strings.TrimSpace(getNestedString(document, "code"))
+	if codeValue == "" {
+		codeValue = daoCode
+		document["code"] = codeValue
+	}
+
+	setNestedValue(document, strings.ReplaceAll(nextIndexerEndpointTemplate, "{code}", codeValue), "indexer", "endpoint")
+}
+
+func renderDaoConfig(document map[string]interface{}, format gqlmodels.ConfigFormat) (string, error) {
+	if format == gqlmodels.ConfigFormatJSON {
+		jsonData, err := json.MarshalIndent(document, "", "  ")
+		if err != nil {
+			return "", errors.New("failed to convert YAML to JSON")
+		}
+		return string(jsonData), nil
+	}
+
+	yamlData, err := yaml.Marshal(document)
+	if err != nil {
+		return "", errors.New("failed to render DAO configuration")
+	}
+
+	var node yaml.Node
+	if err := yaml.Unmarshal(yamlData, &node); err != nil {
+		return "", errors.New("failed to post-process DAO configuration")
+	}
+
+	quoteAddressScalars(&node)
+
+	quotedYAML, err := yaml.Marshal(&node)
+	if err != nil {
+		return "", errors.New("failed to render DAO configuration")
+	}
+
+	return string(quotedYAML), nil
+}
+
 func (s *DaoConfigService) RawConfig(input gqlmodels.GetDaoConfigInput) (string, error) {
 	daoConfig, err := s.Inspect(input.DaoCode)
 	if err != nil {
@@ -489,24 +536,93 @@ func (s *DaoConfigService) RawConfig(input gqlmodels.GetDaoConfigInput) (string,
 		format = *input.Format
 	}
 
-	if format == gqlmodels.ConfigFormatJSON {
-		// Convert YAML to JSON
-		var yamlData interface{}
-		err := yaml.Unmarshal([]byte(daoConfig.Config), &yamlData)
-		if err != nil {
-			return "", errors.New("failed to convert YAML to JSON")
-		}
+	cfg := config.GetConfig()
+	outputMode := cfg.GetString("DAO_CONFIG_MODE")
+	needsOverride := strings.EqualFold(strings.TrimSpace(outputMode), "next")
 
-		jsonData, err := json.MarshalIndent(yamlData, "", "  ")
-		if err != nil {
-			return "", errors.New("failed to convert YAML to JSON")
-		}
-
-		return string(jsonData), nil
-	} else {
-		// Default to YAML format
+	if format != gqlmodels.ConfigFormatJSON && !needsOverride {
 		return daoConfig.Config, nil
 	}
+
+	var document map[string]interface{}
+	if err := yaml.Unmarshal([]byte(daoConfig.Config), &document); err != nil {
+		return "", errors.New("failed to parse DAO configuration")
+	}
+	if document == nil {
+		document = map[string]interface{}{}
+	}
+
+	applyDaoConfigOutputOverrides(
+		document,
+		input.DaoCode,
+		outputMode,
+		cfg.GetStringWithDefault(
+			"DAO_CONFIG_NEXT_INDEXER_ENDPOINT_TEMPLATE",
+			"https://indexer.next.degov.ai/{code}/graphql",
+		),
+	)
+
+	return renderDaoConfig(document, format)
+}
+
+func getNestedString(document map[string]interface{}, keys ...string) string {
+	var current interface{} = document
+	for _, key := range keys {
+		asMap, ok := current.(map[string]interface{})
+		if !ok {
+			return ""
+		}
+		current, ok = asMap[key]
+		if !ok {
+			return ""
+		}
+	}
+
+	value, ok := current.(string)
+	if !ok {
+		return ""
+	}
+	return value
+}
+
+func quoteAddressScalars(node *yaml.Node) {
+	if node == nil {
+		return
+	}
+
+	if node.Kind == yaml.ScalarNode && node.Tag == "!!str" && evmAddressPattern.MatchString(node.Value) {
+		node.Style = yaml.DoubleQuotedStyle
+	}
+
+	for _, child := range node.Content {
+		quoteAddressScalars(child)
+	}
+}
+
+func setNestedValue(document map[string]interface{}, value interface{}, keys ...string) {
+	if len(keys) == 0 {
+		return
+	}
+
+	current := document
+	for _, key := range keys[:len(keys)-1] {
+		next, ok := current[key]
+		if !ok {
+			nested := map[string]interface{}{}
+			current[key] = nested
+			current = nested
+			continue
+		}
+
+		asMap, ok := next.(map[string]interface{})
+		if !ok {
+			asMap = map[string]interface{}{}
+			current[key] = asMap
+		}
+		current = asMap
+	}
+
+	current[keys[len(keys)-1]] = value
 }
 
 type UserLikedDaoService struct {
