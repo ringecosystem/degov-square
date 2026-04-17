@@ -142,6 +142,22 @@ func (r *queryResolver) EvmAbi(ctx context.Context, input gqlmodels.EvmAbiInput)
 	return r.evmChainService.GetAbi(input)
 }
 
+// Ens is the resolver for the ens field.
+func (r *queryResolver) Ens(ctx context.Context, input gqlmodels.EnsInput) (*gqlmodels.EnsOutput, error) {
+	record, err := r.ensService.Resolve(ctx, input.DaoCode, input.Address, input.Name)
+	if err != nil {
+		return nil, err
+	}
+	if record == nil {
+		return nil, nil
+	}
+
+	return &gqlmodels.EnsOutput{
+		Address: record.Address,
+		Name:    record.Name,
+	}, nil
+}
+
 // ListNotificationChannels is the resolver for the listNotificationChannels field.
 func (r *queryResolver) ListNotificationChannels(ctx context.Context) ([]*gqlmodels.NotificationChannel, error) {
 	user, _ := r.authUtils.GetUser(ctx)
