@@ -270,6 +270,12 @@ input EnsInput {
   daoCode: String
 }
 
+input EnsRecordsInput {
+  addresses: [String!]
+  names: [String!]
+  daoCode: String
+}
+
 input BaseNotificationChannelInput {
   type: NotificationChannelType!
   value: String!
@@ -344,6 +350,7 @@ type Query {
   # Tool queries
   evmAbi(input: EvmAbiInput!): [EvmAbiOutput!] @auth(required: false)
   ens(input: EnsInput!): EnsOutput @auth(required: false)
+  ensRecords(input: EnsRecordsInput!): [EnsOutput!]! @auth(required: false)
 
   # notifications
   listNotificationChannels: [NotificationChannel!] @auth

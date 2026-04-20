@@ -183,3 +183,47 @@ func TestENSCacheExpires(t *testing.T) {
 		time.Sleep(5 * time.Millisecond)
 	}
 }
+
+func TestENSResolveBatchUsesCache(t *testing.T) {
+	service := newTestENSService(t)
+	t.Setenv("RPC_URL_1", "https://env-rpc.example")
+
+	originalLookup := resolveENSNameViaRPC
+	t.Cleanup(func() {
+		resolveENSNameViaRPC = originalLookup
+	})
+
+	calls := 0
+	resolveENSNameViaRPC = func(ctx context.Context, rpcURL string, address string) (*string, error) {
+		calls += 1
+		ensName := "alice.eth"
+		return &ensName, nil
+	}
+
+	address := "0x0000000000000000000000000000000000000001"
+	records, err := service.ResolveBatch(context.Background(), ENSRecordsInput{
+		Addresses: []string{address, address},
+	})
+	if err != nil {
+		t.Fatalf("ResolveBatch returned error: %v", err)
+	}
+	if len(records) != 1 {
+		t.Fatalf("expected one deduplicated record, got %d", len(records))
+	}
+	if records[0].Name == nil || *records[0].Name != "alice.eth" {
+		t.Fatalf("expected alice.eth, got %#v", records[0])
+	}
+
+	records, err = service.ResolveBatch(context.Background(), ENSRecordsInput{
+		Addresses: []string{address},
+	})
+	if err != nil {
+		t.Fatalf("second ResolveBatch returned error: %v", err)
+	}
+	if len(records) != 1 {
+		t.Fatalf("expected one cached record, got %d", len(records))
+	}
+	if calls != 1 {
+		t.Fatalf("expected one lookup call after cached batch, got %d", calls)
+	}
+}

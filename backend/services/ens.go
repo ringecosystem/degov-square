@@ -31,6 +31,12 @@ type ENSRecord struct {
 	Name    *string
 }
 
+type ENSRecordsInput struct {
+	DaoCode   *string
+	Addresses []string
+	Names     []string
+}
+
 type ensCacheEntry struct {
 	record ENSRecord
 	timer  *time.Timer
@@ -102,6 +108,32 @@ func (s *ENSService) Resolve(ctx context.Context, daoCode *string, address *stri
 
 	s.setCached(cacheKey, record)
 	return &record, nil
+}
+
+func (s *ENSService) ResolveBatch(ctx context.Context, input ENSRecordsInput) ([]ENSRecord, error) {
+	records := make([]ENSRecord, 0, len(input.Addresses)+len(input.Names))
+
+	for _, address := range compactStrings(input.Addresses) {
+		record, err := s.Resolve(ctx, input.DaoCode, &address, nil)
+		if err != nil {
+			return nil, err
+		}
+		if record != nil {
+			records = append(records, *record)
+		}
+	}
+
+	for _, name := range compactStrings(input.Names) {
+		record, err := s.Resolve(ctx, input.DaoCode, nil, &name)
+		if err != nil {
+			return nil, err
+		}
+		if record != nil {
+			records = append(records, *record)
+		}
+	}
+
+	return records, nil
 }
 
 func (s *ENSService) getCached(key string) (ENSRecord, bool) {
