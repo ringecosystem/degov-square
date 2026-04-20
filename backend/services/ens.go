@@ -285,14 +285,7 @@ var resolveENSAddressViaRPC = func(ctx context.Context, rpcURL string, name stri
 
 func envENSRPCURLs() []string {
 	cfg := config.GetConfig()
-	raw := cfg.GetString("DEGOV_ENS_RPC_URLS")
-	if raw == "" {
-		raw = cfg.GetString("DEGOV_ENS_RPC_URL")
-	}
-	if raw == "" {
-		raw = cfg.GetString("RPC_URL_1")
-	}
-	return splitCSV(raw)
+	return splitCSV(cfg.GetString("RPC_URL_1"))
 }
 
 func ensCacheTTL() time.Duration {

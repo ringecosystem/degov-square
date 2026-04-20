@@ -35,9 +35,9 @@ func newTestENSService(t *testing.T) *ENSService {
 	}
 }
 
-func TestENSResolveUsesEnvRPCBeforeDaoConfigRPCAndCaches(t *testing.T) {
+func TestENSResolveUsesConfiguredRPCBeforeDaoConfigRPCAndCaches(t *testing.T) {
 	service := newTestENSService(t)
-	t.Setenv("DEGOV_ENS_RPC_URL", "https://env-rpc.example")
+	t.Setenv("RPC_URL_1", "https://env-rpc.example")
 	daoCode := "demo"
 	address := "0x0000000000000000000000000000000000000001"
 
@@ -91,9 +91,9 @@ chain:
 	}
 }
 
-func TestENSResolveNameToAddressUsesEnvRPCBeforeDaoConfigRPCAndCaches(t *testing.T) {
+func TestENSResolveNameToAddressUsesConfiguredRPCBeforeDaoConfigRPCAndCaches(t *testing.T) {
 	service := newTestENSService(t)
-	t.Setenv("DEGOV_ENS_RPC_URL", "https://env-rpc.example")
+	t.Setenv("RPC_URL_1", "https://env-rpc.example")
 	daoCode := "demo"
 	name := "alice.eth"
 
@@ -149,7 +149,7 @@ chain:
 
 func TestENSCacheExpires(t *testing.T) {
 	service := newTestENSService(t)
-	t.Setenv("DEGOV_ENS_RPC_URL", "https://env-rpc.example")
+	t.Setenv("RPC_URL_1", "https://env-rpc.example")
 	t.Setenv("DEGOV_ENS_CACHE_TTL", "10ms")
 	address := "0x0000000000000000000000000000000000000002"
 
