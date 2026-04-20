@@ -47,6 +47,7 @@ func TestENSResolveUsesEnvRPCBeforeDaoConfigRPCAndCaches(t *testing.T) {
 	`, "cfg-1", daoCode, `
 code: demo
 chain:
+  id: 1
   rpcs:
     - https://dao-rpc.example
 `).Error; err != nil {
@@ -90,6 +91,62 @@ chain:
 	}
 }
 
+func TestENSResolveNameToAddressUsesEnvRPCBeforeDaoConfigRPCAndCaches(t *testing.T) {
+	service := newTestENSService(t)
+	t.Setenv("DEGOV_ENS_RPC_URL", "https://env-rpc.example")
+	daoCode := "demo"
+	name := "alice.eth"
+
+	if err := service.db.Exec(`
+		INSERT INTO dgv_dao_config (id, dao_code, config)
+		VALUES (?, ?, ?)
+	`, "cfg-1", daoCode, `
+code: demo
+chain:
+  id: 1
+  rpcs:
+    - https://dao-rpc.example
+`).Error; err != nil {
+		t.Fatalf("seed dao config: %v", err)
+	}
+
+	originalLookup := resolveENSAddressViaRPC
+	t.Cleanup(func() {
+		resolveENSAddressViaRPC = originalLookup
+	})
+
+	calls := make([]string, 0, 2)
+	resolveENSAddressViaRPC = func(ctx context.Context, rpcURL string, name string) (*string, error) {
+		calls = append(calls, rpcURL)
+		if rpcURL == "https://env-rpc.example" {
+			return nil, errors.New("temporary failure")
+		}
+		address := "0x0000000000000000000000000000000000000001"
+		return &address, nil
+	}
+
+	first, err := service.Resolve(context.Background(), &daoCode, nil, &name)
+	if err != nil {
+		t.Fatalf("Resolve returned error: %v", err)
+	}
+	if first == nil || first.Address == nil || *first.Address != "0x0000000000000000000000000000000000000001" {
+		t.Fatalf("expected resolved address, got %#v", first)
+	}
+
+	second, err := service.Resolve(context.Background(), &daoCode, nil, &name)
+	if err != nil {
+		t.Fatalf("second Resolve returned error: %v", err)
+	}
+	if second == nil || second.Address == nil || *second.Address != "0x0000000000000000000000000000000000000001" {
+		t.Fatalf("expected cached resolved address, got %#v", second)
+	}
+
+	expectedCalls := []string{"https://env-rpc.example", "https://dao-rpc.example"}
+	if !reflect.DeepEqual(calls, expectedCalls) {
+		t.Fatalf("expected lookup calls %v, got %v", expectedCalls, calls)
+	}
+}
+
 func TestENSCacheExpires(t *testing.T) {
 	service := newTestENSService(t)
 	t.Setenv("DEGOV_ENS_RPC_URL", "https://env-rpc.example")
@@ -111,12 +168,18 @@ func TestENSCacheExpires(t *testing.T) {
 	if _, err := service.Resolve(context.Background(), nil, &address, nil); err != nil {
 		t.Fatalf("Resolve returned error: %v", err)
 	}
-	time.Sleep(30 * time.Millisecond)
-	if _, err := service.Resolve(context.Background(), nil, &address, nil); err != nil {
-		t.Fatalf("second Resolve returned error: %v", err)
-	}
 
-	if calls != 2 {
-		t.Fatalf("expected cache expiry to trigger a second lookup, got %d calls", calls)
+	deadline := time.Now().Add(500 * time.Millisecond)
+	for {
+		if _, err := service.Resolve(context.Background(), nil, &address, nil); err != nil {
+			t.Fatalf("second Resolve returned error: %v", err)
+		}
+		if calls == 2 {
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("expected cache expiry to trigger a second lookup, got %d calls", calls)
+		}
+		time.Sleep(5 * time.Millisecond)
 	}
 }

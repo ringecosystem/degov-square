@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"net/url"
 	"strconv"
 	"strings"
 	"sync"
@@ -22,6 +23,8 @@ import (
 )
 
 const defaultENSCacheTTL = 3 * time.Hour
+const defaultENSCacheMaxEntries = 1000
+const mainnetChainID = 1
 
 type ENSRecord struct {
 	Address *string
@@ -47,6 +50,11 @@ func NewENSService() *ENSService {
 }
 
 func (s *ENSService) Resolve(ctx context.Context, daoCode *string, address *string, name *string) (*ENSRecord, error) {
+	normalizedDaoCode := ""
+	if daoCode != nil {
+		normalizedDaoCode = strings.ToLower(strings.TrimSpace(*daoCode))
+	}
+
 	normalizedAddress := ""
 	if address != nil {
 		normalizedAddress = strings.ToLower(strings.TrimSpace(*address))
@@ -65,9 +73,9 @@ func (s *ENSService) Resolve(ctx context.Context, daoCode *string, address *stri
 		return nil, fmt.Errorf("invalid ens address")
 	}
 
-	cacheKey := "name:" + normalizedAddress
+	cacheKey := normalizedDaoCode + ":name:" + normalizedAddress
 	if normalizedName != "" {
-		cacheKey = "address:" + normalizedName
+		cacheKey = normalizedDaoCode + ":address:" + normalizedName
 	}
 
 	if record, ok := s.getCached(cacheKey); ok {
@@ -113,14 +121,30 @@ func (s *ENSService) setCached(key string, record ENSRecord) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	if entry, ok := s.cache[key]; ok && entry.timer != nil {
+	entry, exists := s.cache[key]
+	if exists && entry.timer != nil {
 		entry.timer.Stop()
 	}
 
-	timer := time.AfterFunc(ttl, func() {
+	for !exists && len(s.cache) >= ensCacheMaxEntries() {
+		for oldestKey, oldestEntry := range s.cache {
+			if oldestEntry.timer != nil {
+				oldestEntry.timer.Stop()
+			}
+			delete(s.cache, oldestKey)
+			break
+		}
+	}
+
+	var timer *time.Timer
+	timer = time.AfterFunc(ttl, func() {
 		s.mu.Lock()
 		defer s.mu.Unlock()
-		delete(s.cache, key)
+
+		entry, ok := s.cache[key]
+		if ok && entry.timer == timer {
+			delete(s.cache, key)
+		}
 	})
 	s.cache[key] = ensCacheEntry{record: record, timer: timer}
 }
@@ -140,6 +164,9 @@ func (s *ENSService) daoRPCURLs(daoCode string) []string {
 	var rawConfig dbmodels.DgvDaoConfig
 	err := s.db.Where("dao_code = ?", daoCode).First(&rawConfig).Error
 	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil
+		}
 		slog.Warn("Failed to load DAO config for ENS RPC fallback", "daoCode", daoCode, "err", err)
 		return nil
 	}
@@ -147,6 +174,10 @@ func (s *ENSService) daoRPCURLs(daoCode string) []string {
 	var daoConfig types.DaoConfig
 	if err := yaml.Unmarshal([]byte(rawConfig.Config), &daoConfig); err != nil {
 		slog.Warn("Failed to parse DAO config for ENS RPC fallback", "daoCode", daoCode, "err", err)
+		return nil
+	}
+
+	if daoConfig.Chain.ID != mainnetChainID {
 		return nil
 	}
 
@@ -172,6 +203,9 @@ func (s *ENSService) activeDaoRPCURLs() []string {
 		if err := yaml.Unmarshal([]byte(row.Config), &daoConfig); err != nil {
 			continue
 		}
+		if daoConfig.Chain.ID != mainnetChainID {
+			continue
+		}
 		rpcURLs = append(rpcURLs, daoConfig.Chain.RPCs...)
 	}
 	return rpcURLs
@@ -188,9 +222,12 @@ func resolveENSNameWithRPCs(ctx context.Context, rpcURLs []string, address strin
 			return nil, nil
 		}
 		lastErr = err
-		slog.Warn("Failed to resolve ENS name", "rpcURL", rpcURL, "address", address, "err", err)
+		slog.Warn("Failed to resolve ENS name", "rpc", safeRPCLabel(rpcURL), "address", address, "errorName", errorName(err))
 	}
-	return nil, fmt.Errorf("all ENS RPCs failed: %w", lastErr)
+	if lastErr != nil {
+		return nil, errors.New("all ENS RPCs failed")
+	}
+	return nil, nil
 }
 
 func resolveENSAddressWithRPCs(ctx context.Context, rpcURLs []string, name string) (*string, error) {
@@ -204,15 +241,18 @@ func resolveENSAddressWithRPCs(ctx context.Context, rpcURLs []string, name strin
 			return nil, nil
 		}
 		lastErr = err
-		slog.Warn("Failed to resolve ENS address", "rpcURL", rpcURL, "name", name, "err", err)
+		slog.Warn("Failed to resolve ENS address", "rpc", safeRPCLabel(rpcURL), "name", name, "errorName", errorName(err))
 	}
-	return nil, fmt.Errorf("all ENS RPCs failed: %w", lastErr)
+	if lastErr != nil {
+		return nil, errors.New("all ENS RPCs failed")
+	}
+	return nil, nil
 }
 
 var resolveENSNameViaRPC = func(ctx context.Context, rpcURL string, address string) (*string, error) {
 	client, err := ethclient.DialContext(ctx, rpcURL)
 	if err != nil {
-		return nil, fmt.Errorf("failed to connect to %s: %w", rpcURL, err)
+		return nil, errors.New("failed to connect to ENS RPC")
 	}
 	defer client.Close()
 
@@ -227,7 +267,7 @@ var resolveENSNameViaRPC = func(ctx context.Context, rpcURL string, address stri
 var resolveENSAddressViaRPC = func(ctx context.Context, rpcURL string, name string) (*string, error) {
 	client, err := ethclient.DialContext(ctx, rpcURL)
 	if err != nil {
-		return nil, fmt.Errorf("failed to connect to %s: %w", rpcURL, err)
+		return nil, errors.New("failed to connect to ENS RPC")
 	}
 	defer client.Close()
 
@@ -270,6 +310,16 @@ func ensCacheTTL() time.Duration {
 	return defaultENSCacheTTL
 }
 
+func ensCacheMaxEntries() int {
+	cfg := config.GetConfig()
+	if raw := strings.TrimSpace(cfg.GetString("DEGOV_ENS_CACHE_MAX_ENTRIES")); raw != "" {
+		if value, err := strconv.Atoi(raw); err == nil && value > 0 {
+			return value
+		}
+	}
+	return defaultENSCacheMaxEntries
+}
+
 func splitCSV(value string) []string {
 	if value == "" {
 		return nil
@@ -300,6 +350,22 @@ func compactStrings(values []string) []string {
 		result = append(result, trimmed)
 	}
 	return result
+}
+
+func safeRPCLabel(rpcURL string) string {
+	parsed, err := url.Parse(rpcURL)
+	if err != nil || parsed.Scheme == "" || parsed.Host == "" {
+		return "invalid_rpc_url"
+	}
+	return parsed.Scheme + "://" + parsed.Host
+}
+
+func errorName(err error) string {
+	if err == nil {
+		return ""
+	}
+
+	return fmt.Sprintf("%T", err)
 }
 
 func isNoENSResolutionError(err error) bool {
