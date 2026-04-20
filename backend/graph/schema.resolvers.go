@@ -142,6 +142,43 @@ func (r *queryResolver) EvmAbi(ctx context.Context, input gqlmodels.EvmAbiInput)
 	return r.evmChainService.GetAbi(input)
 }
 
+// Ens is the resolver for the ens field.
+func (r *queryResolver) Ens(ctx context.Context, input gqlmodels.EnsInput) (*gqlmodels.EnsOutput, error) {
+	record, err := r.ensService.Resolve(ctx, input.DaoCode, input.Address, input.Name)
+	if err != nil {
+		return nil, err
+	}
+	if record == nil {
+		return nil, nil
+	}
+
+	return &gqlmodels.EnsOutput{
+		Address: record.Address,
+		Name:    record.Name,
+	}, nil
+}
+
+// EnsRecords is the resolver for the ensRecords field.
+func (r *queryResolver) EnsRecords(ctx context.Context, input gqlmodels.EnsRecordsInput) ([]*gqlmodels.EnsOutput, error) {
+	records, err := r.ensService.ResolveBatch(ctx, services.ENSRecordsInput{
+		DaoCode:   input.DaoCode,
+		Addresses: input.Addresses,
+		Names:     input.Names,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	outputs := make([]*gqlmodels.EnsOutput, 0, len(records))
+	for _, record := range records {
+		outputs = append(outputs, &gqlmodels.EnsOutput{
+			Address: record.Address,
+			Name:    record.Name,
+		})
+	}
+	return outputs, nil
+}
+
 // ListNotificationChannels is the resolver for the listNotificationChannels field.
 func (r *queryResolver) ListNotificationChannels(ctx context.Context) ([]*gqlmodels.NotificationChannel, error) {
 	user, _ := r.authUtils.GetUser(ctx)
