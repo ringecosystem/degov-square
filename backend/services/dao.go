@@ -439,12 +439,15 @@ func (s *DaoService) UpdateDaoOffsetTrackingProposal(daoCode string, offset int)
 
 // GetLastTrackedBlockNumber returns the last tracked block number cursor for a DAO
 func (s *DaoService) GetLastTrackedBlockNumber(daoCode string) (int64, error) {
-	var dao dbmodels.Dao
-	err := s.db.Select("last_tracked_block_number").Where("code = ?", daoCode).First(&dao).Error
+	var blockNumber int64
+	err := s.db.Model(&dbmodels.Dao{}).
+		Select("COALESCE(last_tracked_block_number, 0)").
+		Where("code = ?", daoCode).
+		Scan(&blockNumber).Error
 	if err != nil {
 		return 0, err
 	}
-	return dao.LastTrackedBlockNumber, nil
+	return blockNumber, nil
 }
 
 // UpdateDaoLastTrackedBlockNumber updates the last tracked block number cursor for a DAO

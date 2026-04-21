@@ -125,7 +125,8 @@ func (t *TrackingProposalTask) storeProposals(dao *gqlmodels.Dao, daoConfig *typ
 					"proposal_id", proposal.ProposalID,
 					"block_number", proposal.BlockNumber,
 					"error", err)
-				continue
+				// Stop processing this batch; retry next time to avoid skipping proposals
+				break
 			}
 
 			var proposalCreatedAt *time.Time
@@ -154,7 +155,8 @@ func (t *TrackingProposalTask) storeProposals(dao *gqlmodels.Dao, daoConfig *typ
 					"dao_code", dao.Code,
 					"proposal_id", proposal.ProposalID,
 					"error", err)
-				continue
+				// Stop processing this batch; do not advance cursor, retry next time
+				break
 			}
 
 			if created {
@@ -169,6 +171,7 @@ func (t *TrackingProposalTask) storeProposals(dao *gqlmodels.Dao, daoConfig *typ
 					"proposal_id", proposal.ProposalID)
 			}
 
+			// Only advance cursor after successful store
 			if blockNumber > lastTrackedBlockNumber {
 				lastTrackedBlockNumber = blockNumber
 			}

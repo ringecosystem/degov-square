@@ -1,4 +1,4 @@
-ALTER TABLE dgv_dao ADD COLUMN IF NOT EXISTS last_tracked_block_number bigint DEFAULT 0;
+ALTER TABLE dgv_dao ADD COLUMN IF NOT EXISTS last_tracked_block_number bigint NOT NULL DEFAULT 0;
 COMMENT ON COLUMN dgv_dao.last_tracked_block_number IS 'Last tracked proposal block number (blockNumber cursor)';
 
 -- Migrate existing data from dgv_proposal_tracking

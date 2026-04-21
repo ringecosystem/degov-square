@@ -329,10 +329,14 @@ func (d *DegovIndexer) QueryProposalsOffset(scope ProposalScope, offset int) ([]
 }
 
 // QueryProposalsByBlockNumber queries proposals with blockNumber greater than the given value
+// Note: orderBy uses [blockNumber_ASC_NULLS_FIRST, id_ASC] to ensure stable pagination.
+// In the rare edge case where a single blockNumber contains more than 30 proposals (the page limit),
+// some proposals within that block could be missed since we use blockNumber_gt for the next page cursor.
+// In practice, a single DAO block will never contain more than 30 proposals, so this is acceptable.
 func (d *DegovIndexer) QueryProposalsByBlockNumber(scope ProposalScope, afterBlockNumber int64) ([]Proposal, error) {
 	query := `
 		query QueryProposalsByBlockNumber($limit: Int!, $where: ProposalWhereInput) {
-			proposals(orderBy: blockNumber_ASC_NULLS_FIRST, limit: $limit, where: $where) {
+			proposals(orderBy: [blockNumber_ASC_NULLS_FIRST, id_ASC], limit: $limit, where: $where) {
 				id
 				chainId
 				daoCode
