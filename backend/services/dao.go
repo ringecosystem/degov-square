@@ -430,11 +430,28 @@ func (s *DaoService) MarkInactiveDAOs(activeCodes map[string]bool) error {
 	return nil
 }
 
-// UpdateDaoLastTrackingBlock updates the last tracking block for a DAO
+// UpdateDaoOffsetTrackingProposal updates the offset tracking proposal for a DAO
 func (s *DaoService) UpdateDaoOffsetTrackingProposal(daoCode string, offset int) error {
 	return s.db.Model(&dbmodels.Dao{}).
 		Where("code = ?", daoCode).
 		Update("offset_tracking_proposal", offset).Error
+}
+
+// GetLastTrackedBlockNumber returns the last tracked block number cursor for a DAO
+func (s *DaoService) GetLastTrackedBlockNumber(daoCode string) (int64, error) {
+	var dao dbmodels.Dao
+	err := s.db.Select("last_tracked_block_number").Where("code = ?", daoCode).First(&dao).Error
+	if err != nil {
+		return 0, err
+	}
+	return dao.LastTrackedBlockNumber, nil
+}
+
+// UpdateDaoLastTrackedBlockNumber updates the last tracked block number cursor for a DAO
+func (s *DaoService) UpdateDaoLastTrackedBlockNumber(daoCode string, blockNumber int64) error {
+	return s.db.Model(&dbmodels.Dao{}).
+		Where("code = ?", daoCode).
+		Update("last_tracked_block_number", blockNumber).Error
 }
 
 // getMapKeys extracts keys from a map[string]bool

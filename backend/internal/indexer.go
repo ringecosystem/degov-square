@@ -3,6 +3,7 @@ package internal
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -322,6 +323,63 @@ func (d *DegovIndexer) QueryProposalsOffset(scope ProposalScope, offset int) ([]
 	var response ProposalsResponse
 	if err := d.client.Run(ctx, req, &response); err != nil {
 		return nil, fmt.Errorf("failed to execute QueryProposalsOffset: %w", err)
+	}
+
+	return response.Proposals, nil
+}
+
+// QueryProposalsByBlockNumber queries proposals with blockNumber greater than the given value
+func (d *DegovIndexer) QueryProposalsByBlockNumber(scope ProposalScope, afterBlockNumber int64) ([]Proposal, error) {
+	query := `
+		query QueryProposalsByBlockNumber($limit: Int!, $where: ProposalWhereInput) {
+			proposals(orderBy: blockNumber_ASC_NULLS_FIRST, limit: $limit, where: $where) {
+				id
+				chainId
+				daoCode
+				governorAddress
+				proposalId
+				title
+				quorum
+				voteStartTimestamp
+				voteEndTimestamp
+				voteStart
+				voteEnd
+				decimals
+				blockInterval
+				clockMode
+				proposer
+				blockNumber
+				blockTimestamp
+				transactionHash
+				proposalDeadline
+				proposalEta
+				queueReadyAt
+				queueExpiresAt
+				timelockAddress
+				timelockGracePeriod
+				description
+				metricsVotesCount
+				metricsVotesWeightAbstainSum
+				metricsVotesWeightAgainstSum
+				metricsVotesWeightForSum
+				metricsVotesWithParamsCount
+				metricsVotesWithoutParamsCount
+			}
+		}
+	`
+	blockNumberStr := strconv.FormatInt(afterBlockNumber, 10)
+	whereFilter := map[string]any{"blockNumber_gt": blockNumberStr}
+
+	req := graphql.NewRequest(query)
+	req.Var("limit", 30)
+	req.Var("where", scope.withScope(whereFilter))
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	var response ProposalsResponse
+	if err := d.client.Run(ctx, req, &response); err != nil {
+		return nil, fmt.Errorf("failed to execute QueryProposalsByBlockNumber: %w", err)
 	}
 
 	return response.Proposals, nil
