@@ -271,63 +271,6 @@ func (d *DegovIndexer) InspectProposal(scope ProposalScope, proposalId string) (
 	return nil, fmt.Errorf("no proposal found with id %s", proposalId)
 }
 
-// QueryProposalsOffset executes the QueryProposalsOffset GraphQL query and returns proposals list
-func (d *DegovIndexer) QueryProposalsOffset(scope ProposalScope, offset int) ([]Proposal, error) {
-	query := `
-		query QueryProposalsOffset($limit: Int!, $offset: Int!, $where: ProposalWhereInput) {
-			proposals(orderBy: blockNumber_ASC_NULLS_FIRST, limit: $limit, offset: $offset, where: $where) {
-				id
-				chainId
-				daoCode
-				governorAddress
-				proposalId
-				title
-				quorum
-				voteStartTimestamp
-				voteEndTimestamp
-				voteStart
-				voteEnd
-				decimals
-				blockInterval
-				clockMode
-				proposer
-				blockNumber
-				blockTimestamp
-				transactionHash
-				proposalDeadline
-				proposalEta
-				queueReadyAt
-				queueExpiresAt
-				timelockAddress
-				timelockGracePeriod
-				description
-
-				metricsVotesCount
-				metricsVotesWeightAbstainSum
-				metricsVotesWeightAgainstSum
-				metricsVotesWeightForSum
-				metricsVotesWithParamsCount
-				metricsVotesWithoutParamsCount
-			}
-		}
-	`
-
-	req := graphql.NewRequest(query)
-	req.Var("limit", 30)
-	req.Var("offset", offset)
-	req.Var("where", scope.withScope(nil))
-
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-
-	var response ProposalsResponse
-	if err := d.client.Run(ctx, req, &response); err != nil {
-		return nil, fmt.Errorf("failed to execute QueryProposalsOffset: %w", err)
-	}
-
-	return response.Proposals, nil
-}
-
 // QueryProposalsByBlockNumber queries proposals after the given blockNumber/id cursor.
 func (d *DegovIndexer) QueryProposalsByBlockNumber(scope ProposalScope, afterBlockNumber int64, afterProposalID string) ([]Proposal, error) {
 	const limit = 30

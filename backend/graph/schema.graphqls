@@ -76,7 +76,6 @@ type Dao {
   metricsCountMembers: Int!
   metricsSumPower: String!
   metricsCountVote: Int!
-  offsetTrackingProposal: Int!
   ctime: Time!
   utime: Time
   liked: Boolean
