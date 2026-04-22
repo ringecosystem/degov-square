@@ -333,11 +333,15 @@ func (d *DegovIndexer) QueryProposalsByBlockNumber(scope ProposalScope, afterBlo
 	const limit = 30
 	proposals := make([]Proposal, 0, limit)
 
-	if afterBlockNumber > 0 && strings.TrimSpace(afterProposalID) != "" {
-		sameBlockProposals, err := d.queryProposalsByBlockNumber(scope, map[string]any{
+	if afterBlockNumber > 0 {
+		sameBlockFilter := map[string]any{
 			"blockNumber_eq": strconv.FormatInt(afterBlockNumber, 10),
-			"id_gt":          afterProposalID,
-		}, limit)
+		}
+		if strings.TrimSpace(afterProposalID) != "" {
+			sameBlockFilter["id_gt"] = afterProposalID
+		}
+
+		sameBlockProposals, err := d.queryProposalsByBlockNumber(scope, sameBlockFilter, limit)
 		if err != nil {
 			return nil, err
 		}
