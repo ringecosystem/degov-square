@@ -147,6 +147,35 @@ chain:
 	}
 }
 
+func TestENSResolveReturnsEmptyRecordForMissingReverseResolver(t *testing.T) {
+	service := newTestENSService(t)
+	t.Setenv("RPC_URL_1", "https://env-rpc.example")
+	address := "0x0000000000000000000000000000000000000003"
+
+	originalLookup := resolveENSNameViaRPC
+	t.Cleanup(func() {
+		resolveENSNameViaRPC = originalLookup
+	})
+
+	resolveENSNameViaRPC = func(ctx context.Context, rpcURL string, address string) (*string, error) {
+		return nil, errors.New("not a resolver")
+	}
+
+	record, err := service.Resolve(context.Background(), nil, &address, nil)
+	if err != nil {
+		t.Fatalf("Resolve returned error: %v", err)
+	}
+	if record == nil {
+		t.Fatal("expected empty ENS record, got nil")
+	}
+	if record.Address == nil || *record.Address != address {
+		t.Fatalf("expected address %s, got %#v", address, record.Address)
+	}
+	if record.Name != nil {
+		t.Fatalf("expected nil ENS name, got %q", *record.Name)
+	}
+}
+
 func TestENSCacheExpires(t *testing.T) {
 	service := newTestENSService(t)
 	t.Setenv("RPC_URL_1", "https://env-rpc.example")
