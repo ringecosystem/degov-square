@@ -93,19 +93,21 @@ func (t *TrackingProposalTask) storeProposals(dao *gqlmodels.Dao, daoConfig *typ
 		GovernorAddress: daoConfig.Contracts.Governor,
 	}
 
-	lastTrackedBlockNumber, err := t.daoService.GetLastTrackedBlockNumber(dao.Code)
+	lastTrackedBlockNumber, lastTrackedProposalID, err := t.daoService.GetLastTrackedProposalCursor(dao.Code)
 	if err != nil {
-		return fmt.Errorf("failed to get last tracked block number: %w", err)
+		return fmt.Errorf("failed to get last tracked proposal cursor: %w", err)
 	}
 
 	initialBlockNumber := lastTrackedBlockNumber
+	initialProposalID := lastTrackedProposalID
 
 	slog.Info("Starting proposal tracking",
 		"dao_code", dao.Code,
-		"after_block_number", lastTrackedBlockNumber)
+		"after_block_number", lastTrackedBlockNumber,
+		"after_proposal_id", lastTrackedProposalID)
 
 	for {
-		proposals, err := indexer.QueryProposalsByBlockNumber(scope, lastTrackedBlockNumber)
+		proposals, err := indexer.QueryProposalsByBlockNumber(scope, lastTrackedBlockNumber, lastTrackedProposalID)
 		if err != nil {
 			return fmt.Errorf("failed to query proposals: %w", err)
 		}
@@ -117,7 +119,16 @@ func (t *TrackingProposalTask) storeProposals(dao *gqlmodels.Dao, daoConfig *typ
 
 		slog.Info("Found proposals", "dao_code", dao.Code, "count", len(proposals))
 
+		var batchErr error
 		for _, proposal := range proposals {
+			if proposal.ID == "" {
+				slog.Error("Proposal missing indexer id",
+					"dao_code", dao.Code,
+					"proposal_id", proposal.ProposalID)
+				batchErr = fmt.Errorf("proposal %s missing indexer id", proposal.ProposalID)
+				break
+			}
+
 			blockNumber, err := strconv.ParseInt(proposal.BlockNumber, 10, 64)
 			if err != nil {
 				slog.Error("Failed to parse block number",
@@ -126,6 +137,7 @@ func (t *TrackingProposalTask) storeProposals(dao *gqlmodels.Dao, daoConfig *typ
 					"block_number", proposal.BlockNumber,
 					"error", err)
 				// Stop processing this batch; retry next time to avoid skipping proposals
+				batchErr = fmt.Errorf("failed to parse proposal block number: %w", err)
 				break
 			}
 
@@ -156,6 +168,7 @@ func (t *TrackingProposalTask) storeProposals(dao *gqlmodels.Dao, daoConfig *typ
 					"proposal_id", proposal.ProposalID,
 					"error", err)
 				// Stop processing this batch; do not advance cursor, retry next time
+				batchErr = fmt.Errorf("failed to store proposal tracking: %w", err)
 				break
 			}
 
@@ -172,20 +185,29 @@ func (t *TrackingProposalTask) storeProposals(dao *gqlmodels.Dao, daoConfig *typ
 			}
 
 			// Only advance cursor after successful store
-			if blockNumber > lastTrackedBlockNumber {
+			if blockNumber > lastTrackedBlockNumber ||
+				(blockNumber == lastTrackedBlockNumber && proposal.ID > lastTrackedProposalID) {
 				lastTrackedBlockNumber = blockNumber
+				lastTrackedProposalID = proposal.ID
 			}
 		}
 
-		if lastTrackedBlockNumber != initialBlockNumber {
-			if err := t.daoService.UpdateDaoLastTrackedBlockNumber(dao.Code, lastTrackedBlockNumber); err != nil {
-				return fmt.Errorf("failed to update last tracked block number: %w", err)
+		if lastTrackedBlockNumber != initialBlockNumber || lastTrackedProposalID != initialProposalID {
+			if err := t.daoService.UpdateDaoLastTrackedProposalCursor(dao.Code, lastTrackedBlockNumber, lastTrackedProposalID); err != nil {
+				return fmt.Errorf("failed to update last tracked proposal cursor: %w", err)
 			}
-			slog.Info("Updated last tracked block number",
+			slog.Info("Updated last tracked proposal cursor",
 				"dao_code", dao.Code,
 				"old_block", initialBlockNumber,
-				"new_block", lastTrackedBlockNumber)
+				"old_proposal_id", initialProposalID,
+				"new_block", lastTrackedBlockNumber,
+				"new_proposal_id", lastTrackedProposalID)
 			initialBlockNumber = lastTrackedBlockNumber
+			initialProposalID = lastTrackedProposalID
+		}
+
+		if batchErr != nil {
+			return batchErr
 		}
 	}
 

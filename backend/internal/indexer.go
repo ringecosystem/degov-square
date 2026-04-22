@@ -328,12 +328,37 @@ func (d *DegovIndexer) QueryProposalsOffset(scope ProposalScope, offset int) ([]
 	return response.Proposals, nil
 }
 
-// QueryProposalsByBlockNumber queries proposals with blockNumber greater than the given value
-// Note: orderBy uses [blockNumber_ASC_NULLS_FIRST, id_ASC] to ensure stable pagination.
-// In the rare edge case where a single blockNumber contains more than 30 proposals (the page limit),
-// some proposals within that block could be missed since we use blockNumber_gt for the next page cursor.
-// In practice, a single DAO block will never contain more than 30 proposals, so this is acceptable.
-func (d *DegovIndexer) QueryProposalsByBlockNumber(scope ProposalScope, afterBlockNumber int64) ([]Proposal, error) {
+// QueryProposalsByBlockNumber queries proposals after the given blockNumber/id cursor.
+func (d *DegovIndexer) QueryProposalsByBlockNumber(scope ProposalScope, afterBlockNumber int64, afterProposalID string) ([]Proposal, error) {
+	const limit = 30
+	proposals := make([]Proposal, 0, limit)
+
+	if afterBlockNumber > 0 && strings.TrimSpace(afterProposalID) != "" {
+		sameBlockProposals, err := d.queryProposalsByBlockNumber(scope, map[string]any{
+			"blockNumber_eq": strconv.FormatInt(afterBlockNumber, 10),
+			"id_gt":          afterProposalID,
+		}, limit)
+		if err != nil {
+			return nil, err
+		}
+
+		proposals = append(proposals, sameBlockProposals...)
+		if len(proposals) >= limit {
+			return proposals, nil
+		}
+	}
+
+	nextBlockProposals, err := d.queryProposalsByBlockNumber(scope, map[string]any{
+		"blockNumber_gt": strconv.FormatInt(afterBlockNumber, 10),
+	}, limit-len(proposals))
+	if err != nil {
+		return nil, err
+	}
+
+	return append(proposals, nextBlockProposals...), nil
+}
+
+func (d *DegovIndexer) queryProposalsByBlockNumber(scope ProposalScope, whereFilter map[string]any, limit int) ([]Proposal, error) {
 	query := `
 		query QueryProposalsByBlockNumber($limit: Int!, $where: ProposalWhereInput) {
 			proposals(orderBy: [blockNumber_ASC_NULLS_FIRST, id_ASC], limit: $limit, where: $where) {
@@ -371,11 +396,9 @@ func (d *DegovIndexer) QueryProposalsByBlockNumber(scope ProposalScope, afterBlo
 			}
 		}
 	`
-	blockNumberStr := strconv.FormatInt(afterBlockNumber, 10)
-	whereFilter := map[string]any{"blockNumber_gt": blockNumberStr}
 
 	req := graphql.NewRequest(query)
-	req.Var("limit", 30)
+	req.Var("limit", limit)
 	req.Var("where", scope.withScope(whereFilter))
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
