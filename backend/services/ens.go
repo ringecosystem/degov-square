@@ -400,6 +400,7 @@ func isNoENSResolutionError(err error) bool {
 
 	message := strings.ToLower(err.Error())
 	return strings.Contains(message, "no resolution") ||
+		strings.Contains(message, "not a resolver") ||
 		strings.Contains(message, "unregistered name") ||
 		strings.Contains(message, "no address")
 }
