@@ -430,11 +430,57 @@ func (s *DaoService) MarkInactiveDAOs(activeCodes map[string]bool) error {
 	return nil
 }
 
-// UpdateDaoLastTrackingBlock updates the last tracking block for a DAO
+// UpdateDaoOffsetTrackingProposal updates the offset tracking proposal for a DAO
 func (s *DaoService) UpdateDaoOffsetTrackingProposal(daoCode string, offset int) error {
 	return s.db.Model(&dbmodels.Dao{}).
 		Where("code = ?", daoCode).
 		Update("offset_tracking_proposal", offset).Error
+}
+
+// GetLastTrackedBlockNumber returns the last tracked block number cursor for a DAO
+func (s *DaoService) GetLastTrackedBlockNumber(daoCode string) (int64, error) {
+	var blockNumber int64
+	err := s.db.Model(&dbmodels.Dao{}).
+		Select("COALESCE(last_tracked_block_number, 0)").
+		Where("code = ?", daoCode).
+		Scan(&blockNumber).Error
+	if err != nil {
+		return 0, err
+	}
+	return blockNumber, nil
+}
+
+// GetLastTrackedProposalCursor returns the last tracked proposal composite cursor for a DAO
+func (s *DaoService) GetLastTrackedProposalCursor(daoCode string) (int64, string, error) {
+	var cursor struct {
+		BlockNumber int64  `gorm:"column:last_tracked_block_number"`
+		ProposalID  string `gorm:"column:last_tracked_proposal_id"`
+	}
+	err := s.db.Model(&dbmodels.Dao{}).
+		Select("COALESCE(last_tracked_block_number, 0) AS last_tracked_block_number, COALESCE(last_tracked_proposal_id, '') AS last_tracked_proposal_id").
+		Where("code = ?", daoCode).
+		Scan(&cursor).Error
+	if err != nil {
+		return 0, "", err
+	}
+	return cursor.BlockNumber, cursor.ProposalID, nil
+}
+
+// UpdateDaoLastTrackedBlockNumber updates the last tracked block number cursor for a DAO
+func (s *DaoService) UpdateDaoLastTrackedBlockNumber(daoCode string, blockNumber int64) error {
+	return s.db.Model(&dbmodels.Dao{}).
+		Where("code = ?", daoCode).
+		Update("last_tracked_block_number", blockNumber).Error
+}
+
+// UpdateDaoLastTrackedProposalCursor updates the last tracked proposal composite cursor for a DAO
+func (s *DaoService) UpdateDaoLastTrackedProposalCursor(daoCode string, blockNumber int64, proposalID string) error {
+	return s.db.Model(&dbmodels.Dao{}).
+		Where("code = ?", daoCode).
+		Updates(map[string]any{
+			"last_tracked_block_number": blockNumber,
+			"last_tracked_proposal_id":  proposalID,
+		}).Error
 }
 
 // getMapKeys extracts keys from a map[string]bool

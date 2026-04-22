@@ -3,6 +3,7 @@ package internal
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -322,6 +323,94 @@ func (d *DegovIndexer) QueryProposalsOffset(scope ProposalScope, offset int) ([]
 	var response ProposalsResponse
 	if err := d.client.Run(ctx, req, &response); err != nil {
 		return nil, fmt.Errorf("failed to execute QueryProposalsOffset: %w", err)
+	}
+
+	return response.Proposals, nil
+}
+
+// QueryProposalsByBlockNumber queries proposals after the given blockNumber/id cursor.
+func (d *DegovIndexer) QueryProposalsByBlockNumber(scope ProposalScope, afterBlockNumber int64, afterProposalID string) ([]Proposal, error) {
+	const limit = 30
+	proposals := make([]Proposal, 0, limit)
+
+	if afterBlockNumber > 0 {
+		sameBlockFilter := map[string]any{
+			"blockNumber_eq": strconv.FormatInt(afterBlockNumber, 10),
+		}
+		if strings.TrimSpace(afterProposalID) != "" {
+			sameBlockFilter["id_gt"] = afterProposalID
+		}
+
+		sameBlockProposals, err := d.queryProposalsByBlockNumber(scope, sameBlockFilter, limit)
+		if err != nil {
+			return nil, err
+		}
+
+		proposals = append(proposals, sameBlockProposals...)
+		if len(proposals) >= limit {
+			return proposals, nil
+		}
+	}
+
+	nextBlockProposals, err := d.queryProposalsByBlockNumber(scope, map[string]any{
+		"blockNumber_gt": strconv.FormatInt(afterBlockNumber, 10),
+	}, limit-len(proposals))
+	if err != nil {
+		return nil, err
+	}
+
+	return append(proposals, nextBlockProposals...), nil
+}
+
+func (d *DegovIndexer) queryProposalsByBlockNumber(scope ProposalScope, whereFilter map[string]any, limit int) ([]Proposal, error) {
+	query := `
+		query QueryProposalsByBlockNumber($limit: Int!, $where: ProposalWhereInput) {
+			proposals(orderBy: [blockNumber_ASC_NULLS_FIRST, id_ASC], limit: $limit, where: $where) {
+				id
+				chainId
+				daoCode
+				governorAddress
+				proposalId
+				title
+				quorum
+				voteStartTimestamp
+				voteEndTimestamp
+				voteStart
+				voteEnd
+				decimals
+				blockInterval
+				clockMode
+				proposer
+				blockNumber
+				blockTimestamp
+				transactionHash
+				proposalDeadline
+				proposalEta
+				queueReadyAt
+				queueExpiresAt
+				timelockAddress
+				timelockGracePeriod
+				description
+				metricsVotesCount
+				metricsVotesWeightAbstainSum
+				metricsVotesWeightAgainstSum
+				metricsVotesWeightForSum
+				metricsVotesWithParamsCount
+				metricsVotesWithoutParamsCount
+			}
+		}
+	`
+
+	req := graphql.NewRequest(query)
+	req.Var("limit", limit)
+	req.Var("where", scope.withScope(whereFilter))
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	var response ProposalsResponse
+	if err := d.client.Run(ctx, req, &response); err != nil {
+		return nil, fmt.Errorf("failed to execute QueryProposalsByBlockNumber: %w", err)
 	}
 
 	return response.Proposals, nil

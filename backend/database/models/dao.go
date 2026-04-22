@@ -46,28 +46,30 @@ func (d *DaoState) UnmarshalYAML(value *yaml.Node) error {
 }
 
 type Dao struct {
-	ID                    string     `gorm:"column:id;type:varchar(50);primaryKey" json:"id"`
-	ChainID               int        `gorm:"column:chain_id;not null" json:"chain_id"`
-	ChainName             string     `gorm:"column:chain_name;type:varchar(255);not null" json:"chain_name"`
-	ChainLogo             string     `gorm:"column:chain_logo;type:text" json:"chain_logo,omitempty"` // Optional chain logo field
-	Name                  string     `gorm:"column:name;type:varchar(255);not null" json:"name"`
-	Code                  string     `gorm:"column:code;type:varchar(255);not null;uniqueIndex:uq_dgv_dao_code" json:"code"`
-	Logo                  string     `gorm:"column:logo;type:text" json:"logo,omitempty"` // Optional logo field
-	Seq                   int        `gorm:"column:seq;not null;default:0" json:"seq"`
-	Endpoint              string     `gorm:"column:endpoint;type:varchar(255);not null" json:"endpoint"` // Website endpoint
-	State                 DaoState   `gorm:"column:state;type:varchar(50);not null" json:"state"`
-	Tags                  string     `gorm:"column:tags;type:text" json:"tags,omitempty"`         // Optional tags field
-	Domains               string     `gorm:"column:domains;type:text" json:"domains,omitempty"`   // Optional domains field
-	Features              string     `gorm:"column:features;type:text" json:"features,omitempty"` // Optional features field (JSON array, e.g., ["fulfill"])
-	ConfigLink            string     `gorm:"column:config_link;type:varchar(255);not null" json:"config_link"`
-	TimeSyncd             *time.Time `gorm:"column:time_syncd" json:"time_syncd,omitempty"`
-	MetricsCountProposals int        `gorm:"column:metrics_count_proposals;not null;default:0" json:"metrics_count_proposals"`
-	MetricsCountMembers   int        `gorm:"column:metrics_count_members;not null;default:0" json:"metrics_count_members"`
-	MetricsSumPower       string     `gorm:"column:metrics_sum_power;type:varchar(255);not null;default:'0'" json:"metrics_sum_power"`
-	MetricsCountVote      int        `gorm:"column:metrics_count_vote;not null;default:0" json:"metrics_count_vote"`
-	OffsetTrackingBlock   int        `gorm:"column:offset_tracking_proposal;default:0" json:"offset_tracking_proposal"` // Tracking proposals offset for this DAO
-	CTime                 time.Time  `gorm:"column:ctime;default:now()" json:"ctime"`
-	UTime                 *time.Time `gorm:"column:utime" json:"utime,omitempty"`
+	ID                     string     `gorm:"column:id;type:varchar(50);primaryKey" json:"id"`
+	ChainID                int        `gorm:"column:chain_id;not null" json:"chain_id"`
+	ChainName              string     `gorm:"column:chain_name;type:varchar(255);not null" json:"chain_name"`
+	ChainLogo              string     `gorm:"column:chain_logo;type:text" json:"chain_logo,omitempty"` // Optional chain logo field
+	Name                   string     `gorm:"column:name;type:varchar(255);not null" json:"name"`
+	Code                   string     `gorm:"column:code;type:varchar(255);not null;uniqueIndex:uq_dgv_dao_code" json:"code"`
+	Logo                   string     `gorm:"column:logo;type:text" json:"logo,omitempty"` // Optional logo field
+	Seq                    int        `gorm:"column:seq;not null;default:0" json:"seq"`
+	Endpoint               string     `gorm:"column:endpoint;type:varchar(255);not null" json:"endpoint"` // Website endpoint
+	State                  DaoState   `gorm:"column:state;type:varchar(50);not null" json:"state"`
+	Tags                   string     `gorm:"column:tags;type:text" json:"tags,omitempty"`         // Optional tags field
+	Domains                string     `gorm:"column:domains;type:text" json:"domains,omitempty"`   // Optional domains field
+	Features               string     `gorm:"column:features;type:text" json:"features,omitempty"` // Optional features field (JSON array, e.g., ["fulfill"])
+	ConfigLink             string     `gorm:"column:config_link;type:varchar(255);not null" json:"config_link"`
+	TimeSyncd              *time.Time `gorm:"column:time_syncd" json:"time_syncd,omitempty"`
+	MetricsCountProposals  int        `gorm:"column:metrics_count_proposals;not null;default:0" json:"metrics_count_proposals"`
+	MetricsCountMembers    int        `gorm:"column:metrics_count_members;not null;default:0" json:"metrics_count_members"`
+	MetricsSumPower        string     `gorm:"column:metrics_sum_power;type:varchar(255);not null;default:'0'" json:"metrics_sum_power"`
+	MetricsCountVote       int        `gorm:"column:metrics_count_vote;not null;default:0" json:"metrics_count_vote"`
+	OffsetTrackingBlock    int        `gorm:"column:offset_tracking_proposal;default:0" json:"offset_tracking_proposal"`                             // Tracking proposals offset for this DAO (deprecated, kept for compatibility)
+	LastTrackedBlockNumber int64      `gorm:"column:last_tracked_block_number;not null;default:0" json:"last_tracked_block_number"`                  // Last tracked proposal block number (blockNumber cursor)
+	LastTrackedProposalID  string     `gorm:"column:last_tracked_proposal_id;type:varchar(255);not null;default:''" json:"last_tracked_proposal_id"` // Last tracked indexer proposal id for blockNumber tie-breaker
+	CTime                  time.Time  `gorm:"column:ctime;default:now()" json:"ctime"`
+	UTime                  *time.Time `gorm:"column:utime" json:"utime,omitempty"`
 }
 
 func (Dao) TableName() string {

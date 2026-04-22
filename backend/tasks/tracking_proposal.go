@@ -93,19 +93,26 @@ func (t *TrackingProposalTask) storeProposals(dao *gqlmodels.Dao, daoConfig *typ
 		GovernorAddress: daoConfig.Contracts.Governor,
 	}
 
-	offsetTrackingProposal := int(dao.OffsetTrackingProposal)
+	lastTrackedBlockNumber, lastTrackedProposalID, err := t.daoService.GetLastTrackedProposalCursor(dao.Code)
+	if err != nil {
+		return fmt.Errorf("failed to get last tracked proposal cursor: %w", err)
+	}
 
-	lastOffsetTrackingProposal := offsetTrackingProposal
+	lastTrackedBlockNumber, lastTrackedProposalID, err = t.bootstrapProposalCursor(indexer, scope, dao, lastTrackedBlockNumber, lastTrackedProposalID)
+	if err != nil {
+		return err
+	}
+
+	initialBlockNumber := lastTrackedBlockNumber
+	initialProposalID := lastTrackedProposalID
 
 	slog.Info("Starting proposal tracking",
 		"dao_code", dao.Code,
-		"start_block", lastOffsetTrackingProposal)
+		"after_block_number", lastTrackedBlockNumber,
+		"after_proposal_id", lastTrackedProposalID)
 
 	for {
-
-		// Query proposals after the last tracked block (correct parameter order)
-		proposals, err := indexer.QueryProposalsOffset(scope, lastOffsetTrackingProposal)
-
+		proposals, err := indexer.QueryProposalsByBlockNumber(scope, lastTrackedBlockNumber, lastTrackedProposalID)
 		if err != nil {
 			return fmt.Errorf("failed to query proposals: %w", err)
 		}
@@ -117,33 +124,38 @@ func (t *TrackingProposalTask) storeProposals(dao *gqlmodels.Dao, daoConfig *typ
 
 		slog.Info("Found proposals", "dao_code", dao.Code, "count", len(proposals))
 
-		// Process each proposal
+		var batchErr error
 		for _, proposal := range proposals {
-			// Parse block number and timestamp
-			blockNumber, err := strconv.Atoi(proposal.BlockNumber)
+			if proposal.ID == "" {
+				slog.Error("Proposal missing indexer id",
+					"dao_code", dao.Code,
+					"proposal_id", proposal.ProposalID)
+				batchErr = fmt.Errorf("proposal %s missing indexer id", proposal.ProposalID)
+				break
+			}
+
+			blockNumber, err := strconv.ParseInt(proposal.BlockNumber, 10, 64)
 			if err != nil {
 				slog.Error("Failed to parse block number",
 					"dao_code", dao.Code,
 					"proposal_id", proposal.ProposalID,
 					"block_number", proposal.BlockNumber,
 					"error", err)
-				continue
+				// Stop processing this batch; retry next time to avoid skipping proposals
+				batchErr = fmt.Errorf("failed to parse proposal block number: %w", err)
+				break
 			}
 
-			// Parse block timestamp
 			var proposalCreatedAt *time.Time
 			if proposal.BlockTimestamp != "" {
 				if timestamp, err := strconv.ParseInt(proposal.BlockTimestamp, 10, 64); err == nil {
-					// Convert milliseconds to seconds for time.Unix()
 					createdAt := time.Unix(timestamp/1000, (timestamp%1000)*1000000)
 					proposalCreatedAt = &createdAt
 				}
 			}
 
-			// Create proposal link
 			proposalLink := fmt.Sprintf("%s/proposal/%s", daoConfig.SiteURL, proposal.ProposalID)
 
-			// Build proposal tracking input
 			input := types.ProposalTrackingInput{
 				DaoCode:           dao.Code,
 				ChainId:           daoConfig.Chain.ID,
@@ -151,17 +163,18 @@ func (t *TrackingProposalTask) storeProposals(dao *gqlmodels.Dao, daoConfig *typ
 				ProposalLink:      proposalLink,
 				ProposalID:        proposal.ProposalID,
 				ProposalCreatedAt: proposalCreatedAt,
-				ProposalAtBlock:   blockNumber,
+				ProposalAtBlock:   int(blockNumber),
 			}
 
-			// Store proposal tracking (handles existence check internally)
 			created, err := t.proposalService.StoreProposalTracking(input)
 			if err != nil {
 				slog.Error("Failed to store proposal tracking",
 					"dao_code", dao.Code,
 					"proposal_id", proposal.ProposalID,
 					"error", err)
-				continue
+				// Stop processing this batch; do not advance cursor, retry next time
+				batchErr = fmt.Errorf("failed to store proposal tracking: %w", err)
+				break
 			}
 
 			if created {
@@ -176,23 +189,69 @@ func (t *TrackingProposalTask) storeProposals(dao *gqlmodels.Dao, daoConfig *typ
 					"proposal_id", proposal.ProposalID)
 			}
 
-			// Update offset tracking proposal
-			lastOffsetTrackingProposal += 1
+			// Only advance cursor after successful store
+			if blockNumber > lastTrackedBlockNumber ||
+				(blockNumber == lastTrackedBlockNumber && proposal.ID > lastTrackedProposalID) {
+				lastTrackedBlockNumber = blockNumber
+				lastTrackedProposalID = proposal.ID
+			}
 		}
 
-		if lastOffsetTrackingProposal != offsetTrackingProposal {
-			if err := t.daoService.UpdateDaoOffsetTrackingProposal(dao.Code, lastOffsetTrackingProposal); err != nil {
-				return fmt.Errorf("failed to update last tracking block: %w", err)
+		if lastTrackedBlockNumber != initialBlockNumber || lastTrackedProposalID != initialProposalID {
+			if err := t.daoService.UpdateDaoLastTrackedProposalCursor(dao.Code, lastTrackedBlockNumber, lastTrackedProposalID); err != nil {
+				return fmt.Errorf("failed to update last tracked proposal cursor: %w", err)
 			}
-
-			slog.Info("Updated last tracking offset",
+			slog.Info("Updated last tracked proposal cursor",
 				"dao_code", dao.Code,
-				"old_offset", offsetTrackingProposal,
-				"new_offset", lastOffsetTrackingProposal)
+				"old_block", initialBlockNumber,
+				"old_proposal_id", initialProposalID,
+				"new_block", lastTrackedBlockNumber,
+				"new_proposal_id", lastTrackedProposalID)
+			initialBlockNumber = lastTrackedBlockNumber
+			initialProposalID = lastTrackedProposalID
+		}
+
+		if batchErr != nil {
+			return batchErr
 		}
 	}
 
 	return nil
+}
+
+func (t *TrackingProposalTask) bootstrapProposalCursor(indexer *internal.DegovIndexer, scope internal.ProposalScope, dao *gqlmodels.Dao, lastTrackedBlockNumber int64, lastTrackedProposalID string) (int64, string, error) {
+	if lastTrackedProposalID != "" || dao.OffsetTrackingProposal <= 0 {
+		return lastTrackedBlockNumber, lastTrackedProposalID, nil
+	}
+
+	proposals, err := indexer.QueryProposalsOffset(scope, int(dao.OffsetTrackingProposal)-1)
+	if err != nil {
+		return 0, "", fmt.Errorf("failed to bootstrap proposal cursor from offset: %w", err)
+	}
+	if len(proposals) == 0 {
+		slog.Warn("Failed to bootstrap proposal cursor from offset",
+			"dao_code", dao.Code,
+			"offset_tracking_proposal", dao.OffsetTrackingProposal)
+		return lastTrackedBlockNumber, lastTrackedProposalID, nil
+	}
+
+	blockNumber, err := strconv.ParseInt(proposals[0].BlockNumber, 10, 64)
+	if err != nil {
+		return 0, "", fmt.Errorf("failed to parse bootstrap proposal block number: %w", err)
+	}
+
+	if blockNumber != lastTrackedBlockNumber {
+		if err := t.daoService.UpdateDaoLastTrackedProposalCursor(dao.Code, blockNumber, ""); err != nil {
+			return 0, "", fmt.Errorf("failed to update bootstrapped proposal cursor: %w", err)
+		}
+	}
+
+	slog.Info("Bootstrapped proposal cursor from offset",
+		"dao_code", dao.Code,
+		"offset_tracking_proposal", dao.OffsetTrackingProposal,
+		"last_tracked_block_number", blockNumber)
+
+	return blockNumber, "", nil
 }
 
 func (t *TrackingProposalTask) updateProposalsStates(dao *gqlmodels.Dao, daoConfig *types.DaoConfig) error {
