@@ -49,7 +49,6 @@ func (s *DaoService) convertToGqlDao(dbDao dbmodels.Dao) *gqlmodels.Dao {
 	copier.Copy(&gqlDao, &dbDao)
 	gqlDao.Tags = tags
 	gqlDao.Domains = domains
-	gqlDao.OffsetTrackingProposal = int32(dbDao.OffsetTrackingBlock)
 	return &gqlDao
 }
 
@@ -323,21 +322,20 @@ func (s *DaoService) RefreshDaoAndConfig(input types.RefreshDaoAndConfigInput) e
 	if result.Error == gorm.ErrRecordNotFound {
 		// Insert new DAO
 		dao := &dbmodels.Dao{
-			ID:                  utils.NextIDString(),
-			ChainID:             input.Config.Chain.ID,
-			ChainName:           input.Config.Chain.Name,
-			ChainLogo:           input.Config.Chain.Logo,
-			Name:                input.Config.Name,
-			Code:                input.Code,
-			Logo:                input.Config.Logo,
-			Endpoint:            input.Config.SiteURL,
-			State:               input.State,
-			Domains:             domainsJson,
-			Tags:                tagsJson,
-			Features:            featuresJson,
-			ConfigLink:          input.ConfigLink,
-			TimeSyncd:           utils.TimePtrNow(),
-			OffsetTrackingBlock: 0, // Default to 0 for new DAOs
+			ID:         utils.NextIDString(),
+			ChainID:    input.Config.Chain.ID,
+			ChainName:  input.Config.Chain.Name,
+			ChainLogo:  input.Config.Chain.Logo,
+			Name:       input.Config.Name,
+			Code:       input.Code,
+			Logo:       input.Config.Logo,
+			Endpoint:   input.Config.SiteURL,
+			State:      input.State,
+			Domains:    domainsJson,
+			Tags:       tagsJson,
+			Features:   featuresJson,
+			ConfigLink: input.ConfigLink,
+			TimeSyncd:  utils.TimePtrNow(),
 		}
 
 		// Set metrics fields if they are provided (not nil)
@@ -428,13 +426,6 @@ func (s *DaoService) MarkInactiveDAOs(activeCodes map[string]bool) error {
 	}
 
 	return nil
-}
-
-// UpdateDaoOffsetTrackingProposal updates the offset tracking proposal for a DAO
-func (s *DaoService) UpdateDaoOffsetTrackingProposal(daoCode string, offset int) error {
-	return s.db.Model(&dbmodels.Dao{}).
-		Where("code = ?", daoCode).
-		Update("offset_tracking_proposal", offset).Error
 }
 
 // GetLastTrackedBlockNumber returns the last tracked block number cursor for a DAO

@@ -98,11 +98,6 @@ func (t *TrackingProposalTask) storeProposals(dao *gqlmodels.Dao, daoConfig *typ
 		return fmt.Errorf("failed to get last tracked proposal cursor: %w", err)
 	}
 
-	lastTrackedBlockNumber, lastTrackedProposalID, err = t.bootstrapProposalCursor(indexer, scope, dao, lastTrackedBlockNumber, lastTrackedProposalID)
-	if err != nil {
-		return err
-	}
-
 	initialBlockNumber := lastTrackedBlockNumber
 	initialProposalID := lastTrackedProposalID
 
@@ -217,41 +212,6 @@ func (t *TrackingProposalTask) storeProposals(dao *gqlmodels.Dao, daoConfig *typ
 	}
 
 	return nil
-}
-
-func (t *TrackingProposalTask) bootstrapProposalCursor(indexer *internal.DegovIndexer, scope internal.ProposalScope, dao *gqlmodels.Dao, lastTrackedBlockNumber int64, lastTrackedProposalID string) (int64, string, error) {
-	if lastTrackedProposalID != "" || dao.OffsetTrackingProposal <= 0 {
-		return lastTrackedBlockNumber, lastTrackedProposalID, nil
-	}
-
-	proposals, err := indexer.QueryProposalsOffset(scope, int(dao.OffsetTrackingProposal)-1)
-	if err != nil {
-		return 0, "", fmt.Errorf("failed to bootstrap proposal cursor from offset: %w", err)
-	}
-	if len(proposals) == 0 {
-		slog.Warn("Failed to bootstrap proposal cursor from offset",
-			"dao_code", dao.Code,
-			"offset_tracking_proposal", dao.OffsetTrackingProposal)
-		return lastTrackedBlockNumber, lastTrackedProposalID, nil
-	}
-
-	blockNumber, err := strconv.ParseInt(proposals[0].BlockNumber, 10, 64)
-	if err != nil {
-		return 0, "", fmt.Errorf("failed to parse bootstrap proposal block number: %w", err)
-	}
-
-	if blockNumber != lastTrackedBlockNumber {
-		if err := t.daoService.UpdateDaoLastTrackedProposalCursor(dao.Code, blockNumber, ""); err != nil {
-			return 0, "", fmt.Errorf("failed to update bootstrapped proposal cursor: %w", err)
-		}
-	}
-
-	slog.Info("Bootstrapped proposal cursor from offset",
-		"dao_code", dao.Code,
-		"offset_tracking_proposal", dao.OffsetTrackingProposal,
-		"last_tracked_block_number", blockNumber)
-
-	return blockNumber, "", nil
 }
 
 func (t *TrackingProposalTask) updateProposalsStates(dao *gqlmodels.Dao, daoConfig *types.DaoConfig) error {
