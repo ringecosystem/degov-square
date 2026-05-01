@@ -24,7 +24,7 @@ require (
 	github.com/vanng822/go-premailer v1.33.0
 	github.com/vektah/gqlparser/v2 v2.5.32
 	github.com/wealdtech/go-ens/v3 v3.6.0
-	go.uber.org/zap v1.27.1
+	go.uber.org/zap v1.28.0
 	go.uber.org/zap/exp v0.3.0
 	gopkg.in/yaml.v3 v3.0.1
 	gorm.io/driver/postgres v1.6.0
