@@ -2,6 +2,7 @@ package mcp
 
 import (
 	"context"
+	"log/slog"
 	"net/http"
 	"time"
 
@@ -84,9 +85,19 @@ func NewHTTPHandler(cfg Config) http.Handler {
 		return NewServer(cfg)
 	}, nil)
 
-	if cfg.AuthMode == AuthModeBearer {
+	switch cfg.AuthMode {
+	case AuthModeBearer:
+		if cfg.BearerToken == "" {
+			slog.Error("MCP bearer token is empty; rejecting all bearer-authenticated MCP requests")
+		}
 		return BearerAuthMiddleware(cfg.BearerToken)(handler)
+	case AuthModeNone:
+		return handler
+	default:
+		slog.Error("Unsupported MCP auth mode; rejecting all MCP requests", "auth_mode", cfg.AuthMode)
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("WWW-Authenticate", "Bearer")
+			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+		})
 	}
-
-	return handler
 }
