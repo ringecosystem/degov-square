@@ -26,6 +26,17 @@ const defaultENSCacheTTL = 3 * time.Hour
 const defaultENSCacheMaxEntries = 1000
 const mainnetChainID = 1
 
+var ensPublicTextRecordKeys = []string{
+	"avatar",
+	"description",
+	"email",
+	"notice",
+	"com.twitter",
+	"com.github",
+	"org.telegram",
+	"url",
+}
+
 type ENSRecord struct {
 	Address *string
 	Name    *string
@@ -35,6 +46,13 @@ type ENSRecordsInput struct {
 	DaoCode   *string
 	Addresses []string
 	Names     []string
+}
+
+type ENSPublicRecords struct {
+	Name        string
+	Address     *string
+	Contenthash *string
+	Text        map[string]string
 }
 
 type ensCacheEntry struct {
@@ -134,6 +152,20 @@ func (s *ENSService) ResolveBatch(ctx context.Context, input ENSRecordsInput) ([
 	}
 
 	return records, nil
+}
+
+func (s *ENSService) ResolveRecords(ctx context.Context, name string) (*ENSPublicRecords, error) {
+	normalizedName := strings.ToLower(strings.TrimSpace(name))
+	if normalizedName == "" {
+		return nil, fmt.Errorf("ENS name is required")
+	}
+
+	rpcURLs := s.ensRPCURLs(nil)
+	if len(rpcURLs) == 0 {
+		return nil, fmt.Errorf("no ENS RPC URL configured")
+	}
+
+	return resolveENSPublicRecordsWithRPCs(ctx, rpcURLs, normalizedName)
 }
 
 func (s *ENSService) getCached(key string) (ENSRecord, bool) {
@@ -279,6 +311,79 @@ func resolveENSAddressWithRPCs(ctx context.Context, rpcURLs []string, name strin
 		return nil, errors.New("all ENS RPCs failed")
 	}
 	return nil, nil
+}
+
+func resolveENSPublicRecordsWithRPCs(ctx context.Context, rpcURLs []string, name string) (*ENSPublicRecords, error) {
+	var lastErr error
+	for _, rpcURL := range rpcURLs {
+		records, err := resolveENSPublicRecordsViaRPC(ctx, rpcURL, name)
+		if err == nil {
+			return records, nil
+		}
+		if isNoENSResolutionError(err) {
+			return &ENSPublicRecords{Name: name, Text: map[string]string{}}, nil
+		}
+		lastErr = err
+		slog.Warn("Failed to resolve ENS records", "rpc", safeRPCLabel(rpcURL), "name", name, "errorName", errorName(err))
+	}
+	if lastErr != nil {
+		return nil, errors.New("all ENS RPCs failed")
+	}
+	return &ENSPublicRecords{Name: name, Text: map[string]string{}}, nil
+}
+
+var resolveENSPublicRecordsViaRPC = func(ctx context.Context, rpcURL string, name string) (*ENSPublicRecords, error) {
+	client, err := ethclient.DialContext(ctx, rpcURL)
+	if err != nil {
+		return nil, errors.New("failed to connect to ENS RPC")
+	}
+	defer client.Close()
+
+	resolver, err := ens.NewResolver(client, name)
+	if err != nil {
+		return nil, err
+	}
+
+	records := &ENSPublicRecords{
+		Name: name,
+		Text: map[string]string{},
+	}
+
+	address, err := resolver.Address()
+	if err != nil && !isNoENSResolutionError(err) {
+		return nil, err
+	}
+	if err == nil && address != (common.Address{}) {
+		resolvedAddress := strings.ToLower(address.Hex())
+		records.Address = &resolvedAddress
+	}
+
+	contenthashBytes, err := resolver.Contenthash()
+	if err != nil && !isNoENSResolutionError(err) {
+		return nil, err
+	}
+	if err == nil && len(contenthashBytes) > 0 {
+		contenthash, err := ens.ContenthashToString(contenthashBytes)
+		if err != nil {
+			contenthash = "0x" + common.Bytes2Hex(contenthashBytes)
+		}
+		records.Contenthash = &contenthash
+	}
+
+	for _, key := range ensPublicTextRecordKeys {
+		value, err := resolver.Text(key)
+		if err != nil {
+			if isNoENSResolutionError(err) {
+				continue
+			}
+			return nil, err
+		}
+		if strings.TrimSpace(value) != "" {
+			records.Text[key] = value
+		}
+	}
+
+	return records, nil
 }
 
 var resolveENSNameViaRPC = func(ctx context.Context, rpcURL string, address string) (*string, error) {

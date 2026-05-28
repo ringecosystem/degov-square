@@ -1,6 +1,7 @@
 package mcp
 
 import (
+	"context"
 	"net/http"
 	"time"
 
@@ -19,11 +20,18 @@ type Config struct {
 	ProposalSummaryService           proposalSummaryService
 	ProposalSummaryGenerateEnabled   bool
 	ProposalSummaryGenerationTimeout time.Duration
+	ENSService                       ensService
+	ENSResolveTimeout                time.Duration
 }
 
 type proposalSummaryService interface {
 	GetCachedSummary(services.ProposalSummaryInput) (*dbmodels.ProposalSummary, error)
 	GetOrGenerateSummary(services.ProposalSummaryInput) (string, error)
+}
+
+type ensService interface {
+	Resolve(ctx context.Context, daoCode *string, address *string, name *string) (*services.ENSRecord, error)
+	ResolveRecords(ctx context.Context, name string) (*services.ENSPublicRecords, error)
 }
 
 func NewServer(cfg Config) *sdkmcp.Server {
@@ -36,8 +44,19 @@ func NewServer(cfg Config) *sdkmcp.Server {
 	addDaoTools(server, withDefaultDaoServices(cfg))
 	addProposalTools(server)
 	addProposalSummaryTool(server, withDefaultProposalSummaryServices(cfg))
+	addENSTools(server, withDefaultENSServices(cfg))
 
 	return server
+}
+
+func withDefaultENSServices(cfg Config) Config {
+	if cfg.ENSService == nil {
+		cfg.ENSService = services.NewENSService()
+	}
+	if cfg.ENSResolveTimeout <= 0 {
+		cfg.ENSResolveTimeout = 10 * time.Second
+	}
+	return cfg
 }
 
 func withDefaultDaoServices(cfg Config) Config {
