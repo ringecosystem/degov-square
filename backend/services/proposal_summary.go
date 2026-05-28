@@ -74,6 +74,11 @@ func (s *ProposalSummaryService) GetCachedSummary(input ProposalSummaryInput) (*
 
 // GetOrGenerateSummary returns cached summary or generates a new one
 func (s *ProposalSummaryService) GetOrGenerateSummary(input ProposalSummaryInput) (string, error) {
+	return s.GetOrGenerateSummaryWithContext(context.Background(), input)
+}
+
+// GetOrGenerateSummaryWithContext returns cached summary or generates a new one with cancellation support.
+func (s *ProposalSummaryService) GetOrGenerateSummaryWithContext(ctx context.Context, input ProposalSummaryInput) (string, error) {
 	daoConfig, err := s.daoConfigService.StandardConfig(input.DaoCode)
 	if err != nil {
 		return "", fmt.Errorf("failed to get dao config for %s: %w", input.DaoCode, err)
@@ -85,7 +90,7 @@ func (s *ProposalSummaryService) GetOrGenerateSummary(input ProposalSummaryInput
 	slog.Info("[proposal-summary] Looking for cached summary", "proposal_id", input.ProposalID, "chain_id", chainID, "dao_code", input.DaoCode)
 
 	var existingSummary dbmodels.ProposalSummary
-	err = s.db.Where(
+	err = s.db.WithContext(ctx).Where(
 		"proposal_id = ? AND chain_id = ? AND dao_code = ?",
 		input.ProposalID,
 		chainID,
@@ -104,7 +109,7 @@ func (s *ProposalSummaryService) GetOrGenerateSummary(input ProposalSummaryInput
 	slog.Info("[proposal-summary] No cached summary found, generating new one", "proposal_id", input.ProposalID)
 
 	indexer := internal.NewDegovIndexer(indexerEndpoint)
-	proposal, err := indexer.InspectProposal(internal.ProposalScope{
+	proposal, err := indexer.InspectProposalWithContext(ctx, internal.ProposalScope{
 		ChainID:         chainID,
 		DaoCode:         input.DaoCode,
 		GovernorAddress: daoConfig.Contracts.Governor,
@@ -117,7 +122,7 @@ func (s *ProposalSummaryService) GetOrGenerateSummary(input ProposalSummaryInput
 		return "", fmt.Errorf("proposal with ID %s on chain %d not found", input.ProposalID, chainID)
 	}
 
-	summary, err := s.generateSummary(proposal.Description)
+	summary, err := s.generateSummaryWithContext(ctx, proposal.Description)
 	if err != nil {
 		return "", fmt.Errorf("failed to generate summary: %w", err)
 	}
@@ -137,9 +142,9 @@ func (s *ProposalSummaryService) GetOrGenerateSummary(input ProposalSummaryInput
 	}
 
 	slog.Info("[proposal-summary] Saving summary to database", "proposal_id", input.ProposalID, "dao_code", input.DaoCode)
-	if err := s.db.Create(&newSummary).Error; err != nil {
+	if err := s.db.WithContext(ctx).Create(&newSummary).Error; err != nil {
 		var existingRecord dbmodels.ProposalSummary
-		if queryErr := s.db.Where(
+		if queryErr := s.db.WithContext(ctx).Where(
 			"proposal_id = ? AND chain_id = ? AND dao_code = ?",
 			input.ProposalID,
 			chainID,
@@ -158,6 +163,11 @@ func (s *ProposalSummaryService) GetOrGenerateSummary(input ProposalSummaryInput
 
 // generateSummary uses AI to generate a summary of the proposal description
 func (s *ProposalSummaryService) generateSummary(description string) (string, error) {
+	return s.generateSummaryWithContext(context.Background(), description)
+}
+
+// generateSummaryWithContext uses AI to generate a summary of the proposal description with cancellation support.
+func (s *ProposalSummaryService) generateSummaryWithContext(ctx context.Context, description string) (string, error) {
 	var userPromptBuf bytes.Buffer
 	err := s.userTemplate.Execute(&userPromptBuf, map[string]string{
 		"Description": description,
@@ -166,7 +176,7 @@ func (s *ProposalSummaryService) generateSummary(description string) (string, er
 		return "", fmt.Errorf("failed to execute user prompt template: %w", err)
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, 60*time.Second)
 	defer cancel()
 
 	response, err := s.openRouterClient.ChatCompletion(ctx, internal.ChatCompletionRequest{

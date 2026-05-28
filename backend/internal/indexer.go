@@ -212,6 +212,13 @@ func (d *DegovIndexer) QueryProposalsCount(scope ProposalScope) (int, error) {
 }
 
 func (d *DegovIndexer) InspectProposal(scope ProposalScope, proposalId string) (*Proposal, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	return d.InspectProposalWithContext(ctx, scope, proposalId)
+}
+
+func (d *DegovIndexer) InspectProposalWithContext(ctx context.Context, scope ProposalScope, proposalId string) (*Proposal, error) {
 	query := `
 		query QueryProposal($where: ProposalWhereInput!) {
 			proposals(where: $where) {
@@ -256,7 +263,7 @@ func (d *DegovIndexer) InspectProposal(scope ProposalScope, proposalId string) (
 		"proposalId_eq": proposalId,
 	}))
 
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 	var response ProposalsResponse
 	if err := d.client.Run(ctx, req, &response); err != nil {

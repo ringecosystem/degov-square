@@ -28,6 +28,7 @@ type Config struct {
 type proposalSummaryService interface {
 	GetCachedSummary(services.ProposalSummaryInput) (*dbmodels.ProposalSummary, error)
 	GetOrGenerateSummary(services.ProposalSummaryInput) (string, error)
+	GetOrGenerateSummaryWithContext(context.Context, services.ProposalSummaryInput) (string, error)
 }
 
 type ensService interface {

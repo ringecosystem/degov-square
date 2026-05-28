@@ -1,9 +1,11 @@
 package internal
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"sync/atomic"
 	"testing"
 )
 
@@ -95,5 +97,31 @@ func TestQueryGlobalDataMetricsFallsBackToProposalsConnectionWhenGlobalProposalC
 				t.Fatalf("request count = %d, want %d", got, want)
 			}
 		})
+	}
+}
+
+func TestInspectProposalWithContextCancelsRequest(t *testing.T) {
+	var requestCount atomic.Int32
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requestCount.Add(1)
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"data":{"proposals":[]}}`))
+	}))
+	defer server.Close()
+
+	indexer := NewDegovIndexer(server.URL)
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	_, err := indexer.InspectProposalWithContext(ctx, ProposalScope{
+		ChainID:         46,
+		DaoCode:         "ring-dao",
+		GovernorAddress: "0xAbC123",
+	}, "0xcancel")
+	if err == nil {
+		t.Fatal("InspectProposalWithContext() error = nil, want cancellation error")
+	}
+	if got := requestCount.Load(); got != 0 {
+		t.Fatalf("request count = %d, want 0", got)
 	}
 }
