@@ -58,6 +58,20 @@ type ProposalSummaryInput struct {
 	DaoCode    string `json:"daoCode"`
 }
 
+// GetCachedSummary returns a stored proposal summary without consulting external services.
+func (s *ProposalSummaryService) GetCachedSummary(input ProposalSummaryInput) (*dbmodels.ProposalSummary, error) {
+	var existingSummary dbmodels.ProposalSummary
+	err := s.db.Where(
+		"proposal_id = ? AND dao_code = ?",
+		input.ProposalID,
+		input.DaoCode,
+	).Order("ctime DESC").First(&existingSummary).Error
+	if err != nil {
+		return nil, err
+	}
+	return &existingSummary, nil
+}
+
 // GetOrGenerateSummary returns cached summary or generates a new one
 func (s *ProposalSummaryService) GetOrGenerateSummary(input ProposalSummaryInput) (string, error) {
 	daoConfig, err := s.daoConfigService.StandardConfig(input.DaoCode)
