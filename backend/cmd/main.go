@@ -169,14 +169,7 @@ func startServer() {
 		}))
 	}
 
-	corsHandler := cors.New(cors.Options{
-		AllowedOrigins:   []string{"*"},
-		AllowedMethods:   []string{"GET", "POST", "OPTIONS"},
-		AllowedHeaders:   []string{"Authorization", "Content-Type"},
-		AllowCredentials: true,
-		Debug:            config.GetAppEnv().IsDevelopment(),
-	})
-	httpHandler := corsHandler.Handler(mux)
+	httpHandler := newCORSHandler().Handler(mux)
 
 	slog.Info(
 		"Server is running",
@@ -192,4 +185,21 @@ func getMCPVersion() string {
 	}
 
 	return Version
+}
+
+func newCORSHandler() *cors.Cors {
+	return cors.New(cors.Options{
+		AllowedOrigins: []string{"*"},
+		AllowedMethods: []string{"GET", "POST", "OPTIONS"},
+		AllowedHeaders: []string{
+			"Accept",
+			"Authorization",
+			"Content-Type",
+			"Last-Event-ID",
+			"MCP-Protocol-Version",
+			"Mcp-Session-Id",
+		},
+		AllowCredentials: true,
+		Debug:            config.GetAppEnv().IsDevelopment(),
+	})
 }
