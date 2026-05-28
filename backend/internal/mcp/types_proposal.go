@@ -25,6 +25,11 @@ type getProposalInput struct {
 	ProposalID string `json:"proposalId" jsonschema:"Proposal id"`
 }
 
+type getProposalStateInput struct {
+	DaoCode    string `json:"daoCode" jsonschema:"DAO code"`
+	ProposalID string `json:"proposalId" jsonschema:"Proposal id"`
+}
+
 type listProposalsOutput struct {
 	DaoCode   string               `json:"daoCode"`
 	State     string               `json:"state,omitempty"`
@@ -35,6 +40,15 @@ type listProposalsOutput struct {
 
 type getProposalOutput struct {
 	Proposal proposalToolOutput `json:"proposal"`
+}
+
+type getProposalStateOutput struct {
+	DaoCode           string     `json:"daoCode"`
+	ProposalID        string     `json:"proposalId"`
+	State             string     `json:"state"`
+	Source            string     `json:"source"`
+	ProposalCreatedAt *time.Time `json:"proposalCreatedAt,omitempty"`
+	UpdatedAt         *time.Time `json:"updatedAt,omitempty"`
 }
 
 type proposalToolOutput struct {

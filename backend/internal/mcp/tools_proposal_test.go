@@ -298,6 +298,173 @@ func TestGetProposalToolReturnsDetail(t *testing.T) {
 	}
 }
 
+func TestProposalToolsListIncludesGetProposalState(t *testing.T) {
+	server := newTestProposalServer(t)
+	session, closeSession := newProposalTestSession(t, server)
+	defer closeSession()
+
+	result, err := session.ListTools(context.Background(), nil)
+	if err != nil {
+		t.Fatalf("ListTools() error = %v", err)
+	}
+
+	for _, tool := range result.Tools {
+		if tool.Name == "get_proposal_state" {
+			return
+		}
+	}
+	t.Fatal("get_proposal_state not found in tool listing")
+}
+
+func TestGetProposalStateToolReturnsTrackedState(t *testing.T) {
+	server := newTestProposalServer(t)
+	createdAt := time.Now().Add(-time.Hour).UTC()
+	updatedAt := time.Now().UTC()
+
+	seedMCPProposal(t, dbmodels.ProposalTracking{
+		ID:                "proposal-state",
+		DaoCode:           "ring-dao",
+		ChainId:           46,
+		Title:             "State proposal",
+		ProposalLink:      "https://gov.ringdao.com/proposal/state",
+		ProposalID:        "0xstate",
+		State:             dbmodels.ProposalStateQueued,
+		ProposalCreatedAt: &createdAt,
+		ProposalAtBlock:   23456,
+		CTime:             createdAt,
+		UTime:             &updatedAt,
+	})
+
+	result := callProposalTool(t, server, "get_proposal_state", map[string]any{
+		"daoCode":    " ring-dao ",
+		"proposalId": " 0xstate ",
+	})
+	content := requireStructuredContent(t, result)
+
+	if got, want := content["daoCode"], "ring-dao"; got != want {
+		t.Fatalf("daoCode = %v, want %v", got, want)
+	}
+	if got, want := content["proposalId"], "0xstate"; got != want {
+		t.Fatalf("proposalId = %v, want %v", got, want)
+	}
+	if got, want := content["state"], "QUEUED"; got != want {
+		t.Fatalf("state = %v, want %v", got, want)
+	}
+	if got, want := content["source"], "tracked"; got != want {
+		t.Fatalf("source = %v, want %v", got, want)
+	}
+	if _, ok := content["updatedAt"]; !ok {
+		t.Fatal("updatedAt is missing")
+	}
+}
+
+func TestGetProposalStateToolReturnsClearErrors(t *testing.T) {
+	tests := []struct {
+		name      string
+		arguments map[string]any
+		wantError string
+	}{
+		{
+			name:      "invalid dao code",
+			arguments: map[string]any{"daoCode": "", "proposalId": "0xstate"},
+			wantError: "invalid_dao_code",
+		},
+		{
+			name:      "invalid proposal id",
+			arguments: map[string]any{"daoCode": "ring-dao", "proposalId": ""},
+			wantError: "invalid_proposal_id",
+		},
+		{
+			name:      "unknown dao",
+			arguments: map[string]any{"daoCode": "missing-dao", "proposalId": "0xstate"},
+			wantError: "dao_not_found",
+		},
+		{
+			name:      "unknown proposal",
+			arguments: map[string]any{"daoCode": "ring-dao", "proposalId": "0xmissing"},
+			wantError: "proposal_not_found",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := newTestProposalServer(t)
+
+			result := callProposalTool(t, server, "get_proposal_state", tt.arguments)
+
+			requireToolErrorContains(t, result, tt.wantError)
+		})
+	}
+}
+
+func TestGetProposalStateToolRejectsUnavailableState(t *testing.T) {
+	server := newTestProposalServer(t)
+	seedMCPProposal(t, dbmodels.ProposalTracking{
+		ID:           "proposal-state-unavailable",
+		DaoCode:      "ring-dao",
+		ChainId:      46,
+		Title:        "State unavailable proposal",
+		ProposalLink: "https://gov.ringdao.com/proposal/state-unavailable",
+		ProposalID:   "0xnostate",
+		State:        "",
+		CTime:        time.Now(),
+	})
+
+	result := callProposalTool(t, server, "get_proposal_state", map[string]any{
+		"daoCode":    "ring-dao",
+		"proposalId": "0xnostate",
+	})
+
+	requireToolErrorContains(t, result, "proposal_state_unavailable")
+}
+
+func TestGetProposalStateToolDoesNotMutateTrackingState(t *testing.T) {
+	server := newTestProposalServer(t)
+	nextTrackAt := time.Now().Add(time.Hour).UTC()
+	updatedAt := time.Now().Add(-time.Minute).UTC()
+	seedMCPProposal(t, dbmodels.ProposalTracking{
+		ID:                 "proposal-read-only",
+		DaoCode:            "ring-dao",
+		ChainId:            46,
+		Title:              "Read-only proposal",
+		ProposalLink:       "https://gov.ringdao.com/proposal/read-only",
+		ProposalID:         "0xreadonly",
+		State:              dbmodels.ProposalStateActive,
+		TimesTrack:         5,
+		TimeNextTrack:      &nextTrackAt,
+		Message:            "keep retry metadata",
+		OffsetTrackingVote: 9,
+		CTime:              time.Now().Add(-time.Hour).UTC(),
+		UTime:              &updatedAt,
+	})
+
+	result := callProposalTool(t, server, "get_proposal_state", map[string]any{
+		"daoCode":    "ring-dao",
+		"proposalId": "0xreadonly",
+	})
+	requireStructuredContent(t, result)
+
+	var proposal dbmodels.ProposalTracking
+	if err := database.DB.Where("dao_code = ? AND proposal_id = ?", "ring-dao", "0xreadonly").First(&proposal).Error; err != nil {
+		t.Fatalf("load proposal: %v", err)
+	}
+	if got, want := proposal.TimesTrack, 5; got != want {
+		t.Fatalf("TimesTrack = %d, want %d", got, want)
+	}
+	if proposal.TimeNextTrack == nil || !proposal.TimeNextTrack.Equal(nextTrackAt) {
+		t.Fatalf("TimeNextTrack = %v, want %v", proposal.TimeNextTrack, nextTrackAt)
+	}
+	if got, want := proposal.Message, "keep retry metadata"; got != want {
+		t.Fatalf("Message = %q, want %q", got, want)
+	}
+	if got, want := proposal.OffsetTrackingVote, 9; got != want {
+		t.Fatalf("OffsetTrackingVote = %d, want %d", got, want)
+	}
+	if proposal.UTime == nil || !proposal.UTime.Equal(updatedAt) {
+		t.Fatalf("UTime = %v, want %v", proposal.UTime, updatedAt)
+	}
+}
+
 func TestProposalToolsReturnClearErrors(t *testing.T) {
 	tests := []struct {
 		name      string
@@ -345,5 +512,27 @@ func TestProposalToolsReturnClearErrors(t *testing.T) {
 
 			requireToolErrorContains(t, result, tt.wantError)
 		})
+	}
+}
+
+func newProposalTestSession(t *testing.T, server *sdkmcp.Server) (*sdkmcp.ClientSession, func()) {
+	t.Helper()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	clientTransport, serverTransport := sdkmcp.NewInMemoryTransports()
+	go func() {
+		_ = server.Run(ctx, serverTransport)
+	}()
+
+	client := sdkmcp.NewClient(&sdkmcp.Implementation{Name: "test-client"}, nil)
+	session, err := client.Connect(ctx, clientTransport, nil)
+	if err != nil {
+		cancel()
+		t.Fatalf("Connect() error = %v", err)
+	}
+
+	return session, func() {
+		session.Close()
+		cancel()
 	}
 }

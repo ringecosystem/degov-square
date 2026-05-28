@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
+	gqlmodels "github.com/ringecosystem/degov-square/graph/models"
 	"github.com/ringecosystem/degov-square/services"
 	"github.com/ringecosystem/degov-square/types"
 	"gorm.io/gorm"
@@ -30,6 +31,15 @@ func addProposalTools(server *sdkmcp.Server) {
 			ReadOnlyHint: true,
 		},
 	}, getProposalTool)
+
+	sdkmcp.AddTool(server, &sdkmcp.Tool{
+		Name:        "get_proposal_state",
+		Title:       "Get Proposal State",
+		Description: "Return the cached governance proposal state for a DAO.",
+		Annotations: &sdkmcp.ToolAnnotations{
+			ReadOnlyHint: true,
+		},
+	}, getProposalStateTool)
 }
 
 func listProposalsTool(ctx context.Context, req *sdkmcp.CallToolRequest, input listProposalsInput) (*sdkmcp.CallToolResult, listProposalsOutput, error) {
@@ -108,6 +118,59 @@ func getProposalTool(ctx context.Context, req *sdkmcp.CallToolRequest, input get
 
 	return nil, getProposalOutput{
 		Proposal: proposalToolDTO(proposal),
+	}, nil
+}
+
+func getProposalStateTool(ctx context.Context, req *sdkmcp.CallToolRequest, input getProposalStateInput) (*sdkmcp.CallToolResult, getProposalStateOutput, error) {
+	daoCode, err := normalizeProposalDaoCode(input.DaoCode)
+	if err != nil {
+		return nil, getProposalStateOutput{}, err
+	}
+	proposalID := strings.TrimSpace(input.ProposalID)
+	if proposalID == "" {
+		return nil, getProposalStateOutput{}, errors.New("invalid_proposal_id: proposalId is required")
+	}
+	if err := requireDAO(daoCode); err != nil {
+		return nil, getProposalStateOutput{}, err
+	}
+
+	proposalService := services.NewProposalService()
+	state, err := proposalService.GetProposalState(gqlmodels.ProposalStateInput{
+		DaoCode:    daoCode,
+		ProposalID: proposalID,
+	})
+	if err != nil {
+		return nil, getProposalStateOutput{}, fmt.Errorf("proposal_state_lookup_failed: %w", err)
+	}
+	if state == nil {
+		return nil, getProposalStateOutput{}, fmt.Errorf("proposal_not_found: proposal %q was not found for DAO %q", proposalID, daoCode)
+	}
+	if strings.TrimSpace(string(*state)) == "" {
+		return nil, getProposalStateOutput{}, fmt.Errorf("proposal_state_unavailable: proposal %q has no cached state for DAO %q", proposalID, daoCode)
+	}
+
+	proposal, err := proposalService.InspectProposal(types.InspectProposalInput{
+		DaoCode:    daoCode,
+		ProposalID: proposalID,
+	})
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, getProposalStateOutput{}, fmt.Errorf("proposal_not_found: proposal %q was not found for DAO %q", proposalID, daoCode)
+		}
+		return nil, getProposalStateOutput{}, fmt.Errorf("proposal_lookup_failed: %w", err)
+	}
+
+	updatedAt := proposal.CTime
+	if proposal.UTime != nil {
+		updatedAt = *proposal.UTime
+	}
+	return nil, getProposalStateOutput{
+		DaoCode:           daoCode,
+		ProposalID:        proposalID,
+		State:             string(*state),
+		Source:            "tracked",
+		ProposalCreatedAt: proposal.ProposalCreatedAt,
+		UpdatedAt:         &updatedAt,
 	}, nil
 }
 
