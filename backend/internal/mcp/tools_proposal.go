@@ -33,7 +33,7 @@ func addProposalTools(server *sdkmcp.Server) {
 }
 
 func listProposalsTool(ctx context.Context, req *sdkmcp.CallToolRequest, input listProposalsInput) (*sdkmcp.CallToolResult, listProposalsOutput, error) {
-	daoCode, err := normalizeDaoCode(input.DaoCode)
+	daoCode, err := normalizeProposalDaoCode(input.DaoCode)
 	if err != nil {
 		return nil, listProposalsOutput{}, err
 	}
@@ -82,7 +82,7 @@ func listProposalsTool(ctx context.Context, req *sdkmcp.CallToolRequest, input l
 }
 
 func getProposalTool(ctx context.Context, req *sdkmcp.CallToolRequest, input getProposalInput) (*sdkmcp.CallToolResult, getProposalOutput, error) {
-	daoCode, err := normalizeDaoCode(input.DaoCode)
+	daoCode, err := normalizeProposalDaoCode(input.DaoCode)
 	if err != nil {
 		return nil, getProposalOutput{}, err
 	}
@@ -121,7 +121,7 @@ func normalizeProposalListLimit(limit int) int {
 	return limit
 }
 
-func normalizeDaoCode(raw string) (string, error) {
+func normalizeProposalDaoCode(raw string) (string, error) {
 	daoCode := strings.TrimSpace(raw)
 	if daoCode == "" {
 		return "", errors.New("invalid_dao_code: daoCode is required")
