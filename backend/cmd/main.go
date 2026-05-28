@@ -19,6 +19,7 @@ import (
 	"github.com/ringecosystem/degov-square/internal"
 	"github.com/ringecosystem/degov-square/internal/config"
 	"github.com/ringecosystem/degov-square/internal/directives"
+	mcpserver "github.com/ringecosystem/degov-square/internal/mcp"
 	"github.com/ringecosystem/degov-square/internal/middleware"
 	"github.com/ringecosystem/degov-square/routes"
 	"github.com/ringecosystem/degov-square/tasks"
@@ -157,6 +158,15 @@ func startServer() {
 	mux.Handle("/dao/config", middlewareChain.Then(http.HandlerFunc(daoRoute.ConfigHandler)))
 	mux.Handle("/dao/config/{dao}", middlewareChain.Then(http.HandlerFunc(daoRoute.ConfigHandler)))
 
+	if cfg.GetMCPEnabled() {
+		mux.Handle(cfg.GetMCPPath(), mcpserver.NewHTTPHandler(mcpserver.Config{
+			Name:        "degov-square",
+			Version:     getMCPVersion(),
+			AuthMode:    cfg.GetMCPAuthMode(),
+			BearerToken: cfg.GetMCPBearerToken(),
+		}))
+	}
+
 	corsHandler := cors.New(cors.Options{
 		AllowedOrigins:   []string{"*"},
 		AllowedMethods:   []string{"GET", "POST", "OPTIONS"},
@@ -172,4 +182,12 @@ func startServer() {
 	)
 	err := http.ListenAndServe(":"+port, httpHandler)
 	slog.Error("failed to listen server", "error", err)
+}
+
+func getMCPVersion() string {
+	if Version == "" {
+		return "Debug"
+	}
+
+	return Version
 }

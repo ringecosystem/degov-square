@@ -104,6 +104,12 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("DAO_CONFIG_MODE", "")
 	v.SetDefault("DAO_CONFIG_NEXT_INDEXER_ENDPOINT_TEMPLATE", "https://indexer.next.degov.ai/{code}/graphql")
 
+	// MCP defaults
+	v.SetDefault("MCP_ENABLED", false)
+	v.SetDefault("MCP_PATH", "/mcp")
+	v.SetDefault("MCP_AUTH_MODE", "bearer")
+	v.SetDefault("MCP_BEARER_TOKEN", "")
+
 	// Task defaults
 	v.SetDefault("TASK_DAO_SYNC_ENABLED", true)
 	v.SetDefault("TASK_DAO_SYNC_INTERVAL", "5m")
@@ -198,6 +204,22 @@ func (c *Config) GetAppEnv() Environment {
 	// Try GO_ENV first, then APP_ENV
 	env := c.viper.GetString("APP_ENV")
 	return parseEnvironment(strings.ToLower(strings.TrimSpace(env)))
+}
+
+func (c *Config) GetMCPEnabled() bool {
+	return c.viper.GetBool("MCP_ENABLED")
+}
+
+func (c *Config) GetMCPPath() string {
+	return c.viper.GetString("MCP_PATH")
+}
+
+func (c *Config) GetMCPAuthMode() string {
+	return strings.ToLower(strings.TrimSpace(c.viper.GetString("MCP_AUTH_MODE")))
+}
+
+func (c *Config) GetMCPBearerToken() string {
+	return c.viper.GetString("MCP_BEARER_TOKEN")
 }
 
 // Task configuration methods
