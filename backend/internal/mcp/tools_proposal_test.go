@@ -1,0 +1,334 @@
+package mcp
+
+import (
+	"context"
+	"fmt"
+	"strings"
+	"testing"
+	"time"
+
+	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
+	"github.com/ringecosystem/degov-square/database"
+	dbmodels "github.com/ringecosystem/degov-square/database/models"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
+)
+
+func newTestProposalServer(t *testing.T) *sdkmcp.Server {
+	t.Helper()
+
+	previousDB := database.DB
+	t.Cleanup(func() {
+		database.DB = previousDB
+	})
+
+	db, err := gorm.Open(sqlite.Open("file:"+t.Name()+"?mode=memory&cache=shared"), &gorm.Config{})
+	if err != nil {
+		t.Fatalf("open sqlite db: %v", err)
+	}
+	if err := db.Exec(`
+		CREATE TABLE dgv_dao (
+			id TEXT PRIMARY KEY,
+			chain_id INTEGER NOT NULL,
+			chain_name TEXT NOT NULL,
+			chain_logo TEXT,
+			name TEXT NOT NULL,
+			code TEXT NOT NULL,
+			logo TEXT,
+			seq INTEGER NOT NULL DEFAULT 0,
+			endpoint TEXT NOT NULL,
+			state TEXT NOT NULL,
+			tags TEXT,
+			domains TEXT,
+			features TEXT,
+			config_link TEXT NOT NULL,
+			time_syncd DATETIME,
+			metrics_count_proposals INTEGER NOT NULL DEFAULT 0,
+			metrics_count_members INTEGER NOT NULL DEFAULT 0,
+			metrics_sum_power TEXT NOT NULL DEFAULT '0',
+			metrics_count_vote INTEGER NOT NULL DEFAULT 0,
+			last_tracked_block_number INTEGER NOT NULL DEFAULT 0,
+			last_tracked_proposal_id TEXT NOT NULL DEFAULT '',
+			ctime DATETIME NOT NULL,
+			utime DATETIME
+		)
+	`).Error; err != nil {
+		t.Fatalf("create dao table: %v", err)
+	}
+	if err := db.Exec(`
+		CREATE TABLE dgv_proposal_tracking (
+			id TEXT PRIMARY KEY,
+			dao_code TEXT NOT NULL,
+			chain_id INTEGER NOT NULL,
+			title TEXT NOT NULL,
+			proposal_link TEXT NOT NULL,
+			proposal_id TEXT NOT NULL,
+			state TEXT NOT NULL,
+			proposal_created_at DATETIME,
+			proposal_at_block INTEGER NOT NULL,
+			times_track INTEGER NOT NULL DEFAULT 0,
+			time_next_track DATETIME,
+			message TEXT,
+			offset_tracking_vote INTEGER DEFAULT 0,
+			fulfilled INTEGER DEFAULT 0,
+			fulfilled_explain TEXT,
+			fulfilled_at DATETIME,
+			times_fulfill INTEGER DEFAULT 0,
+			fulfill_errored INTEGER DEFAULT 0,
+			ctime DATETIME NOT NULL,
+			utime DATETIME
+		)
+	`).Error; err != nil {
+		t.Fatalf("create proposal tracking table: %v", err)
+	}
+	database.DB = db
+
+	seedMCPDao(t, db, "ring-dao")
+	return NewServer(Config{Name: "degov-square", Version: "test-version"})
+}
+
+func seedMCPDao(t *testing.T, db *gorm.DB, code string) {
+	t.Helper()
+
+	if err := db.Create(&dbmodels.Dao{
+		ID:         "dao-" + code,
+		ChainID:    46,
+		ChainName:  "Darwinia",
+		Name:       "Ring DAO",
+		Code:       code,
+		Endpoint:   "https://gov.ringdao.com",
+		State:      dbmodels.DaoStateActive,
+		ConfigLink: "https://example.com/config.yml",
+		CTime:      time.Now(),
+	}).Error; err != nil {
+		t.Fatalf("seed dao: %v", err)
+	}
+}
+
+func seedMCPProposal(t *testing.T, proposal dbmodels.ProposalTracking) {
+	t.Helper()
+
+	if err := database.DB.Create(&proposal).Error; err != nil {
+		t.Fatalf("seed proposal: %v", err)
+	}
+}
+
+func callProposalTool(t *testing.T, server *sdkmcp.Server, name string, arguments map[string]any) *sdkmcp.CallToolResult {
+	t.Helper()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	clientTransport, serverTransport := sdkmcp.NewInMemoryTransports()
+	go func() {
+		_ = server.Run(ctx, serverTransport)
+	}()
+
+	client := sdkmcp.NewClient(&sdkmcp.Implementation{Name: "test-client"}, nil)
+	session, err := client.Connect(ctx, clientTransport, nil)
+	if err != nil {
+		t.Fatalf("Connect() error = %v", err)
+	}
+	defer session.Close()
+
+	result, err := session.CallTool(ctx, &sdkmcp.CallToolParams{
+		Name:      name,
+		Arguments: arguments,
+	})
+	if err != nil {
+		t.Fatalf("CallTool() protocol error = %v", err)
+	}
+	return result
+}
+
+func requireStructuredContent(t *testing.T, result *sdkmcp.CallToolResult) map[string]any {
+	t.Helper()
+
+	if result.IsError {
+		t.Fatalf("CallTool() returned error result: %v", result.Content)
+	}
+	content, ok := result.StructuredContent.(map[string]any)
+	if !ok {
+		t.Fatalf("StructuredContent type = %T, want map[string]any", result.StructuredContent)
+	}
+	return content
+}
+
+func requireToolErrorContains(t *testing.T, result *sdkmcp.CallToolResult, want string) {
+	t.Helper()
+
+	if !result.IsError {
+		t.Fatalf("IsError = false, want true")
+	}
+	if len(result.Content) == 0 {
+		t.Fatalf("error content is empty")
+	}
+	text, ok := result.Content[0].(*sdkmcp.TextContent)
+	if !ok {
+		t.Fatalf("error content type = %T, want *TextContent", result.Content[0])
+	}
+	if !strings.Contains(text.Text, want) {
+		t.Fatalf("error text = %q, want substring %q", text.Text, want)
+	}
+}
+
+func TestListProposalsToolReturnsBoundedRows(t *testing.T) {
+	server := newTestProposalServer(t)
+	createdAt := time.Now().Add(-time.Hour)
+	for i := 0; i < 60; i++ {
+		seedMCPProposal(t, dbmodels.ProposalTracking{
+			ID:                fmt.Sprintf("proposal-%d", i),
+			DaoCode:           "ring-dao",
+			ChainId:           46,
+			Title:             fmt.Sprintf("Proposal %d", i),
+			ProposalLink:      fmt.Sprintf("https://gov.ringdao.com/proposal/%d", i),
+			ProposalID:        fmt.Sprintf("0x%x", i),
+			State:             dbmodels.ProposalStateActive,
+			ProposalCreatedAt: &createdAt,
+			CTime:             time.Now(),
+		})
+	}
+
+	result := callProposalTool(t, server, "list_proposals", map[string]any{
+		"daoCode": "ring-dao",
+		"limit":   99,
+	})
+	content := requireStructuredContent(t, result)
+
+	if got, want := content["limit"], float64(50); got != want {
+		t.Fatalf("limit = %v, want %v", got, want)
+	}
+	proposals, ok := content["proposals"].([]any)
+	if !ok {
+		t.Fatalf("proposals type = %T, want []any", content["proposals"])
+	}
+	if len(proposals) != 50 {
+		t.Fatalf("len(proposals) = %d, want 50", len(proposals))
+	}
+}
+
+func TestListProposalsToolFiltersByState(t *testing.T) {
+	server := newTestProposalServer(t)
+
+	seedMCPProposal(t, dbmodels.ProposalTracking{
+		ID:           "proposal-active",
+		DaoCode:      "ring-dao",
+		ChainId:      46,
+		Title:        "Active proposal",
+		ProposalLink: "https://gov.ringdao.com/proposal/active",
+		ProposalID:   "0xactive",
+		State:        dbmodels.ProposalStateActive,
+		CTime:        time.Now(),
+	})
+	seedMCPProposal(t, dbmodels.ProposalTracking{
+		ID:           "proposal-executed",
+		DaoCode:      "ring-dao",
+		ChainId:      46,
+		Title:        "Executed proposal",
+		ProposalLink: "https://gov.ringdao.com/proposal/executed",
+		ProposalID:   "0xexecuted",
+		State:        dbmodels.ProposalStateExecuted,
+		CTime:        time.Now(),
+	})
+
+	result := callProposalTool(t, server, "list_proposals", map[string]any{
+		"daoCode": "ring-dao",
+		"state":   "executed",
+	})
+	content := requireStructuredContent(t, result)
+	proposals := content["proposals"].([]any)
+
+	if len(proposals) != 1 {
+		t.Fatalf("len(proposals) = %d, want 1", len(proposals))
+	}
+	proposal := proposals[0].(map[string]any)
+	if got, want := proposal["proposalId"], "0xexecuted"; got != want {
+		t.Fatalf("proposalId = %v, want %v", got, want)
+	}
+}
+
+func TestGetProposalToolReturnsDetail(t *testing.T) {
+	server := newTestProposalServer(t)
+	createdAt := time.Now().Add(-time.Hour)
+
+	seedMCPProposal(t, dbmodels.ProposalTracking{
+		ID:                 "proposal-detail",
+		DaoCode:            "ring-dao",
+		ChainId:            46,
+		Title:              "Detailed proposal",
+		ProposalLink:       "https://gov.ringdao.com/proposal/detail",
+		ProposalID:         "0xdetail",
+		State:              dbmodels.ProposalStateSucceeded,
+		ProposalCreatedAt:  &createdAt,
+		ProposalAtBlock:    12345,
+		OffsetTrackingVote: 12,
+		CTime:              time.Now(),
+	})
+
+	result := callProposalTool(t, server, "get_proposal", map[string]any{
+		"daoCode":    "ring-dao",
+		"proposalId": "0xdetail",
+	})
+	content := requireStructuredContent(t, result)
+
+	proposal := content["proposal"].(map[string]any)
+	if got, want := proposal["proposalId"], "0xdetail"; got != want {
+		t.Fatalf("proposalId = %v, want %v", got, want)
+	}
+	if got, want := proposal["state"], "SUCCEEDED"; got != want {
+		t.Fatalf("state = %v, want %v", got, want)
+	}
+	if got, want := proposal["offsetTrackingVote"], float64(12); got != want {
+		t.Fatalf("offsetTrackingVote = %v, want %v", got, want)
+	}
+}
+
+func TestProposalToolsReturnClearErrors(t *testing.T) {
+	tests := []struct {
+		name      string
+		tool      string
+		arguments map[string]any
+		wantError string
+	}{
+		{
+			name:      "invalid state",
+			tool:      "list_proposals",
+			arguments: map[string]any{"daoCode": "ring-dao", "state": "bad"},
+			wantError: "invalid_state",
+		},
+		{
+			name:      "invalid dao code",
+			tool:      "list_proposals",
+			arguments: map[string]any{"daoCode": ""},
+			wantError: "invalid_dao_code",
+		},
+		{
+			name:      "unknown dao",
+			tool:      "list_proposals",
+			arguments: map[string]any{"daoCode": "missing-dao"},
+			wantError: "dao_not_found",
+		},
+		{
+			name:      "invalid proposal id",
+			tool:      "get_proposal",
+			arguments: map[string]any{"daoCode": "ring-dao", "proposalId": ""},
+			wantError: "invalid_proposal_id",
+		},
+		{
+			name:      "unknown proposal",
+			tool:      "get_proposal",
+			arguments: map[string]any{"daoCode": "ring-dao", "proposalId": "0xmissing"},
+			wantError: "proposal_not_found",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := newTestProposalServer(t)
+
+			result := callProposalTool(t, server, tt.tool, tt.arguments)
+
+			requireToolErrorContains(t, result, tt.wantError)
+		})
+	}
+}

@@ -22,6 +22,13 @@ type TrackingStateProposalsInput struct {
 	States     []dbmodels.ProposalState
 }
 
+type ListProposalsInput struct {
+	DaoCode string
+	State   dbmodels.ProposalState
+	Limit   int
+	Offset  int
+}
+
 // ProposalStateCountResult represents the result of proposal state count query
 type ProposalStateCountResult struct {
 	DaoCode string                 `json:"dao_code"`
