@@ -113,28 +113,23 @@ func generateSummaryWithTimeout(ctx context.Context, cfg Config, input services.
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
-	type result struct {
-		summary string
-		err     error
+	summary, err := cfg.ProposalSummaryService.GetOrGenerateSummaryWithContext(ctx, input)
+	if err != nil {
+		if ctx.Err() != nil {
+			if errors.Is(ctx.Err(), context.DeadlineExceeded) {
+				return "", fmt.Errorf("summary_generation_timeout: exceeded %s", timeout)
+			}
+			return "", fmt.Errorf("summary_generation_cancelled: %w", ctx.Err())
+		}
+		return "", fmt.Errorf("summary_generation_failed: %w", err)
 	}
-	resultCh := make(chan result, 1)
-	go func() {
-		summary, err := cfg.ProposalSummaryService.GetOrGenerateSummary(input)
-		resultCh <- result{summary: summary, err: err}
-	}()
-
-	select {
-	case <-ctx.Done():
+	if ctx.Err() != nil {
 		if errors.Is(ctx.Err(), context.DeadlineExceeded) {
 			return "", fmt.Errorf("summary_generation_timeout: exceeded %s", timeout)
 		}
 		return "", fmt.Errorf("summary_generation_cancelled: %w", ctx.Err())
-	case result := <-resultCh:
-		if result.err != nil {
-			return "", fmt.Errorf("summary_generation_failed: %w", result.err)
-		}
-		return result.summary, nil
 	}
+	return summary, nil
 }
 
 func summaryFailureReason(err error) string {

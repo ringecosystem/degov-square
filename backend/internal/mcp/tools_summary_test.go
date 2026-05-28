@@ -1,6 +1,7 @@
 package mcp
 
 import (
+	"context"
 	"errors"
 	"testing"
 	"time"
@@ -18,6 +19,7 @@ type fakeProposalSummaryService struct {
 	generateDelay    time.Duration
 	generateInput    services.ProposalSummaryInput
 	generateCalls    int
+	ctxDone          chan error
 }
 
 func (s *fakeProposalSummaryService) GetCachedSummary(input services.ProposalSummaryInput) (*dbmodels.ProposalSummary, error) {
@@ -29,6 +31,27 @@ func (s *fakeProposalSummaryService) GetOrGenerateSummary(input services.Proposa
 	s.generateCalls++
 	if s.generateDelay > 0 {
 		time.Sleep(s.generateDelay)
+	}
+	return s.generatedSummary, s.generateErr
+}
+
+func (s *fakeProposalSummaryService) GetOrGenerateSummaryWithContext(ctx context.Context, input services.ProposalSummaryInput) (string, error) {
+	s.generateInput = input
+	s.generateCalls++
+	if s.ctxDone != nil {
+		<-ctx.Done()
+		err := ctx.Err()
+		s.ctxDone <- err
+		return "", err
+	}
+	if s.generateDelay > 0 {
+		timer := time.NewTimer(s.generateDelay)
+		defer timer.Stop()
+		select {
+		case <-ctx.Done():
+			return "", ctx.Err()
+		case <-timer.C:
+		}
 	}
 	return s.generatedSummary, s.generateErr
 }
@@ -156,6 +179,37 @@ func TestSummarizeProposalToolBoundsGenerationByTimeout(t *testing.T) {
 	})
 
 	requireToolErrorContains(t, result, "summary_generation_timeout")
+}
+
+func TestSummarizeProposalToolCancelsGenerationOnTimeout(t *testing.T) {
+	ctxDone := make(chan error, 1)
+	summaryService := &fakeProposalSummaryService{
+		cachedErr:     errors.New("record not found"),
+		generateDelay: 200 * time.Millisecond,
+		ctxDone:       ctxDone,
+	}
+	server := NewServer(Config{
+		Name:                             "degov-square",
+		Version:                          "test-version",
+		ProposalSummaryGenerateEnabled:   true,
+		ProposalSummaryGenerationTimeout: 10 * time.Millisecond,
+		ProposalSummaryService:           summaryService,
+	})
+
+	result := callProposalTool(t, server, "summarize_proposal", map[string]any{
+		"daoCode":    "ring-dao",
+		"proposalId": "0xcancel",
+	})
+
+	requireToolErrorContains(t, result, "summary_generation_timeout")
+	select {
+	case err := <-ctxDone:
+		if !errors.Is(err, context.DeadlineExceeded) {
+			t.Fatalf("generation context error = %v, want %v", err, context.DeadlineExceeded)
+		}
+	case <-time.After(100 * time.Millisecond):
+		t.Fatal("generation did not observe timeout cancellation")
+	}
 }
 
 func TestSummarizeProposalToolReturnsStructuredFailure(t *testing.T) {
