@@ -103,6 +103,31 @@ func (s *ProposalService) TrackingStateProposals(input types.TrackingStatePropos
 	return proposals, nil
 }
 
+func (s *ProposalService) ListProposals(input types.ListProposalsInput) ([]*dbmodels.ProposalTracking, error) {
+	var proposals []*dbmodels.ProposalTracking
+
+	query := s.db.
+		Where("dao_code = ?", input.DaoCode).
+		Order("proposal_created_at IS NULL ASC").
+		Order("proposal_created_at DESC").
+		Order("ctime DESC")
+
+	if input.State != "" {
+		query = query.Where("state = ?", input.State)
+	}
+	if input.Offset > 0 {
+		query = query.Offset(input.Offset)
+	}
+	if input.Limit > 0 {
+		query = query.Limit(input.Limit)
+	}
+
+	if err := query.Find(&proposals).Error; err != nil {
+		return nil, err
+	}
+	return proposals, nil
+}
+
 // UpdateProposalState updates the state of a proposal
 func (s *ProposalService) UpdateProposalState(proposalID, daoCode string, newState dbmodels.ProposalState) error {
 	return s.db.Model(&dbmodels.ProposalTracking{}).

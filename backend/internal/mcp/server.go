@@ -24,6 +24,7 @@ func NewServer(cfg Config) *sdkmcp.Server {
 
 	addPingTool(server, cfg)
 	addDaoTools(server, withDefaultDaoServices(cfg))
+	addProposalTools(server)
 
 	return server
 }

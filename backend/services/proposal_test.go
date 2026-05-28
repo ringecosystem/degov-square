@@ -86,6 +86,102 @@ func TestTrackingStateProposalsWithoutTimesTrackLimitReturnsStalledRows(t *testi
 	}
 }
 
+func TestListProposalsReturnsBoundedRows(t *testing.T) {
+	service := newTestProposalService(t)
+	older := time.Now().Add(-2 * time.Hour)
+	newer := time.Now().Add(-time.Hour)
+
+	seedProposalTracking(t, service, dbmodels.ProposalTracking{
+		ID:                "proposal-4",
+		DaoCode:           "ring-dao",
+		ChainId:           46,
+		Title:             "Older proposal",
+		ProposalLink:      "https://gov.ringdao.com/proposal/4",
+		ProposalID:        "0x4",
+		State:             dbmodels.ProposalStateActive,
+		ProposalCreatedAt: &older,
+		CTime:             time.Now(),
+	})
+	seedProposalTracking(t, service, dbmodels.ProposalTracking{
+		ID:                "proposal-5",
+		DaoCode:           "ring-dao",
+		ChainId:           46,
+		Title:             "Newer proposal",
+		ProposalLink:      "https://gov.ringdao.com/proposal/5",
+		ProposalID:        "0x5",
+		State:             dbmodels.ProposalStateExecuted,
+		ProposalCreatedAt: &newer,
+		CTime:             time.Now(),
+	})
+	seedProposalTracking(t, service, dbmodels.ProposalTracking{
+		ID:                "proposal-6",
+		DaoCode:           "other-dao",
+		ChainId:           46,
+		Title:             "Other DAO proposal",
+		ProposalLink:      "https://gov.ringdao.com/proposal/6",
+		ProposalID:        "0x6",
+		State:             dbmodels.ProposalStateActive,
+		ProposalCreatedAt: &newer,
+		CTime:             time.Now(),
+	})
+
+	proposals, err := service.ListProposals(types.ListProposalsInput{
+		DaoCode: "ring-dao",
+		Limit:   1,
+	})
+	if err != nil {
+		t.Fatalf("ListProposals returned error: %v", err)
+	}
+
+	if len(proposals) != 1 {
+		t.Fatalf("len(proposals) = %d, want 1", len(proposals))
+	}
+	if got, want := proposals[0].ProposalID, "0x5"; got != want {
+		t.Fatalf("proposal id = %q, want %q", got, want)
+	}
+}
+
+func TestListProposalsFiltersByState(t *testing.T) {
+	service := newTestProposalService(t)
+
+	seedProposalTracking(t, service, dbmodels.ProposalTracking{
+		ID:           "proposal-7",
+		DaoCode:      "ring-dao",
+		ChainId:      46,
+		Title:        "Active proposal",
+		ProposalLink: "https://gov.ringdao.com/proposal/7",
+		ProposalID:   "0x7",
+		State:        dbmodels.ProposalStateActive,
+		CTime:        time.Now(),
+	})
+	seedProposalTracking(t, service, dbmodels.ProposalTracking{
+		ID:           "proposal-8",
+		DaoCode:      "ring-dao",
+		ChainId:      46,
+		Title:        "Executed proposal",
+		ProposalLink: "https://gov.ringdao.com/proposal/8",
+		ProposalID:   "0x8",
+		State:        dbmodels.ProposalStateExecuted,
+		CTime:        time.Now(),
+	})
+
+	proposals, err := service.ListProposals(types.ListProposalsInput{
+		DaoCode: "ring-dao",
+		State:   dbmodels.ProposalStateExecuted,
+		Limit:   10,
+	})
+	if err != nil {
+		t.Fatalf("ListProposals returned error: %v", err)
+	}
+
+	if len(proposals) != 1 {
+		t.Fatalf("len(proposals) = %d, want 1", len(proposals))
+	}
+	if got, want := proposals[0].ProposalID, "0x8"; got != want {
+		t.Fatalf("proposal id = %q, want %q", got, want)
+	}
+}
+
 func TestResetProposalTrackingStatusClearsRetryMetadata(t *testing.T) {
 	service := newTestProposalService(t)
 	nextTrackAt := time.Now().Add(2 * time.Hour)
