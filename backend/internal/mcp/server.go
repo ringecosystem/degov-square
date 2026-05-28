@@ -4,13 +4,16 @@ import (
 	"net/http"
 
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
+	"github.com/ringecosystem/degov-square/services"
 )
 
 type Config struct {
-	Name        string
-	Version     string
-	AuthMode    string
-	BearerToken string
+	Name             string
+	Version          string
+	AuthMode         string
+	BearerToken      string
+	DaoService       daoService
+	DaoConfigService daoConfigService
 }
 
 func NewServer(cfg Config) *sdkmcp.Server {
@@ -20,8 +23,19 @@ func NewServer(cfg Config) *sdkmcp.Server {
 	}, nil)
 
 	addPingTool(server, cfg)
+	addDaoTools(server, withDefaultDaoServices(cfg))
 
 	return server
+}
+
+func withDefaultDaoServices(cfg Config) Config {
+	if cfg.DaoService == nil {
+		cfg.DaoService = services.NewDaoService()
+	}
+	if cfg.DaoConfigService == nil {
+		cfg.DaoConfigService = services.NewDaoConfigService()
+	}
+	return cfg
 }
 
 func NewHTTPHandler(cfg Config) http.Handler {
