@@ -160,10 +160,12 @@ func startServer() {
 
 	if cfg.GetMCPEnabled() {
 		mux.Handle(cfg.GetMCPPath(), mcpserver.NewHTTPHandler(mcpserver.Config{
-			Name:        "degov-square",
-			Version:     getMCPVersion(),
-			AuthMode:    cfg.GetMCPAuthMode(),
-			BearerToken: cfg.GetMCPBearerToken(),
+			Name:                             "degov-square",
+			Version:                          getMCPVersion(),
+			AuthMode:                         cfg.GetMCPAuthMode(),
+			BearerToken:                      cfg.GetMCPBearerToken(),
+			ProposalSummaryGenerateEnabled:   cfg.GetMCPProposalSummaryGenerateEnabled(),
+			ProposalSummaryGenerationTimeout: cfg.GetMCPProposalSummaryTimeout(),
 		}))
 	}
 

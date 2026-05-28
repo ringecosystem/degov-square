@@ -81,6 +81,21 @@ func newTestProposalServer(t *testing.T) *sdkmcp.Server {
 	`).Error; err != nil {
 		t.Fatalf("create proposal tracking table: %v", err)
 	}
+	if err := db.Exec(`
+		CREATE TABLE dgv_proposal_summary (
+			id TEXT PRIMARY KEY,
+			dao_code TEXT,
+			chain_id INTEGER NOT NULL,
+			proposal_id TEXT NOT NULL,
+			indexer TEXT,
+			description TEXT NOT NULL,
+			summary TEXT NOT NULL,
+			ctime DATETIME NOT NULL,
+			utime DATETIME
+		)
+	`).Error; err != nil {
+		t.Fatalf("create proposal summary table: %v", err)
+	}
 	database.DB = db
 
 	seedMCPDao(t, db, "ring-dao")

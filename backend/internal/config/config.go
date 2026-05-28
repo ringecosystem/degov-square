@@ -109,6 +109,8 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("MCP_PATH", "/mcp")
 	v.SetDefault("MCP_AUTH_MODE", "bearer")
 	v.SetDefault("MCP_BEARER_TOKEN", "")
+	v.SetDefault("MCP_PROPOSAL_SUMMARY_GENERATE_ENABLED", false)
+	v.SetDefault("MCP_PROPOSAL_SUMMARY_TIMEOUT", "30s")
 
 	// Task defaults
 	v.SetDefault("TASK_DAO_SYNC_ENABLED", true)
@@ -220,6 +222,14 @@ func (c *Config) GetMCPAuthMode() string {
 
 func (c *Config) GetMCPBearerToken() string {
 	return c.viper.GetString("MCP_BEARER_TOKEN")
+}
+
+func (c *Config) GetMCPProposalSummaryGenerateEnabled() bool {
+	return c.viper.GetBool("MCP_PROPOSAL_SUMMARY_GENERATE_ENABLED")
+}
+
+func (c *Config) GetMCPProposalSummaryTimeout() time.Duration {
+	return c.viper.GetDuration("MCP_PROPOSAL_SUMMARY_TIMEOUT")
 }
 
 // Task configuration methods
