@@ -20,6 +20,7 @@ func NewServer(cfg Config) *sdkmcp.Server {
 	}, nil)
 
 	addPingTool(server, cfg)
+	addProposalTools(server)
 
 	return server
 }
