@@ -256,3 +256,73 @@ func TestENSResolveBatchUsesCache(t *testing.T) {
 		t.Fatalf("expected one lookup call after cached batch, got %d", calls)
 	}
 }
+
+func TestENSResolveRecordsReturnsPublicRecords(t *testing.T) {
+	service := newTestENSService(t)
+	t.Setenv("RPC_URL_1", "https://env-rpc.example")
+
+	originalLookup := resolveENSPublicRecordsViaRPC
+	t.Cleanup(func() {
+		resolveENSPublicRecordsViaRPC = originalLookup
+	})
+
+	resolveENSPublicRecordsViaRPC = func(ctx context.Context, rpcURL string, name string) (*ENSPublicRecords, error) {
+		return &ENSPublicRecords{
+			Name:        name,
+			Address:     stringPtr("0x0000000000000000000000000000000000000001"),
+			Contenthash: stringPtr("ipfs://bafybeigdyrzt"),
+			Text: map[string]string{
+				"url": "https://alice.example",
+			},
+		}, nil
+	}
+
+	records, err := service.ResolveRecords(context.Background(), "alice.eth")
+	if err != nil {
+		t.Fatalf("ResolveRecords returned error: %v", err)
+	}
+	if records == nil {
+		t.Fatal("expected ENS public records, got nil")
+	}
+	if got, want := records.Name, "alice.eth"; got != want {
+		t.Fatalf("name = %q, want %q", got, want)
+	}
+	if records.Address == nil || *records.Address != "0x0000000000000000000000000000000000000001" {
+		t.Fatalf("address = %#v, want resolved address", records.Address)
+	}
+	if got, want := records.Text["url"], "https://alice.example"; got != want {
+		t.Fatalf("url text = %q, want %q", got, want)
+	}
+}
+
+func TestENSResolveRecordsReturnsEmptyRecordForMissingResolver(t *testing.T) {
+	service := newTestENSService(t)
+	t.Setenv("RPC_URL_1", "https://env-rpc.example")
+
+	originalLookup := resolveENSPublicRecordsViaRPC
+	t.Cleanup(func() {
+		resolveENSPublicRecordsViaRPC = originalLookup
+	})
+
+	resolveENSPublicRecordsViaRPC = func(ctx context.Context, rpcURL string, name string) (*ENSPublicRecords, error) {
+		return nil, errors.New("not a resolver")
+	}
+
+	records, err := service.ResolveRecords(context.Background(), "missing.eth")
+	if err != nil {
+		t.Fatalf("ResolveRecords returned error: %v", err)
+	}
+	if records == nil {
+		t.Fatal("expected empty ENS records, got nil")
+	}
+	if got, want := records.Name, "missing.eth"; got != want {
+		t.Fatalf("name = %q, want %q", got, want)
+	}
+	if records.Address != nil || records.Contenthash != nil || len(records.Text) != 0 {
+		t.Fatalf("expected empty public records, got %#v", records)
+	}
+}
+
+func stringPtr(value string) *string {
+	return &value
+}
