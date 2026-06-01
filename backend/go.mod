@@ -6,7 +6,7 @@ require (
 	github.com/99designs/gqlgen v0.17.90
 	github.com/JohannesKaufmann/html-to-markdown/v2 v2.5.0
 	github.com/bwmarrin/snowflake v0.3.0
-	github.com/ethereum/go-ethereum v1.17.2
+	github.com/ethereum/go-ethereum v1.17.3
 	github.com/go-co-op/gocron/v2 v2.21.1
 	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/golang-migrate/migrate/v4 v4.19.1
