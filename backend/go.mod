@@ -22,7 +22,7 @@ require (
 	github.com/sendgrid/sendgrid-go v3.16.1+incompatible
 	github.com/spf13/viper v1.21.0
 	github.com/spruceid/siwe-go v0.2.1
-	github.com/vanng822/go-premailer v1.33.0
+	github.com/vanng822/go-premailer v1.34.0
 	github.com/vektah/gqlparser/v2 v2.5.33
 	github.com/wealdtech/go-ens/v3 v3.6.0
 	go.uber.org/zap v1.28.0
