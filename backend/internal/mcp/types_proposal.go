@@ -52,21 +52,22 @@ type getProposalStateOutput struct {
 }
 
 type proposalToolOutput struct {
-	ID                 string     `json:"id"`
-	DaoCode            string     `json:"daoCode"`
-	ChainID            int        `json:"chainId"`
-	Title              string     `json:"title"`
-	ProposalLink       string     `json:"proposalLink"`
-	ProposalID         string     `json:"proposalId"`
-	State              string     `json:"state"`
-	ProposalCreatedAt  *time.Time `json:"proposalCreatedAt,omitempty"`
-	ProposalAtBlock    int        `json:"proposalAtBlock"`
-	OffsetTrackingVote int        `json:"offsetTrackingVote"`
-	Fulfilled          int        `json:"fulfilled"`
-	FulfilledExplain   *string    `json:"fulfilledExplain,omitempty"`
-	FulfilledAt        *time.Time `json:"fulfilledAt,omitempty"`
-	CTime              time.Time  `json:"ctime"`
-	UTime              *time.Time `json:"utime,omitempty"`
+	ID                 string                 `json:"id"`
+	DaoCode            string                 `json:"daoCode"`
+	ChainID            int                    `json:"chainId"`
+	Title              string                 `json:"title"`
+	ProposalLink       string                 `json:"proposalLink"`
+	ProposalID         string                 `json:"proposalId"`
+	Proposer           *addressIdentityOutput `json:"proposer,omitempty"`
+	State              string                 `json:"state"`
+	ProposalCreatedAt  *time.Time             `json:"proposalCreatedAt,omitempty"`
+	ProposalAtBlock    int                    `json:"proposalAtBlock"`
+	OffsetTrackingVote int                    `json:"offsetTrackingVote"`
+	Fulfilled          int                    `json:"fulfilled"`
+	FulfilledExplain   *string                `json:"fulfilledExplain,omitempty"`
+	FulfilledAt        *time.Time             `json:"fulfilledAt,omitempty"`
+	CTime              time.Time              `json:"ctime"`
+	UTime              *time.Time             `json:"utime,omitempty"`
 }
 
 func normalizeProposalState(raw string) (dbmodels.ProposalState, error) {

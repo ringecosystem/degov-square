@@ -4,16 +4,19 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"strings"
+	"time"
 
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 	gqlmodels "github.com/ringecosystem/degov-square/graph/models"
+	degovinternal "github.com/ringecosystem/degov-square/internal"
 	"github.com/ringecosystem/degov-square/services"
 	"github.com/ringecosystem/degov-square/types"
 	"gorm.io/gorm"
 )
 
-func addProposalTools(server *sdkmcp.Server) {
+func addProposalTools(server *sdkmcp.Server, cfg Config) {
 	sdkmcp.AddTool(server, &sdkmcp.Tool{
 		Name:        "list_proposals",
 		Title:       "List Proposals",
@@ -30,7 +33,9 @@ func addProposalTools(server *sdkmcp.Server) {
 		Annotations: &sdkmcp.ToolAnnotations{
 			ReadOnlyHint: true,
 		},
-	}, getProposalTool)
+	}, func(ctx context.Context, req *sdkmcp.CallToolRequest, input getProposalInput) (*sdkmcp.CallToolResult, getProposalOutput, error) {
+		return getProposalTool(ctx, cfg, input)
+	})
 
 	sdkmcp.AddTool(server, &sdkmcp.Tool{
 		Name:        "get_proposal_state",
@@ -91,7 +96,7 @@ func listProposalsTool(ctx context.Context, req *sdkmcp.CallToolRequest, input l
 	return nil, output, nil
 }
 
-func getProposalTool(ctx context.Context, req *sdkmcp.CallToolRequest, input getProposalInput) (*sdkmcp.CallToolResult, getProposalOutput, error) {
+func getProposalTool(ctx context.Context, cfg Config, input getProposalInput) (*sdkmcp.CallToolResult, getProposalOutput, error) {
 	daoCode, err := normalizeProposalDaoCode(input.DaoCode)
 	if err != nil {
 		return nil, getProposalOutput{}, err
@@ -116,9 +121,35 @@ func getProposalTool(ctx context.Context, req *sdkmcp.CallToolRequest, input get
 		return nil, getProposalOutput{}, fmt.Errorf("proposal_lookup_failed: %w", err)
 	}
 
+	output := proposalToolDTO(proposal)
+	if indexerProposal, err := inspectMCPIndexerProposal(ctx, cfg, daoCode, proposalID); err == nil && indexerProposal != nil {
+		output.Proposer = proposerIdentityOutput(ctx, cfg, daoCode, indexerProposal.Proposer)
+	} else if err != nil {
+		slog.Debug("MCP proposal proposer enrichment failed", "daoCode", daoCode, "proposalId", proposalID, "err", err)
+	}
+
 	return nil, getProposalOutput{
-		Proposal: proposalToolDTO(proposal),
+		Proposal: output,
 	}, nil
+}
+
+func inspectMCPIndexerProposal(ctx context.Context, cfg Config, daoCode string, proposalID string) (*degovinternal.Proposal, error) {
+	indexer, scope, err := mcpIndexerForDAO(daoCode, cfg)
+	if err != nil {
+		return nil, err
+	}
+	queryCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+	return indexer.InspectProposalWithContext(queryCtx, scope, proposalID)
+}
+
+func proposerIdentityOutput(ctx context.Context, cfg Config, daoCode string, address string) *addressIdentityOutput {
+	if strings.TrimSpace(address) == "" {
+		return nil
+	}
+	identities := hydrateAddressIdentities(ctx, cfg, daoCode, []string{address})
+	identity := addressIdentityFromMap(identities, address)
+	return &identity
 }
 
 func getProposalStateTool(ctx context.Context, req *sdkmcp.CallToolRequest, input getProposalStateInput) (*sdkmcp.CallToolResult, getProposalStateOutput, error) {

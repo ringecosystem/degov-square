@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"sync/atomic"
 	"testing"
 )
@@ -123,5 +124,42 @@ func TestInspectProposalWithContextCancelsRequest(t *testing.T) {
 	}
 	if got := requestCount.Load(); got != 0 {
 		t.Fatalf("request count = %d, want 0", got)
+	}
+}
+
+func TestQueryContributorsRequestsBalance(t *testing.T) {
+	type graphqlRequest struct {
+		Query     string         `json:"query"`
+		Variables map[string]any `json:"variables"`
+	}
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var req graphqlRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			t.Fatalf("decode request: %v", err)
+		}
+		if !strings.Contains(req.Query, "balance") {
+			t.Fatalf("query = %s, want balance field", req.Query)
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"data":{"contributors":[{"id":"0x0000000000000000000000000000000000000001","power":"100","balance":"25","delegatesCountAll":2,"delegatesCountEffective":1}]}}`))
+	}))
+	defer server.Close()
+
+	indexer := NewDegovIndexer(server.URL)
+	contributors, err := indexer.QueryContributors(context.Background(), ProposalScope{
+		ChainID:         46,
+		DaoCode:         "ring-dao",
+		GovernorAddress: "0xAbC123",
+	}, 0, 1, "power_DESC")
+	if err != nil {
+		t.Fatalf("QueryContributors() error = %v", err)
+	}
+	if len(contributors) != 1 {
+		t.Fatalf("len(contributors) = %d, want 1", len(contributors))
+	}
+	if contributors[0].Balance == nil || *contributors[0].Balance != "25" {
+		t.Fatalf("balance = %#v, want 25", contributors[0].Balance)
 	}
 }

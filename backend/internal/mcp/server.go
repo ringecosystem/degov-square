@@ -33,7 +33,6 @@ type proposalSummaryService interface {
 
 type ensService interface {
 	Resolve(ctx context.Context, daoCode *string, address *string, name *string) (*services.ENSRecord, error)
-	ResolveRecords(ctx context.Context, name string) (*services.ENSPublicRecords, error)
 }
 
 func NewServer(cfg Config) *sdkmcp.Server {
@@ -44,9 +43,9 @@ func NewServer(cfg Config) *sdkmcp.Server {
 
 	addPingTool(server, cfg)
 	addDaoTools(server, withDefaultDaoServices(cfg))
-	addProposalTools(server)
+	addProposalTools(server, withDefaultENSServices(cfg))
+	addIndexerTools(server, withDefaultENSServices(cfg))
 	addProposalSummaryTool(server, withDefaultProposalSummaryServices(cfg))
-	addENSTools(server, withDefaultENSServices(cfg))
 
 	return server
 }
