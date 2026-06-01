@@ -3,6 +3,8 @@ package mcp
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
@@ -15,6 +17,10 @@ import (
 )
 
 func newTestProposalServer(t *testing.T) *sdkmcp.Server {
+	return newTestProposalServerWithConfig(t, Config{Name: "degov-square", Version: "test-version"})
+}
+
+func newTestProposalServerWithConfig(t *testing.T, cfg Config) *sdkmcp.Server {
 	t.Helper()
 
 	previousDB := database.DB
@@ -96,10 +102,27 @@ func newTestProposalServer(t *testing.T) *sdkmcp.Server {
 	`).Error; err != nil {
 		t.Fatalf("create proposal summary table: %v", err)
 	}
+	if err := db.Exec(`
+		CREATE TABLE dgv_dao_config (
+			id TEXT PRIMARY KEY,
+			dao_code TEXT NOT NULL,
+			config TEXT NOT NULL,
+			ctime DATETIME NOT NULL,
+			utime DATETIME
+		)
+	`).Error; err != nil {
+		t.Fatalf("create dao config table: %v", err)
+	}
 	database.DB = db
 
 	seedMCPDao(t, db, "ring-dao")
-	return NewServer(Config{Name: "degov-square", Version: "test-version"})
+	if cfg.Name == "" {
+		cfg.Name = "degov-square"
+	}
+	if cfg.Version == "" {
+		cfg.Version = "test-version"
+	}
+	return NewServer(cfg)
 }
 
 func seedMCPDao(t *testing.T, db *gorm.DB, code string) {
@@ -126,6 +149,27 @@ func seedMCPProposal(t *testing.T, proposal dbmodels.ProposalTracking) {
 	if err := database.DB.Create(&proposal).Error; err != nil {
 		t.Fatalf("seed proposal: %v", err)
 	}
+}
+
+func seedMCPDaoConfig(t *testing.T, daoCode string, indexerEndpoint string) {
+	t.Helper()
+
+	config := fmt.Sprintf("name: Ring DAO\ncode: %s\nindexer:\n  endpoint: %s\ncontracts:\n  governor: \"0x52cdd25f7c83c335236ce209fa1ec8e197e96533\"\nchain:\n  id: 46\n", daoCode, indexerEndpoint)
+	if err := database.DB.Exec(`
+		INSERT INTO dgv_dao_config (id, dao_code, config, ctime)
+		VALUES (?, ?, ?, ?)
+	`, "config-"+daoCode, daoCode, config, time.Now()).Error; err != nil {
+		t.Fatalf("seed dao config: %v", err)
+	}
+}
+
+func newMCPIndexerServer(t *testing.T, response string) *httptest.Server {
+	t.Helper()
+
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(response))
+	}))
 }
 
 func callProposalTool(t *testing.T, server *sdkmcp.Server, name string, arguments map[string]any) *sdkmcp.CallToolResult {
@@ -314,6 +358,58 @@ func TestProposalToolsListIncludesGetProposalState(t *testing.T) {
 		}
 	}
 	t.Fatal("get_proposal_state not found in tool listing")
+}
+
+func TestProposalToolsListOmitsStandaloneENSTools(t *testing.T) {
+	server := newTestProposalServer(t)
+	session, closeSession := newProposalTestSession(t, server)
+	defer closeSession()
+
+	result, err := session.ListTools(context.Background(), nil)
+	if err != nil {
+		t.Fatalf("ListTools() error = %v", err)
+	}
+
+	for _, tool := range result.Tools {
+		if tool.Name == "resolve_ens" || tool.Name == "resolve_ens_records" {
+			t.Fatalf("unexpected standalone ENS tool listed: %s", tool.Name)
+		}
+	}
+}
+
+func TestGetProposalToolIncludesBestEffortProposerIdentity(t *testing.T) {
+	indexer := newMCPIndexerServer(t, `{"data":{"proposals":[{"id":"indexer-proposal","proposalId":"0xdetail","proposer":"0x0000000000000000000000000000000000000001"}]}}`)
+	defer indexer.Close()
+
+	server := newTestProposalServer(t)
+	seedMCPDaoConfig(t, "ring-dao", indexer.URL)
+	createdAt := time.Now().Add(-time.Hour)
+	seedMCPProposal(t, dbmodels.ProposalTracking{
+		ID:                "proposal-detail-identity",
+		DaoCode:           "ring-dao",
+		ChainId:           46,
+		Title:             "Detailed proposal",
+		ProposalLink:      "https://gov.ringdao.com/proposal/detail",
+		ProposalID:        "0xdetail",
+		State:             dbmodels.ProposalStateSucceeded,
+		ProposalCreatedAt: &createdAt,
+		CTime:             time.Now(),
+	})
+
+	result := callProposalTool(t, server, "get_proposal", map[string]any{
+		"daoCode":    "ring-dao",
+		"proposalId": "0xdetail",
+	})
+	content := requireStructuredContent(t, result)
+
+	proposal := content["proposal"].(map[string]any)
+	proposer := proposal["proposer"].(map[string]any)
+	if got, want := proposer["address"], "0x0000000000000000000000000000000000000001"; got != want {
+		t.Fatalf("proposer.address = %v, want %v", got, want)
+	}
+	if _, ok := proposer["ensName"]; ok {
+		t.Fatalf("proposer.ensName present without ENS result")
+	}
 }
 
 func TestGetProposalStateToolReturnsTrackedState(t *testing.T) {

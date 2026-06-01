@@ -93,6 +93,18 @@ type VoteCastsResponse struct {
 	VoteCasts []VoteCast `json:"voteCasts"`
 }
 
+type Contributor struct {
+	ID                      string  `json:"id"`
+	Power                   string  `json:"power"`
+	Balance                 *string `json:"balance"`
+	DelegatesCountAll       int     `json:"delegatesCountAll"`
+	DelegatesCountEffective int     `json:"delegatesCountEffective"`
+}
+
+type ContributorsResponse struct {
+	Contributors []Contributor `json:"contributors"`
+}
+
 type ProposalScope struct {
 	ChainID         int
 	DaoCode         string
@@ -367,6 +379,10 @@ func (d *DegovIndexer) queryProposalsByBlockNumber(scope ProposalScope, whereFil
 }
 
 func (d *DegovIndexer) QueryVotesOffset(ctx context.Context, scope ProposalScope, offset int, proposalId string) ([]VoteCast, error) {
+	return d.QueryVotes(ctx, scope, offset, 30, proposalId)
+}
+
+func (d *DegovIndexer) QueryVotes(ctx context.Context, scope ProposalScope, offset int, limit int, proposalId string) ([]VoteCast, error) {
 	query := `
 		query QueryVotesOffset($limit: Int!, $offset: Int!, $where: VoteCastWhereInput!) {
 			voteCasts(orderBy: blockNumber_ASC_NULLS_FIRST, limit: $limit, offset: $offset, where: $where) {
@@ -383,7 +399,7 @@ func (d *DegovIndexer) QueryVotesOffset(ctx context.Context, scope ProposalScope
 		}
 	`
 	req := graphql.NewRequest(query)
-	req.Var("limit", 30)
+	req.Var("limit", limit)
 	req.Var("offset", offset)
 	req.Var("where", scope.withScope(map[string]any{
 		"proposalId_eq": proposalId,
@@ -395,6 +411,65 @@ func (d *DegovIndexer) QueryVotesOffset(ctx context.Context, scope ProposalScope
 	}
 
 	return response.VoteCasts, nil
+}
+
+func (d *DegovIndexer) QueryContributors(ctx context.Context, scope ProposalScope, offset int, limit int, orderBy string) ([]Contributor, error) {
+	switch orderBy {
+	case "power_ASC", "id_ASC":
+	default:
+		orderBy = "power_DESC"
+	}
+
+	query := fmt.Sprintf(`
+		query QueryContributors($limit: Int!, $offset: Int!, $where: ContributorWhereInput) {
+			contributors(orderBy: %s, limit: $limit, offset: $offset, where: $where) {
+				id
+				power
+				balance
+				delegatesCountAll
+				delegatesCountEffective
+			}
+		}
+	`, orderBy)
+	req := graphql.NewRequest(query)
+	req.Var("limit", limit)
+	req.Var("offset", offset)
+	req.Var("where", scope.withScope(nil))
+
+	var response ContributorsResponse
+	if err := d.client.Run(ctx, req, &response); err != nil {
+		return nil, fmt.Errorf("failed to execute QueryContributors: %w", err)
+	}
+
+	return response.Contributors, nil
+}
+
+func (d *DegovIndexer) QueryContributor(ctx context.Context, scope ProposalScope, address string) (*Contributor, error) {
+	query := `
+		query QueryContributor($where: ContributorWhereInput!) {
+			contributors(where: $where) {
+				id
+				power
+				balance
+				delegatesCountAll
+				delegatesCountEffective
+			}
+		}
+	`
+	req := graphql.NewRequest(query)
+	req.Var("where", scope.withScope(map[string]any{
+		"id_eq": strings.ToLower(address),
+	}))
+
+	var response ContributorsResponse
+	if err := d.client.Run(ctx, req, &response); err != nil {
+		return nil, fmt.Errorf("failed to execute QueryContributor: %w", err)
+	}
+	if len(response.Contributors) > 0 {
+		return &response.Contributors[0], nil
+	}
+
+	return nil, fmt.Errorf("no contributor found with address %s", address)
 }
 
 func (d *DegovIndexer) QueryVote(id string) (*VoteCast, error) {
