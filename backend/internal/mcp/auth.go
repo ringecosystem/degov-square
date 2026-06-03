@@ -3,6 +3,7 @@ package mcp
 import (
 	"crypto/subtle"
 	"net/http"
+	"strings"
 )
 
 const (
@@ -37,4 +38,37 @@ func validBearerToken(r *http.Request, token string) bool {
 	}
 
 	return subtle.ConstantTimeCompare([]byte(got[len(prefix):]), []byte(token)) == 1
+}
+
+type authModes struct {
+	bearer bool
+	none   bool
+	oauth  bool
+	valid  bool
+}
+
+func parseAuthModes(authMode string) authModes {
+	modes := authModes{valid: true}
+	parts := strings.Split(authMode, ",")
+	for _, part := range parts {
+		switch strings.ToLower(strings.TrimSpace(part)) {
+		case "":
+			modes.valid = false
+		case AuthModeBearer:
+			modes.bearer = true
+		case AuthModeNone:
+			modes.none = true
+		case AuthModeOAuth:
+			modes.oauth = true
+		default:
+			modes.valid = false
+		}
+	}
+	if modes.none && (modes.bearer || modes.oauth) {
+		modes.valid = false
+	}
+	if !modes.bearer && !modes.none && !modes.oauth {
+		modes.valid = false
+	}
+	return modes
 }

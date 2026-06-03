@@ -61,6 +61,24 @@ func TestBuildHTTPHandlerUsesBearerAuth(t *testing.T) {
 	}
 }
 
+func TestBuildHTTPHandlerAllowsBearerInCompositeAuthMode(t *testing.T) {
+	handler := NewHTTPHandler(Config{
+		Name:        "degov-square",
+		Version:     "test",
+		AuthMode:    "oauth,bearer",
+		BearerToken: "secret",
+	})
+
+	req := httptest.NewRequest(http.MethodPost, "/mcp", nil)
+	req.Header.Set("Authorization", "Bearer secret")
+	rr := httptest.NewRecorder()
+	handler.ServeHTTP(rr, req)
+
+	if rr.Code == http.StatusUnauthorized {
+		t.Fatalf("status = %d, want non-auth response", rr.Code)
+	}
+}
+
 func TestBuildHTTPHandlerAllowsExplicitNoAuth(t *testing.T) {
 	handler := NewHTTPHandler(Config{
 		Name:     "degov-square",
@@ -100,6 +118,31 @@ func TestBuildHTTPHandlerRejectsEmptyBearerToken(t *testing.T) {
 	}
 	if !strings.Contains(logs.String(), "MCP bearer token is empty") {
 		t.Fatalf("logs = %q, want empty token diagnostic", logs.String())
+	}
+}
+
+func TestBuildHTTPHandlerRejectsCompositeAuthModeWithUnknownMode(t *testing.T) {
+	var logs bytes.Buffer
+	originalLogger := slog.Default()
+	slog.SetDefault(slog.New(slog.NewJSONHandler(&logs, nil)))
+	t.Cleanup(func() {
+		slog.SetDefault(originalLogger)
+	})
+
+	handler := NewHTTPHandler(Config{
+		Name:     "degov-square",
+		Version:  "test",
+		AuthMode: "oauth,api-key",
+	})
+
+	rr := httptest.NewRecorder()
+	handler.ServeHTTP(rr, httptest.NewRequest(http.MethodPost, "/mcp", nil))
+
+	if rr.Code != http.StatusUnauthorized {
+		t.Fatalf("status = %d, want %d", rr.Code, http.StatusUnauthorized)
+	}
+	if !strings.Contains(logs.String(), "Unsupported MCP auth mode") {
+		t.Fatalf("logs = %q, want unsupported auth mode diagnostic", logs.String())
 	}
 }
 
