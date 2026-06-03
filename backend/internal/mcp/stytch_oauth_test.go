@@ -51,7 +51,6 @@ func TestStytchOAuthClientConsumerStartRequest(t *testing.T) {
 		Domain:    server.URL,
 		ProjectID: "project-test",
 		Secret:    "secret-test",
-		Kind:      StytchOAuthKindConsumer,
 	})
 
 	resp, err := client.AuthorizeStart(context.Background(), StytchOAuthAuthorizeStartRequest{
@@ -104,7 +103,6 @@ func TestStytchOAuthClientConsumerSubmitRequest(t *testing.T) {
 		Domain:    server.URL,
 		ProjectID: "project-test",
 		Secret:    "secret-test",
-		Kind:      StytchOAuthKindConsumer,
 	})
 
 	resp, err := client.AuthorizeSubmit(context.Background(), StytchOAuthAuthorizeSubmitRequest{
@@ -130,52 +128,6 @@ func TestStytchOAuthClientConsumerSubmitRequest(t *testing.T) {
 	}
 }
 
-func TestStytchOAuthClientB2BStartRequest(t *testing.T) {
-	allowUnsafeStytchOAuthTestDomain(t)
-
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if got, want := r.URL.Path, "/v1/b2b/idp/oauth/authorize/start"; got != want {
-			t.Fatalf("path = %q, want %q", got, want)
-		}
-
-		var body map[string]any
-		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-			t.Fatalf("decode body: %v", err)
-		}
-		assertJSONValue(t, body, "organization_id", "org-test")
-		assertJSONValue(t, body, "member_id", "member-test")
-		if _, ok := body["user_id"]; ok {
-			t.Fatal("b2b request included user_id")
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte(`{"client":{"client_id":"client-test","client_name":"B2B App"},"consent_required":false,"scope_results":[],"status_code":200}`))
-	}))
-	defer server.Close()
-
-	client := NewStytchOAuthClient(StytchOAuthClientConfig{
-		Domain:    server.URL,
-		ProjectID: "project-test",
-		Secret:    "secret-test",
-		Kind:      StytchOAuthKindB2B,
-	})
-
-	_, err := client.AuthorizeStart(context.Background(), StytchOAuthAuthorizeStartRequest{
-		StytchOAuthAuthorizeRequest: StytchOAuthAuthorizeRequest{
-			ClientID:       "client-test",
-			RedirectURI:    "https://client.example/callback",
-			ResponseType:   "code",
-			Scopes:         []string{"openid"},
-			OrganizationID: "org-test",
-			MemberID:       "member-test",
-		},
-	})
-	if err != nil {
-		t.Fatalf("AuthorizeStart returned error: %v", err)
-	}
-}
-
 func TestStytchOAuthHandlerStartUnauthorized(t *testing.T) {
 	handler := NewStytchOAuthHandler(StytchOAuthHandlerConfig{
 		Client: &fakeStytchOAuthClient{},
@@ -198,7 +150,6 @@ func TestStytchOAuthHandlerSubmitReturnsRedirectURI(t *testing.T) {
 	}
 	handler := NewStytchOAuthHandler(StytchOAuthHandlerConfig{
 		Client:        client,
-		Kind:          StytchOAuthKindConsumer,
 		UserIDPrefix:  "degov-square:",
 		OAuthResource: "https://square.degov.ai/mcp",
 	})
@@ -227,7 +178,7 @@ func TestStytchOAuthHandlerSubmitReturnsRedirectURI(t *testing.T) {
 	assertStringSlice(t, client.submitRequest.Resources, []string{"https://square.degov.ai/mcp"})
 }
 
-func TestStytchOAuthHandlerIgnoresConfiguredFixedUserID(t *testing.T) {
+func TestStytchOAuthHandlerStartUsesAuthenticatedSquareUserID(t *testing.T) {
 	client := &fakeStytchOAuthClient{
 		startResponse: StytchOAuthAuthorizeStartResponse{
 			Client: StytchOAuthClientInfo{ClientID: "client-test"},
@@ -235,9 +186,7 @@ func TestStytchOAuthHandlerIgnoresConfiguredFixedUserID(t *testing.T) {
 	}
 	handler := NewStytchOAuthHandler(StytchOAuthHandlerConfig{
 		Client:       client,
-		Kind:         StytchOAuthKindConsumer,
 		UserIDPrefix: "degov-square:",
-		UserID:       "configured-static-user",
 	})
 
 	req := httptest.NewRequest(http.MethodPost, "/api/oauth/stytch/authorize/start", bytes.NewReader([]byte(`{"client_id":"client-test","redirect_uri":"https://client.example/callback"}`)))
@@ -255,42 +204,10 @@ func TestStytchOAuthHandlerIgnoresConfiguredFixedUserID(t *testing.T) {
 	}
 }
 
-func TestStytchOAuthHandlerB2BModeIsDisabled(t *testing.T) {
-	client := &fakeStytchOAuthClient{}
-	handler := NewStytchOAuthHandler(StytchOAuthHandlerConfig{
-		Client:         client,
-		Kind:           StytchOAuthKindB2B,
-		OrganizationID: "org-test",
-		MemberID:       "member-test",
-	})
-
-	req := httptest.NewRequest(http.MethodPost, "/api/oauth/stytch/authorize/start", bytes.NewReader([]byte(`{"client_id":"client-test","redirect_uri":"https://client.example/callback"}`)))
-	req = req.WithContext(context.WithValue(req.Context(), middleware.UserClaimsKey, &middleware.AuthClaims{
-		User: &types.UserSessInfo{Id: "user-123"},
-	}))
-	rec := httptest.NewRecorder()
-	handler.AuthorizeStart(rec, req)
-
-	if rec.Code != http.StatusBadRequest {
-		t.Fatalf("status = %d, want %d, body %q", rec.Code, http.StatusBadRequest, rec.Body.String())
-	}
-	if client.startCalls != 0 {
-		t.Fatalf("startCalls = %d, want 0", client.startCalls)
-	}
-	var body map[string]string
-	if err := json.NewDecoder(rec.Body).Decode(&body); err != nil {
-		t.Fatalf("decode response: %v", err)
-	}
-	if got, want := body["error"], "Stytch B2B authorization is disabled"; got != want {
-		t.Fatalf("error = %q, want %q", got, want)
-	}
-}
-
 func TestStytchOAuthHandlerReturnsGenericStartError(t *testing.T) {
 	client := &fakeStytchOAuthClient{err: errors.New("project-test secret-test upstream detail")}
 	handler := NewStytchOAuthHandler(StytchOAuthHandlerConfig{
 		Client:       client,
-		Kind:         StytchOAuthKindConsumer,
 		UserIDPrefix: "degov-square:",
 	})
 
@@ -317,7 +234,6 @@ func TestStytchOAuthHandlerReturnsGenericSubmitError(t *testing.T) {
 	client := &fakeStytchOAuthClient{err: errors.New("project-test secret-test upstream detail")}
 	handler := NewStytchOAuthHandler(StytchOAuthHandlerConfig{
 		Client:       client,
-		Kind:         StytchOAuthKindConsumer,
 		UserIDPrefix: "degov-square:",
 	})
 
@@ -361,7 +277,6 @@ func TestStytchOAuthClientRejectsUnsafeDomainBeforeRequest(t *testing.T) {
 		Domain:    "http://api.stytch.com",
 		ProjectID: "project-test",
 		Secret:    "secret-test",
-		Kind:      StytchOAuthKindConsumer,
 		HTTPClient: roundTripFunc(func(*http.Request) (*http.Response, error) {
 			t.Fatal("HTTP client should not be called for unsafe domain")
 			return nil, nil

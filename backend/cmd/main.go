@@ -207,16 +207,12 @@ func registerStytchOAuthRoutes(mux *http.ServeMux, middlewareChain *middleware.C
 		Domain:     cfg.GetMCPStytchOAuthDomain(),
 		ProjectID:  cfg.GetMCPStytchOAuthProjectID(),
 		Secret:     cfg.GetMCPStytchOAuthSecret(),
-		Kind:       mcpserver.StytchOAuthKind(cfg.GetMCPStytchOAuthKind()),
 		HTTPClient: httpClient,
 	})
 	handler := mcpserver.NewStytchOAuthHandler(mcpserver.StytchOAuthHandlerConfig{
-		Client:         client,
-		Kind:           mcpserver.StytchOAuthKind(cfg.GetMCPStytchOAuthKind()),
-		UserIDPrefix:   cfg.GetMCPStytchOAuthUserIDPrefix(),
-		OrganizationID: cfg.GetMCPStytchOAuthOrganizationID(),
-		MemberID:       cfg.GetMCPStytchOAuthMemberID(),
-		OAuthResource:  cfg.GetMCPOAuthResource(),
+		Client:        client,
+		UserIDPrefix:  cfg.GetMCPStytchOAuthUserIDPrefix(),
+		OAuthResource: cfg.GetMCPOAuthResource(),
 	})
 	mux.Handle("/api/oauth/stytch/authorize/start", middlewareChain.Then(http.HandlerFunc(handler.AuthorizeStart)))
 	mux.Handle("/api/oauth/stytch/authorize/submit", middlewareChain.Then(http.HandlerFunc(handler.AuthorizeSubmit)))

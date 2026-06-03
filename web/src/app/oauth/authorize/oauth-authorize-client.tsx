@@ -53,13 +53,13 @@ export const OAuthAuthorizeClient = () => {
       try {
         const response = await stytchAuthorizeStart(authorizeParams, activeToken);
         setStartResponse(response);
-	    } catch (err) {
-	        if (err instanceof OAuthApiError && err.status === 401) {
-	          useAuthStore.getState().clearAuth();
-	          setStartResponse(null);
-	          setStartedKey('');
-	          setNeedsSignIn(true);
-	          setError('Session expired. Please sign in again.');
+      } catch (err) {
+        if (err instanceof OAuthApiError && err.status === 401) {
+          useAuthStore.getState().clearAuth();
+          setStartResponse(null);
+          setStartedKey('');
+          setNeedsSignIn(true);
+          setError('Session expired. Please sign in again.');
           return;
         }
         setError(err instanceof Error ? err.message : 'Failed to load authorization request');
@@ -107,13 +107,13 @@ export const OAuthAuthorizeClient = () => {
           return;
         }
         window.location.assign(response.redirect_uri);
-	      } catch (err) {
-	        if (err instanceof OAuthApiError && err.status === 401) {
-	          useAuthStore.getState().clearAuth();
-	          setStartResponse(null);
-	          setStartedKey('');
-	          setNeedsSignIn(true);
-	          setError('Session expired. Please sign in again.');
+      } catch (err) {
+        if (err instanceof OAuthApiError && err.status === 401) {
+          useAuthStore.getState().clearAuth();
+          setStartResponse(null);
+          setStartedKey('');
+          setNeedsSignIn(true);
+          setError('Session expired. Please sign in again.');
           return;
         }
         setError(err instanceof Error ? err.message : 'Authorization failed');

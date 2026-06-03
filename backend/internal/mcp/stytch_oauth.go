@@ -22,18 +22,10 @@ const (
 
 var allowUnsafeStytchOAuthDomain bool
 
-type StytchOAuthKind string
-
-const (
-	StytchOAuthKindConsumer StytchOAuthKind = "consumer"
-	StytchOAuthKindB2B      StytchOAuthKind = "b2b"
-)
-
 type StytchOAuthClientConfig struct {
 	Domain     string
 	ProjectID  string
 	Secret     string
-	Kind       StytchOAuthKind
 	HTTPClient *http.Client
 }
 
@@ -53,8 +45,6 @@ type StytchOAuthAuthorizeRequest struct {
 	ResponseType        string   `json:"response_type"`
 	Scopes              []string `json:"scopes"`
 	UserID              string   `json:"user_id,omitempty"`
-	OrganizationID      string   `json:"organization_id,omitempty"`
-	MemberID            string   `json:"member_id,omitempty"`
 	State               string   `json:"state,omitempty"`
 	Nonce               string   `json:"nonce,omitempty"`
 	CodeChallenge       string   `json:"code_challenge,omitempty"`
@@ -96,13 +86,9 @@ type StytchOAuthAuthorizeSubmitResponse struct {
 }
 
 type StytchOAuthHandlerConfig struct {
-	Client         StytchOAuthAuthorizer
-	Kind           StytchOAuthKind
-	UserIDPrefix   string
-	UserID         string
-	OrganizationID string
-	MemberID       string
-	OAuthResource  string
+	Client        StytchOAuthAuthorizer
+	UserIDPrefix  string
+	OAuthResource string
 }
 
 type StytchOAuthHandler struct {
@@ -123,7 +109,6 @@ type stytchOAuthWebRequest struct {
 
 func NewStytchOAuthClient(cfg StytchOAuthClientConfig) *StytchOAuthClient {
 	cfg.Domain = strings.TrimRight(cfg.Domain, "/")
-	cfg.Kind = normalizeStytchOAuthKind(cfg.Kind)
 	client := cfg.HTTPClient
 	if client == nil {
 		client = &http.Client{Timeout: 10 * time.Second}
@@ -144,16 +129,10 @@ func (c *StytchOAuthClient) AuthorizeSubmit(ctx context.Context, req StytchOAuth
 }
 
 func (c *StytchOAuthClient) authorizeStartPath() string {
-	if c.cfg.Kind == StytchOAuthKindB2B {
-		return "/v1/b2b/idp/oauth/authorize/start"
-	}
 	return "/v1/idp/oauth/authorize/start"
 }
 
 func (c *StytchOAuthClient) authorizeSubmitPath() string {
-	if c.cfg.Kind == StytchOAuthKindB2B {
-		return "/v1/b2b/idp/oauth/authorize"
-	}
 	return "/v1/idp/oauth/authorize"
 }
 
@@ -255,7 +234,6 @@ func cleanStytchError(body []byte) string {
 }
 
 func NewStytchOAuthHandler(cfg StytchOAuthHandlerConfig) *StytchOAuthHandler {
-	cfg.Kind = normalizeStytchOAuthKind(cfg.Kind)
 	if cfg.UserIDPrefix == "" {
 		cfg.UserIDPrefix = "degov-square:"
 	}
@@ -265,9 +243,6 @@ func NewStytchOAuthHandler(cfg StytchOAuthHandlerConfig) *StytchOAuthHandler {
 func (h *StytchOAuthHandler) AuthorizeStart(w http.ResponseWriter, r *http.Request) {
 	claims, ok := h.requireAuth(w, r)
 	if !ok {
-		return
-	}
-	if !h.requireConsumerMode(w) {
 		return
 	}
 
@@ -291,9 +266,6 @@ func (h *StytchOAuthHandler) AuthorizeStart(w http.ResponseWriter, r *http.Reque
 func (h *StytchOAuthHandler) AuthorizeSubmit(w http.ResponseWriter, r *http.Request) {
 	claims, ok := h.requireAuth(w, r)
 	if !ok {
-		return
-	}
-	if !h.requireConsumerMode(w) {
 		return
 	}
 
@@ -325,14 +297,6 @@ func (h *StytchOAuthHandler) requireAuth(w http.ResponseWriter, r *http.Request)
 		return nil, false
 	}
 	return claims, true
-}
-
-func (h *StytchOAuthHandler) requireConsumerMode(w http.ResponseWriter) bool {
-	if h.cfg.Kind == StytchOAuthKindConsumer {
-		return true
-	}
-	writeJSONError(w, http.StatusBadRequest, "Stytch B2B authorization is disabled")
-	return false
 }
 
 func (h *StytchOAuthHandler) buildAuthorizeRequest(webReq stytchOAuthWebRequest, claims *middleware.AuthClaims) StytchOAuthAuthorizeRequest {
@@ -375,11 +339,4 @@ func writeJSON(w http.ResponseWriter, status int, payload any) {
 
 func writeJSONError(w http.ResponseWriter, status int, message string) {
 	writeJSON(w, status, map[string]string{"error": message})
-}
-
-func normalizeStytchOAuthKind(kind StytchOAuthKind) StytchOAuthKind {
-	if kind == StytchOAuthKindB2B {
-		return StytchOAuthKindB2B
-	}
-	return StytchOAuthKindConsumer
 }
