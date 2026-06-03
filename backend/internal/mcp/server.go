@@ -16,6 +16,16 @@ type Config struct {
 	Version                          string
 	AuthMode                         string
 	BearerToken                      string
+	OAuthResource                    string
+	OAuthResourceMetadataURL         string
+	OAuthAuthorizationServers        []string
+	OAuthIssuer                      string
+	OAuthJWKSURL                     string
+	OAuthAudience                    string
+	OAuthScopesSupported             []string
+	OAuthRequiredScopes              []string
+	OAuthAllowStaticBearer           bool
+	OAuthHTTPClient                  *http.Client
 	DaoService                       daoService
 	DaoConfigService                 daoConfigService
 	ProposalSummaryService           proposalSummaryService
@@ -91,6 +101,18 @@ func NewHTTPHandler(cfg Config) http.Handler {
 			slog.Error("MCP bearer token is empty; rejecting all bearer-authenticated MCP requests")
 		}
 		return BearerAuthMiddleware(cfg.BearerToken)(handler)
+	case AuthModeOAuth:
+		oauthHandler := OAuthAuthMiddleware(cfg)(handler)
+		if cfg.OAuthAllowStaticBearer && cfg.BearerToken != "" {
+			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if validBearerToken(r, cfg.BearerToken) {
+					handler.ServeHTTP(w, r)
+					return
+				}
+				oauthHandler.ServeHTTP(w, r)
+			})
+		}
+		return oauthHandler
 	case AuthModeNone:
 		return handler
 	default:

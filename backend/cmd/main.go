@@ -159,11 +159,28 @@ func startServer() {
 	mux.Handle("/dao/config/{dao}", middlewareChain.Then(http.HandlerFunc(daoRoute.ConfigHandler)))
 
 	if cfg.GetMCPEnabled() {
+		if cfg.GetMCPAuthMode() == mcpserver.AuthModeOAuth {
+			mcpserver.RegisterProtectedResourceMetadataHandlers(mux, mcpserver.Config{
+				OAuthResource:             cfg.GetMCPOAuthResource(),
+				OAuthResourceMetadataURL:  cfg.GetMCPOAuthResourceMetadataURL(),
+				OAuthAuthorizationServers: cfg.GetMCPOAuthAuthorizationServers(),
+				OAuthScopesSupported:      cfg.GetMCPOAuthScopesSupported(),
+			})
+		}
 		mux.Handle(cfg.GetMCPPath(), mcpserver.NewHTTPHandler(mcpserver.Config{
 			Name:                             "degov-square",
 			Version:                          getMCPVersion(),
 			AuthMode:                         cfg.GetMCPAuthMode(),
 			BearerToken:                      cfg.GetMCPBearerToken(),
+			OAuthResource:                    cfg.GetMCPOAuthResource(),
+			OAuthResourceMetadataURL:         cfg.GetMCPOAuthResourceMetadataURL(),
+			OAuthAuthorizationServers:        cfg.GetMCPOAuthAuthorizationServers(),
+			OAuthIssuer:                      cfg.GetMCPOAuthIssuer(),
+			OAuthJWKSURL:                     cfg.GetMCPOAuthJWKSURL(),
+			OAuthAudience:                    cfg.GetMCPOAuthAudience(),
+			OAuthScopesSupported:             cfg.GetMCPOAuthScopesSupported(),
+			OAuthRequiredScopes:              cfg.GetMCPOAuthRequiredScopes(),
+			OAuthAllowStaticBearer:           cfg.GetMCPOAuthAllowStaticBearer(),
 			ProposalSummaryGenerateEnabled:   cfg.GetMCPProposalSummaryGenerateEnabled(),
 			ProposalSummaryGenerationTimeout: cfg.GetMCPProposalSummaryTimeout(),
 		}))
