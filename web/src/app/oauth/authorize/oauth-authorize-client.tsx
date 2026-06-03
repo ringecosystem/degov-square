@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { useSiweAuth } from '@/hooks/useSiweAuth';
 import {
   getOAuthAuthorizeParams,
+  OAuthApiError,
   stytchAuthorizeStart,
   stytchAuthorizeSubmit,
   type StytchOAuthAuthorizeStartResponse,
@@ -33,6 +34,7 @@ export const OAuthAuthorizeClient = () => {
   const [isStarting, setIsStarting] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [needsSignIn, setNeedsSignIn] = useState(false);
 
   const requestKey = `${token ?? ''}:${queryString}`;
   const hasRequiredParams = Boolean(authorizeParams.client_id && authorizeParams.redirect_uri);
@@ -46,11 +48,20 @@ export const OAuthAuthorizeClient = () => {
 
       setIsStarting(true);
       setError('');
+      setNeedsSignIn(false);
       setStartedKey(`${activeToken}:${queryString}`);
       try {
         const response = await stytchAuthorizeStart(authorizeParams, activeToken);
         setStartResponse(response);
-      } catch (err) {
+	    } catch (err) {
+	        if (err instanceof OAuthApiError && err.status === 401) {
+	          useAuthStore.getState().clearAuth();
+	          setStartResponse(null);
+	          setStartedKey('');
+	          setNeedsSignIn(true);
+	          setError('Session expired. Please sign in again.');
+          return;
+        }
         setError(err instanceof Error ? err.message : 'Failed to load authorization request');
       } finally {
         setIsStarting(false);
@@ -68,8 +79,10 @@ export const OAuthAuthorizeClient = () => {
 
   const signIn = useCallback(async () => {
     setError('');
+    setNeedsSignIn(false);
     const result = await authenticate();
     if (!result.success) {
+      setNeedsSignIn(true);
       setError(result.error || 'Sign in failed');
       return;
     }
@@ -86,6 +99,7 @@ export const OAuthAuthorizeClient = () => {
 
       setIsSubmitting(true);
       setError('');
+      setNeedsSignIn(false);
       try {
         const response = await stytchAuthorizeSubmit(authorizeParams, activeToken, consentGranted);
         if (!response.redirect_uri) {
@@ -93,7 +107,15 @@ export const OAuthAuthorizeClient = () => {
           return;
         }
         window.location.assign(response.redirect_uri);
-      } catch (err) {
+	      } catch (err) {
+	        if (err instanceof OAuthApiError && err.status === 401) {
+	          useAuthStore.getState().clearAuth();
+	          setStartResponse(null);
+	          setStartedKey('');
+	          setNeedsSignIn(true);
+	          setError('Session expired. Please sign in again.');
+          return;
+        }
         setError(err instanceof Error ? err.message : 'Authorization failed');
       } finally {
         setIsSubmitting(false);
@@ -148,7 +170,7 @@ export const OAuthAuthorizeClient = () => {
                 disabled={!canAuthenticate || isAuthenticating}
                 className="rounded-[100px]"
               >
-                {isAuthenticating ? 'Signing in...' : 'Sign in'}
+                {isAuthenticating ? 'Signing in...' : needsSignIn ? 'Sign in again' : 'Sign in'}
               </Button>
             </div>
           </div>

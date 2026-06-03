@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -13,6 +14,8 @@ import (
 )
 
 func TestStytchOAuthClientConsumerStartRequest(t *testing.T) {
+	allowUnsafeStytchOAuthTestDomain(t)
+
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if got, want := r.URL.Path, "/v1/idp/oauth/authorize/start"; got != want {
 			t.Fatalf("path = %q, want %q", got, want)
@@ -72,6 +75,8 @@ func TestStytchOAuthClientConsumerStartRequest(t *testing.T) {
 }
 
 func TestStytchOAuthClientConsumerSubmitRequest(t *testing.T) {
+	allowUnsafeStytchOAuthTestDomain(t)
+
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if got, want := r.URL.Path, "/v1/idp/oauth/authorize"; got != want {
 			t.Fatalf("path = %q, want %q", got, want)
@@ -126,6 +131,8 @@ func TestStytchOAuthClientConsumerSubmitRequest(t *testing.T) {
 }
 
 func TestStytchOAuthClientB2BStartRequest(t *testing.T) {
+	allowUnsafeStytchOAuthTestDomain(t)
+
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if got, want := r.URL.Path, "/v1/b2b/idp/oauth/authorize/start"; got != want {
 			t.Fatalf("path = %q, want %q", got, want)
@@ -220,20 +227,171 @@ func TestStytchOAuthHandlerSubmitReturnsRedirectURI(t *testing.T) {
 	assertStringSlice(t, client.submitRequest.Resources, []string{"https://square.degov.ai/mcp"})
 }
 
+func TestStytchOAuthHandlerIgnoresConfiguredFixedUserID(t *testing.T) {
+	client := &fakeStytchOAuthClient{
+		startResponse: StytchOAuthAuthorizeStartResponse{
+			Client: StytchOAuthClientInfo{ClientID: "client-test"},
+		},
+	}
+	handler := NewStytchOAuthHandler(StytchOAuthHandlerConfig{
+		Client:       client,
+		Kind:         StytchOAuthKindConsumer,
+		UserIDPrefix: "degov-square:",
+		UserID:       "configured-static-user",
+	})
+
+	req := httptest.NewRequest(http.MethodPost, "/api/oauth/stytch/authorize/start", bytes.NewReader([]byte(`{"client_id":"client-test","redirect_uri":"https://client.example/callback"}`)))
+	req = req.WithContext(context.WithValue(req.Context(), middleware.UserClaimsKey, &middleware.AuthClaims{
+		User: &types.UserSessInfo{Id: "user-123"},
+	}))
+	rec := httptest.NewRecorder()
+	handler.AuthorizeStart(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body %q", rec.Code, http.StatusOK, rec.Body.String())
+	}
+	if got, want := client.startRequest.UserID, "degov-square:user-123"; got != want {
+		t.Fatalf("start user_id = %q, want %q", got, want)
+	}
+}
+
+func TestStytchOAuthHandlerB2BModeIsDisabled(t *testing.T) {
+	client := &fakeStytchOAuthClient{}
+	handler := NewStytchOAuthHandler(StytchOAuthHandlerConfig{
+		Client:         client,
+		Kind:           StytchOAuthKindB2B,
+		OrganizationID: "org-test",
+		MemberID:       "member-test",
+	})
+
+	req := httptest.NewRequest(http.MethodPost, "/api/oauth/stytch/authorize/start", bytes.NewReader([]byte(`{"client_id":"client-test","redirect_uri":"https://client.example/callback"}`)))
+	req = req.WithContext(context.WithValue(req.Context(), middleware.UserClaimsKey, &middleware.AuthClaims{
+		User: &types.UserSessInfo{Id: "user-123"},
+	}))
+	rec := httptest.NewRecorder()
+	handler.AuthorizeStart(rec, req)
+
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want %d, body %q", rec.Code, http.StatusBadRequest, rec.Body.String())
+	}
+	if client.startCalls != 0 {
+		t.Fatalf("startCalls = %d, want 0", client.startCalls)
+	}
+	var body map[string]string
+	if err := json.NewDecoder(rec.Body).Decode(&body); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if got, want := body["error"], "Stytch B2B authorization is disabled"; got != want {
+		t.Fatalf("error = %q, want %q", got, want)
+	}
+}
+
+func TestStytchOAuthHandlerReturnsGenericStartError(t *testing.T) {
+	client := &fakeStytchOAuthClient{err: errors.New("project-test secret-test upstream detail")}
+	handler := NewStytchOAuthHandler(StytchOAuthHandlerConfig{
+		Client:       client,
+		Kind:         StytchOAuthKindConsumer,
+		UserIDPrefix: "degov-square:",
+	})
+
+	req := httptest.NewRequest(http.MethodPost, "/api/oauth/stytch/authorize/start", bytes.NewReader([]byte(`{"client_id":"client-test","redirect_uri":"https://client.example/callback"}`)))
+	req = req.WithContext(context.WithValue(req.Context(), middleware.UserClaimsKey, &middleware.AuthClaims{
+		User: &types.UserSessInfo{Id: "user-123"},
+	}))
+	rec := httptest.NewRecorder()
+	handler.AuthorizeStart(rec, req)
+
+	if rec.Code != http.StatusBadGateway {
+		t.Fatalf("status = %d, want %d, body %q", rec.Code, http.StatusBadGateway, rec.Body.String())
+	}
+	var body map[string]string
+	if err := json.NewDecoder(rec.Body).Decode(&body); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if got, want := body["error"], "Stytch authorization request failed"; got != want {
+		t.Fatalf("error = %q, want %q", got, want)
+	}
+}
+
+func TestStytchOAuthHandlerReturnsGenericSubmitError(t *testing.T) {
+	client := &fakeStytchOAuthClient{err: errors.New("project-test secret-test upstream detail")}
+	handler := NewStytchOAuthHandler(StytchOAuthHandlerConfig{
+		Client:       client,
+		Kind:         StytchOAuthKindConsumer,
+		UserIDPrefix: "degov-square:",
+	})
+
+	req := httptest.NewRequest(http.MethodPost, "/api/oauth/stytch/authorize/submit", bytes.NewReader([]byte(`{"client_id":"client-test","redirect_uri":"https://client.example/callback","consent_granted":true}`)))
+	req = req.WithContext(context.WithValue(req.Context(), middleware.UserClaimsKey, &middleware.AuthClaims{
+		User: &types.UserSessInfo{Id: "user-123"},
+	}))
+	rec := httptest.NewRecorder()
+	handler.AuthorizeSubmit(rec, req)
+
+	if rec.Code != http.StatusBadGateway {
+		t.Fatalf("status = %d, want %d, body %q", rec.Code, http.StatusBadGateway, rec.Body.String())
+	}
+	var body map[string]string
+	if err := json.NewDecoder(rec.Body).Decode(&body); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if got, want := body["error"], "Stytch authorization submit failed"; got != want {
+		t.Fatalf("error = %q, want %q", got, want)
+	}
+}
+
+func TestValidateStytchOAuthDomain(t *testing.T) {
+	t.Parallel()
+
+	for _, domain := range []string{"https://api.stytch.com", "https://test.stytch.com"} {
+		if err := validateStytchOAuthDomain(domain); err != nil {
+			t.Fatalf("validateStytchOAuthDomain(%q) returned error: %v", domain, err)
+		}
+	}
+
+	for _, domain := range []string{"", "http://api.stytch.com", "https://evil.example", "https://api.stytch.com.evil.example"} {
+		if err := validateStytchOAuthDomain(domain); err == nil {
+			t.Fatalf("validateStytchOAuthDomain(%q) returned nil, want error", domain)
+		}
+	}
+}
+
+func TestStytchOAuthClientRejectsUnsafeDomainBeforeRequest(t *testing.T) {
+	client := NewStytchOAuthClient(StytchOAuthClientConfig{
+		Domain:    "http://api.stytch.com",
+		ProjectID: "project-test",
+		Secret:    "secret-test",
+		Kind:      StytchOAuthKindConsumer,
+		HTTPClient: roundTripFunc(func(*http.Request) (*http.Response, error) {
+			t.Fatal("HTTP client should not be called for unsafe domain")
+			return nil, nil
+		}).client(),
+	})
+
+	_, err := client.AuthorizeStart(context.Background(), StytchOAuthAuthorizeStartRequest{})
+	if err == nil {
+		t.Fatal("AuthorizeStart returned nil error, want unsafe domain error")
+	}
+}
+
 type fakeStytchOAuthClient struct {
 	startRequest   StytchOAuthAuthorizeStartRequest
 	startResponse  StytchOAuthAuthorizeStartResponse
 	submitRequest  StytchOAuthAuthorizeSubmitRequest
 	submitResponse StytchOAuthAuthorizeSubmitResponse
 	err            error
+	startCalls     int
+	submitCalls    int
 }
 
 func (c *fakeStytchOAuthClient) AuthorizeStart(_ context.Context, req StytchOAuthAuthorizeStartRequest) (StytchOAuthAuthorizeStartResponse, error) {
+	c.startCalls++
 	c.startRequest = req
 	return c.startResponse, c.err
 }
 
 func (c *fakeStytchOAuthClient) AuthorizeSubmit(_ context.Context, req StytchOAuthAuthorizeSubmitRequest) (StytchOAuthAuthorizeSubmitResponse, error) {
+	c.submitCalls++
 	c.submitRequest = req
 	return c.submitResponse, c.err
 }
@@ -279,4 +437,23 @@ func assertStringSlice(t *testing.T, got []string, want []string) {
 			t.Fatalf("slice = %v, want %v", got, want)
 		}
 	}
+}
+
+type roundTripFunc func(*http.Request) (*http.Response, error)
+
+func (f roundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) {
+	return f(req)
+}
+
+func (f roundTripFunc) client() *http.Client {
+	return &http.Client{Transport: f}
+}
+
+func allowUnsafeStytchOAuthTestDomain(t *testing.T) {
+	t.Helper()
+	previous := allowUnsafeStytchOAuthDomain
+	allowUnsafeStytchOAuthDomain = true
+	t.Cleanup(func() {
+		allowUnsafeStytchOAuthDomain = previous
+	})
 }

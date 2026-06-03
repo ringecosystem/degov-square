@@ -7,7 +7,9 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -17,6 +19,8 @@ import (
 const (
 	stytchOAuthResponseBodyLimit = 1 << 20
 )
+
+var allowUnsafeStytchOAuthDomain bool
 
 type StytchOAuthKind string
 
@@ -157,6 +161,11 @@ func (c *StytchOAuthClient) post(ctx context.Context, path string, payload any, 
 	if c.cfg.Domain == "" {
 		return errors.New("missing Stytch OAuth domain")
 	}
+	if !allowUnsafeStytchOAuthDomain {
+		if err := validateStytchOAuthDomain(c.cfg.Domain); err != nil {
+			return err
+		}
+	}
 	if c.cfg.ProjectID == "" {
 		return errors.New("missing Stytch OAuth project ID")
 	}
@@ -192,6 +201,22 @@ func (c *StytchOAuthClient) post(ctx context.Context, path string, payload any, 
 		return fmt.Errorf("decode Stytch OAuth response: %w", err)
 	}
 	return nil
+}
+
+func validateStytchOAuthDomain(domain string) error {
+	parsed, err := url.Parse(domain)
+	if err != nil {
+		return fmt.Errorf("invalid Stytch OAuth domain: %w", err)
+	}
+	if parsed.Scheme != "https" {
+		return errors.New("Stytch OAuth domain must use https")
+	}
+	switch parsed.Hostname() {
+	case "api.stytch.com", "test.stytch.com":
+		return nil
+	default:
+		return errors.New("Stytch OAuth domain host is not allowed")
+	}
 }
 
 func readLimitedResponseBody(body io.Reader) ([]byte, error) {
@@ -242,6 +267,9 @@ func (h *StytchOAuthHandler) AuthorizeStart(w http.ResponseWriter, r *http.Reque
 	if !ok {
 		return
 	}
+	if !h.requireConsumerMode(w) {
+		return
+	}
 
 	var webReq stytchOAuthWebRequest
 	if !decodeJSONRequest(w, r, &webReq) {
@@ -253,7 +281,8 @@ func (h *StytchOAuthHandler) AuthorizeStart(w http.ResponseWriter, r *http.Reque
 		StytchOAuthAuthorizeRequest: req,
 	})
 	if err != nil {
-		writeJSONError(w, http.StatusBadGateway, err.Error())
+		slog.Error("Stytch OAuth authorize start failed", "error", err)
+		writeJSONError(w, http.StatusBadGateway, "Stytch authorization request failed")
 		return
 	}
 	writeJSON(w, http.StatusOK, resp)
@@ -262,6 +291,9 @@ func (h *StytchOAuthHandler) AuthorizeStart(w http.ResponseWriter, r *http.Reque
 func (h *StytchOAuthHandler) AuthorizeSubmit(w http.ResponseWriter, r *http.Request) {
 	claims, ok := h.requireAuth(w, r)
 	if !ok {
+		return
+	}
+	if !h.requireConsumerMode(w) {
 		return
 	}
 
@@ -279,7 +311,8 @@ func (h *StytchOAuthHandler) AuthorizeSubmit(w http.ResponseWriter, r *http.Requ
 		ConsentGranted:              webReq.ConsentGranted,
 	})
 	if err != nil {
-		writeJSONError(w, http.StatusBadGateway, err.Error())
+		slog.Error("Stytch OAuth authorize submit failed", "error", err)
+		writeJSONError(w, http.StatusBadGateway, "Stytch authorization submit failed")
 		return
 	}
 	writeJSON(w, http.StatusOK, resp)
@@ -292,6 +325,14 @@ func (h *StytchOAuthHandler) requireAuth(w http.ResponseWriter, r *http.Request)
 		return nil, false
 	}
 	return claims, true
+}
+
+func (h *StytchOAuthHandler) requireConsumerMode(w http.ResponseWriter) bool {
+	if h.cfg.Kind == StytchOAuthKindConsumer {
+		return true
+	}
+	writeJSONError(w, http.StatusBadRequest, "Stytch B2B authorization is disabled")
+	return false
 }
 
 func (h *StytchOAuthHandler) buildAuthorizeRequest(webReq stytchOAuthWebRequest, claims *middleware.AuthClaims) StytchOAuthAuthorizeRequest {
@@ -310,16 +351,6 @@ func (h *StytchOAuthHandler) buildAuthorizeRequest(webReq stytchOAuthWebRequest,
 		CodeChallengeMethod: webReq.CodeChallengeMethod,
 	}
 
-	if h.cfg.Kind == StytchOAuthKindB2B {
-		req.OrganizationID = h.cfg.OrganizationID
-		req.MemberID = h.cfg.MemberID
-		return req
-	}
-
-	if h.cfg.UserID != "" {
-		req.UserID = h.cfg.UserID
-		return req
-	}
 	req.UserID = h.cfg.UserIDPrefix + claims.User.Id
 	return req
 }

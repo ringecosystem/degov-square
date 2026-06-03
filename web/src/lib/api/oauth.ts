@@ -35,6 +35,16 @@ export interface StytchOAuthAuthorizeSubmitResponse {
   redirect_uri: string;
 }
 
+export class OAuthApiError extends Error {
+  status: number;
+
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = 'OAuthApiError';
+    this.status = status;
+  }
+}
+
 export const getOAuthAuthorizeParams = (searchParams: URLSearchParams): OAuthAuthorizeParams => {
   return {
     client_id: searchParams.get('client_id') ?? '',
@@ -81,7 +91,7 @@ const postStytchOAuth = async <T>(path: string, body: unknown, token: string): P
   if (!response.ok) {
     const message =
       typeof data?.error === 'string' ? data.error : `Request failed: ${response.status}`;
-    throw new Error(message);
+    throw new OAuthApiError(message, response.status);
   }
 
   return data as T;

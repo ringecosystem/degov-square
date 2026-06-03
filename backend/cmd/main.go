@@ -214,7 +214,6 @@ func registerStytchOAuthRoutes(mux *http.ServeMux, middlewareChain *middleware.C
 		Client:         client,
 		Kind:           mcpserver.StytchOAuthKind(cfg.GetMCPStytchOAuthKind()),
 		UserIDPrefix:   cfg.GetMCPStytchOAuthUserIDPrefix(),
-		UserID:         cfg.GetMCPStytchOAuthUserID(),
 		OrganizationID: cfg.GetMCPStytchOAuthOrganizationID(),
 		MemberID:       cfg.GetMCPStytchOAuthMemberID(),
 		OAuthResource:  cfg.GetMCPOAuthResource(),
