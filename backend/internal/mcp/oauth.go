@@ -30,7 +30,6 @@ type OAuthVerifierConfig struct {
 	Issuer         string
 	JWKSURL        string
 	Audience       string
-	RequiredScopes []string
 	Client         *http.Client
 	JWKSCacheTTL   time.Duration
 }
@@ -118,9 +117,6 @@ func (v *oauthTokenVerifier) Verify(ctx context.Context, tokenString string, _ *
 	issuer, _ := claims.GetIssuer()
 	audience, _ := claims.GetAudience()
 	scopes := tokenScopes(claims)
-	if missingScope(scopes, v.cfg.RequiredScopes) != "" {
-		return nil, invalidOAuthToken("token missing required scope")
-	}
 
 	return &sdkauth.TokenInfo{
 		UserID:     subject,
@@ -314,22 +310,6 @@ func tokenScopes(claims jwt.MapClaims) []string {
 	addList(claims["scp"])
 	addList(claims["permissions"])
 	return scopes
-}
-
-func missingScope(scopes []string, required []string) string {
-	for _, requiredScope := range required {
-		found := false
-		for _, scope := range scopes {
-			if scope == requiredScope {
-				found = true
-				break
-			}
-		}
-		if !found {
-			return requiredScope
-		}
-	}
-	return ""
 }
 
 func invalidOAuthToken(message string) error {
