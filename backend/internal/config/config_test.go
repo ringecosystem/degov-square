@@ -62,20 +62,8 @@ func TestMCPConfigDefaults(t *testing.T) {
 	if got := cfg.GetMCPStytchOAuthSecret(); got != "" {
 		t.Fatalf("GetMCPStytchOAuthSecret() = %q, want empty", got)
 	}
-	if got, want := cfg.GetMCPStytchOAuthKind(), "consumer"; got != want {
-		t.Fatalf("GetMCPStytchOAuthKind() = %q, want %q", got, want)
-	}
 	if got, want := cfg.GetMCPStytchOAuthUserIDPrefix(), "degov-square:"; got != want {
 		t.Fatalf("GetMCPStytchOAuthUserIDPrefix() = %q, want %q", got, want)
-	}
-	if got := cfg.GetMCPStytchOAuthUserID(); got != "" {
-		t.Fatalf("GetMCPStytchOAuthUserID() = %q, want empty", got)
-	}
-	if got := cfg.GetMCPStytchOAuthOrganizationID(); got != "" {
-		t.Fatalf("GetMCPStytchOAuthOrganizationID() = %q, want empty", got)
-	}
-	if got := cfg.GetMCPStytchOAuthMemberID(); got != "" {
-		t.Fatalf("GetMCPStytchOAuthMemberID() = %q, want empty", got)
 	}
 	if cfg.GetMCPProposalSummaryGenerateEnabled() {
 		t.Fatal("GetMCPProposalSummaryGenerateEnabled() = true, want false")
@@ -103,11 +91,7 @@ func TestMCPConfigReadsEnvironment(t *testing.T) {
 	t.Setenv("MCP_STYTCH_OAUTH_DOMAIN", "https://test.stytch.com")
 	t.Setenv("MCP_STYTCH_OAUTH_PROJECT_ID", "project-test")
 	t.Setenv("MCP_STYTCH_OAUTH_SECRET", "secret-test")
-	t.Setenv("MCP_STYTCH_OAUTH_KIND", "b2b")
 	t.Setenv("MCP_STYTCH_OAUTH_USER_ID_PREFIX", "square:")
-	t.Setenv("MCP_STYTCH_OAUTH_USER_ID", "user-fixed")
-	t.Setenv("MCP_STYTCH_OAUTH_ORGANIZATION_ID", "org-test")
-	t.Setenv("MCP_STYTCH_OAUTH_MEMBER_ID", "member-test")
 	t.Setenv("MCP_PROPOSAL_SUMMARY_GENERATE_ENABLED", "true")
 	t.Setenv("MCP_PROPOSAL_SUMMARY_TIMEOUT", "5s")
 	globalConfig = nil
@@ -166,20 +150,8 @@ func TestMCPConfigReadsEnvironment(t *testing.T) {
 	if got, want := cfg.GetMCPStytchOAuthSecret(), "secret-test"; got != want {
 		t.Fatalf("GetMCPStytchOAuthSecret() = %q, want %q", got, want)
 	}
-	if got, want := cfg.GetMCPStytchOAuthKind(), "b2b"; got != want {
-		t.Fatalf("GetMCPStytchOAuthKind() = %q, want %q", got, want)
-	}
 	if got, want := cfg.GetMCPStytchOAuthUserIDPrefix(), "square:"; got != want {
 		t.Fatalf("GetMCPStytchOAuthUserIDPrefix() = %q, want %q", got, want)
-	}
-	if got, want := cfg.GetMCPStytchOAuthUserID(), "user-fixed"; got != want {
-		t.Fatalf("GetMCPStytchOAuthUserID() = %q, want %q", got, want)
-	}
-	if got, want := cfg.GetMCPStytchOAuthOrganizationID(), "org-test"; got != want {
-		t.Fatalf("GetMCPStytchOAuthOrganizationID() = %q, want %q", got, want)
-	}
-	if got, want := cfg.GetMCPStytchOAuthMemberID(), "member-test"; got != want {
-		t.Fatalf("GetMCPStytchOAuthMemberID() = %q, want %q", got, want)
 	}
 	if !cfg.GetMCPProposalSummaryGenerateEnabled() {
 		t.Fatal("GetMCPProposalSummaryGenerateEnabled() = false, want true")
