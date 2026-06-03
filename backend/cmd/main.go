@@ -161,7 +161,7 @@ func startServer() {
 	registerStytchOAuthRoutes(mux, middlewareChain, cfg, nil)
 
 	if cfg.GetMCPEnabled() {
-		if cfg.GetMCPAuthMode() == mcpserver.AuthModeOAuth {
+		if mcpserver.AuthModeIncludes(cfg.GetMCPAuthMode(), mcpserver.AuthModeOAuth) {
 			mcpserver.RegisterProtectedResourceMetadataHandlers(mux, mcpserver.Config{
 				OAuthResource:             cfg.GetMCPOAuthResource(),
 				OAuthResourceMetadataURL:  cfg.GetMCPOAuthResourceMetadataURL(),

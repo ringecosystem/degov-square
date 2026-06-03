@@ -72,3 +72,20 @@ func parseAuthModes(authMode string) authModes {
 	}
 	return modes
 }
+
+func AuthModeIncludes(authMode string, mode string) bool {
+	modes := parseAuthModes(authMode)
+	if !modes.valid {
+		return false
+	}
+	switch mode {
+	case AuthModeBearer:
+		return modes.bearer
+	case AuthModeNone:
+		return modes.none
+	case AuthModeOAuth:
+		return modes.oauth
+	default:
+		return false
+	}
+}
