@@ -118,6 +118,15 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("MCP_OAUTH_SCOPES_SUPPORTED", "degov.mcp.read")
 	v.SetDefault("MCP_OAUTH_REQUIRED_SCOPES", "degov.mcp.read")
 	v.SetDefault("MCP_OAUTH_ALLOW_STATIC_BEARER", false)
+	v.SetDefault("MCP_STYTCH_OAUTH_ENABLED", false)
+	v.SetDefault("MCP_STYTCH_OAUTH_DOMAIN", "")
+	v.SetDefault("MCP_STYTCH_OAUTH_PROJECT_ID", "")
+	v.SetDefault("MCP_STYTCH_OAUTH_SECRET", "")
+	v.SetDefault("MCP_STYTCH_OAUTH_KIND", "consumer")
+	v.SetDefault("MCP_STYTCH_OAUTH_USER_ID_PREFIX", "degov-square:")
+	v.SetDefault("MCP_STYTCH_OAUTH_USER_ID", "")
+	v.SetDefault("MCP_STYTCH_OAUTH_ORGANIZATION_ID", "")
+	v.SetDefault("MCP_STYTCH_OAUTH_MEMBER_ID", "")
 	v.SetDefault("MCP_PROPOSAL_SUMMARY_GENERATE_ENABLED", false)
 	v.SetDefault("MCP_PROPOSAL_SUMMARY_TIMEOUT", "30s")
 
@@ -267,6 +276,46 @@ func (c *Config) GetMCPOAuthRequiredScopes() []string {
 
 func (c *Config) GetMCPOAuthAllowStaticBearer() bool {
 	return c.viper.GetBool("MCP_OAUTH_ALLOW_STATIC_BEARER")
+}
+
+func (c *Config) GetMCPStytchOAuthEnabled() bool {
+	return c.viper.GetBool("MCP_STYTCH_OAUTH_ENABLED")
+}
+
+func (c *Config) GetMCPStytchOAuthDomain() string {
+	return strings.TrimRight(c.viper.GetString("MCP_STYTCH_OAUTH_DOMAIN"), "/")
+}
+
+func (c *Config) GetMCPStytchOAuthProjectID() string {
+	return c.viper.GetString("MCP_STYTCH_OAUTH_PROJECT_ID")
+}
+
+func (c *Config) GetMCPStytchOAuthSecret() string {
+	return c.viper.GetString("MCP_STYTCH_OAUTH_SECRET")
+}
+
+func (c *Config) GetMCPStytchOAuthKind() string {
+	kind := strings.ToLower(strings.TrimSpace(c.viper.GetString("MCP_STYTCH_OAUTH_KIND")))
+	if kind == "b2b" {
+		return kind
+	}
+	return "consumer"
+}
+
+func (c *Config) GetMCPStytchOAuthUserIDPrefix() string {
+	return c.viper.GetString("MCP_STYTCH_OAUTH_USER_ID_PREFIX")
+}
+
+func (c *Config) GetMCPStytchOAuthUserID() string {
+	return c.viper.GetString("MCP_STYTCH_OAUTH_USER_ID")
+}
+
+func (c *Config) GetMCPStytchOAuthOrganizationID() string {
+	return c.viper.GetString("MCP_STYTCH_OAUTH_ORGANIZATION_ID")
+}
+
+func (c *Config) GetMCPStytchOAuthMemberID() string {
+	return c.viper.GetString("MCP_STYTCH_OAUTH_MEMBER_ID")
 }
 
 func (c *Config) GetMCPProposalSummaryGenerateEnabled() bool {

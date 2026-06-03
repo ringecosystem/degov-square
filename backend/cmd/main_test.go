@@ -5,6 +5,9 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/ringecosystem/degov-square/internal/config"
+	"github.com/ringecosystem/degov-square/internal/middleware"
 )
 
 func TestCORSAllowsMCPStreamableHTTPHeaders(t *testing.T) {
@@ -29,5 +32,40 @@ func TestCORSAllowsMCPStreamableHTTPHeaders(t *testing.T) {
 		if !strings.Contains(allowedHeaders, header) {
 			t.Fatalf("expected Access-Control-Allow-Headers to contain %q, got %q", header, allowedHeaders)
 		}
+	}
+}
+
+func TestRegisterStytchOAuthRoutesOnlyWhenEnabled(t *testing.T) {
+	t.Setenv("MCP_STYTCH_OAUTH_ENABLED", "false")
+	if err := config.InitConfig(); err != nil {
+		t.Fatalf("InitConfig: %v", err)
+	}
+
+	mux := http.NewServeMux()
+	registerStytchOAuthRoutes(mux, middleware.NewChain(), config.GetConfig(), nil)
+
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodPost, "/api/oauth/stytch/authorize/start", strings.NewReader(`{}`))
+	mux.ServeHTTP(rec, req)
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("disabled route status = %d, want %d", rec.Code, http.StatusNotFound)
+	}
+
+	t.Setenv("MCP_STYTCH_OAUTH_ENABLED", "true")
+	t.Setenv("MCP_STYTCH_OAUTH_DOMAIN", "https://test.stytch.com")
+	t.Setenv("MCP_STYTCH_OAUTH_PROJECT_ID", "project-test")
+	t.Setenv("MCP_STYTCH_OAUTH_SECRET", "secret-test")
+	if err := config.InitConfig(); err != nil {
+		t.Fatalf("InitConfig: %v", err)
+	}
+
+	mux = http.NewServeMux()
+	registerStytchOAuthRoutes(mux, middleware.NewChain(), config.GetConfig(), nil)
+
+	rec = httptest.NewRecorder()
+	req = httptest.NewRequest(http.MethodPost, "/api/oauth/stytch/authorize/start", strings.NewReader(`{}`))
+	mux.ServeHTTP(rec, req)
+	if rec.Code != http.StatusUnauthorized {
+		t.Fatalf("enabled route status = %d, want %d", rec.Code, http.StatusUnauthorized)
 	}
 }

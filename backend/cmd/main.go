@@ -158,6 +158,8 @@ func startServer() {
 	mux.Handle("/dao/config", middlewareChain.Then(http.HandlerFunc(daoRoute.ConfigHandler)))
 	mux.Handle("/dao/config/{dao}", middlewareChain.Then(http.HandlerFunc(daoRoute.ConfigHandler)))
 
+	registerStytchOAuthRoutes(mux, middlewareChain, cfg, nil)
+
 	if cfg.GetMCPEnabled() {
 		if cfg.GetMCPAuthMode() == mcpserver.AuthModeOAuth {
 			mcpserver.RegisterProtectedResourceMetadataHandlers(mux, mcpserver.Config{
@@ -194,6 +196,30 @@ func startServer() {
 	)
 	err := http.ListenAndServe(":"+port, httpHandler)
 	slog.Error("failed to listen server", "error", err)
+}
+
+func registerStytchOAuthRoutes(mux *http.ServeMux, middlewareChain *middleware.Chain, cfg *config.Config, httpClient *http.Client) {
+	if !cfg.GetMCPStytchOAuthEnabled() {
+		return
+	}
+
+	client := mcpserver.NewStytchOAuthClient(mcpserver.StytchOAuthClientConfig{
+		Domain:     cfg.GetMCPStytchOAuthDomain(),
+		ProjectID:  cfg.GetMCPStytchOAuthProjectID(),
+		Secret:     cfg.GetMCPStytchOAuthSecret(),
+		Kind:       mcpserver.StytchOAuthKind(cfg.GetMCPStytchOAuthKind()),
+		HTTPClient: httpClient,
+	})
+	handler := mcpserver.NewStytchOAuthHandler(mcpserver.StytchOAuthHandlerConfig{
+		Client:         client,
+		Kind:           mcpserver.StytchOAuthKind(cfg.GetMCPStytchOAuthKind()),
+		UserIDPrefix:   cfg.GetMCPStytchOAuthUserIDPrefix(),
+		OrganizationID: cfg.GetMCPStytchOAuthOrganizationID(),
+		MemberID:       cfg.GetMCPStytchOAuthMemberID(),
+		OAuthResource:  cfg.GetMCPOAuthResource(),
+	})
+	mux.Handle("/api/oauth/stytch/authorize/start", middlewareChain.Then(http.HandlerFunc(handler.AuthorizeStart)))
+	mux.Handle("/api/oauth/stytch/authorize/submit", middlewareChain.Then(http.HandlerFunc(handler.AuthorizeSubmit)))
 }
 
 func getMCPVersion() string {
