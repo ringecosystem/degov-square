@@ -79,6 +79,18 @@ func TestBuildHTTPHandlerAllowsBearerInCompositeAuthMode(t *testing.T) {
 	}
 }
 
+func TestAuthModeIncludesCompositeOAuth(t *testing.T) {
+	if !AuthModeIncludes("oauth,bearer", AuthModeOAuth) {
+		t.Fatal("AuthModeIncludes(oauth,bearer, oauth) = false, want true")
+	}
+	if !AuthModeIncludes("oauth,bearer", AuthModeBearer) {
+		t.Fatal("AuthModeIncludes(oauth,bearer, bearer) = false, want true")
+	}
+	if AuthModeIncludes("oauth,bearer", AuthModeNone) {
+		t.Fatal("AuthModeIncludes(oauth,bearer, none) = true, want false")
+	}
+}
+
 func TestBuildHTTPHandlerAllowsExplicitNoAuth(t *testing.T) {
 	handler := NewHTTPHandler(Config{
 		Name:     "degov-square",
