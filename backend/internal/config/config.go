@@ -109,6 +109,15 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("MCP_PATH", "/mcp")
 	v.SetDefault("MCP_AUTH_MODE", "bearer")
 	v.SetDefault("MCP_BEARER_TOKEN", "")
+	v.SetDefault("MCP_OAUTH_RESOURCE", "")
+	v.SetDefault("MCP_OAUTH_RESOURCE_METADATA_URL", "")
+	v.SetDefault("MCP_OAUTH_AUTHORIZATION_SERVERS", "")
+	v.SetDefault("MCP_OAUTH_ISSUER", "")
+	v.SetDefault("MCP_OAUTH_JWKS_URL", "")
+	v.SetDefault("MCP_OAUTH_AUDIENCE", "")
+	v.SetDefault("MCP_OAUTH_SCOPES_SUPPORTED", "degov.mcp.read")
+	v.SetDefault("MCP_OAUTH_REQUIRED_SCOPES", "degov.mcp.read")
+	v.SetDefault("MCP_OAUTH_ALLOW_STATIC_BEARER", false)
 	v.SetDefault("MCP_PROPOSAL_SUMMARY_GENERATE_ENABLED", false)
 	v.SetDefault("MCP_PROPOSAL_SUMMARY_TIMEOUT", "30s")
 
@@ -224,6 +233,42 @@ func (c *Config) GetMCPBearerToken() string {
 	return c.viper.GetString("MCP_BEARER_TOKEN")
 }
 
+func (c *Config) GetMCPOAuthResource() string {
+	return c.viper.GetString("MCP_OAUTH_RESOURCE")
+}
+
+func (c *Config) GetMCPOAuthResourceMetadataURL() string {
+	return c.viper.GetString("MCP_OAUTH_RESOURCE_METADATA_URL")
+}
+
+func (c *Config) GetMCPOAuthAuthorizationServers() []string {
+	return splitCommaSeparated(c.viper.GetString("MCP_OAUTH_AUTHORIZATION_SERVERS"))
+}
+
+func (c *Config) GetMCPOAuthIssuer() string {
+	return c.viper.GetString("MCP_OAUTH_ISSUER")
+}
+
+func (c *Config) GetMCPOAuthJWKSURL() string {
+	return c.viper.GetString("MCP_OAUTH_JWKS_URL")
+}
+
+func (c *Config) GetMCPOAuthAudience() string {
+	return c.viper.GetString("MCP_OAUTH_AUDIENCE")
+}
+
+func (c *Config) GetMCPOAuthScopesSupported() []string {
+	return splitCommaSeparated(c.viper.GetString("MCP_OAUTH_SCOPES_SUPPORTED"))
+}
+
+func (c *Config) GetMCPOAuthRequiredScopes() []string {
+	return splitCommaSeparated(c.viper.GetString("MCP_OAUTH_REQUIRED_SCOPES"))
+}
+
+func (c *Config) GetMCPOAuthAllowStaticBearer() bool {
+	return c.viper.GetBool("MCP_OAUTH_ALLOW_STATIC_BEARER")
+}
+
 func (c *Config) GetMCPProposalSummaryGenerateEnabled() bool {
 	return c.viper.GetBool("MCP_PROPOSAL_SUMMARY_GENERATE_ENABLED")
 }
@@ -326,6 +371,22 @@ func parseEnvironment(env string) Environment {
 	default:
 		return Production
 	}
+}
+
+func splitCommaSeparated(value string) []string {
+	if strings.TrimSpace(value) == "" {
+		return nil
+	}
+
+	parts := strings.Split(value, ",")
+	result := make([]string, 0, len(parts))
+	for _, part := range parts {
+		part = strings.TrimSpace(part)
+		if part != "" {
+			result = append(result, part)
+		}
+	}
+	return result
 }
 
 // Convenience functions for backward compatibility

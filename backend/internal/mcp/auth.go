@@ -8,6 +8,7 @@ import (
 const (
 	AuthModeBearer = "bearer"
 	AuthModeNone   = "none"
+	AuthModeOAuth  = "oauth"
 )
 
 func BearerAuthMiddleware(token string) func(http.Handler) http.Handler {
