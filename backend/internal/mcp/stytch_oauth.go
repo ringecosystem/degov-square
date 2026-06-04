@@ -118,7 +118,15 @@ func NewStytchOAuthClient(cfg StytchOAuthClientConfig) *StytchOAuthClient {
 
 func (c *StytchOAuthClient) AuthorizeStart(ctx context.Context, req StytchOAuthAuthorizeStartRequest) (StytchOAuthAuthorizeStartResponse, error) {
 	var resp StytchOAuthAuthorizeStartResponse
-	err := c.post(ctx, c.authorizeStartPath(), req.payload(), &resp)
+	payload := req.payload()
+	err := c.post(ctx, c.authorizeStartPath(), payload, &resp)
+	var requestErr *StytchOAuthRequestError
+	if errors.As(err, &requestErr) && requestErr.IsUserNotFound() && payload.UserID != "" {
+		if createErr := c.createUser(ctx, payload.UserID); createErr != nil {
+			return resp, createErr
+		}
+		err = c.post(ctx, c.authorizeStartPath(), payload, &resp)
+	}
 	return resp, err
 }
 
@@ -165,6 +173,18 @@ func (c *StytchOAuthClient) authorizeSubmitPath() string {
 	return "/v1/idp/oauth/authorize"
 }
 
+func (c *StytchOAuthClient) createUser(ctx context.Context, externalID string) error {
+	var resp struct {
+		UserID     string `json:"user_id"`
+		ExternalID string `json:"external_id"`
+	}
+	return c.post(ctx, "/v1/users", struct {
+		ExternalID string `json:"external_id"`
+	}{
+		ExternalID: externalID,
+	}, &resp)
+}
+
 func (c *StytchOAuthClient) post(ctx context.Context, path string, payload any, target any) error {
 	if c.cfg.Domain == "" {
 		return errors.New("missing Stytch OAuth domain")
@@ -203,12 +223,28 @@ func (c *StytchOAuthClient) post(ctx context.Context, path string, payload any, 
 		return err
 	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return fmt.Errorf("Stytch OAuth request returned status %d: %s", resp.StatusCode, cleanStytchError(respBody))
+		return &StytchOAuthRequestError{
+			StatusCode: resp.StatusCode,
+			Message:    cleanStytchError(respBody),
+		}
 	}
 	if err := json.Unmarshal(respBody, target); err != nil {
 		return fmt.Errorf("decode Stytch OAuth response: %w", err)
 	}
 	return nil
+}
+
+type StytchOAuthRequestError struct {
+	StatusCode int
+	Message    string
+}
+
+func (e *StytchOAuthRequestError) Error() string {
+	return fmt.Sprintf("Stytch OAuth request returned status %d: %s", e.StatusCode, e.Message)
+}
+
+func (e *StytchOAuthRequestError) IsUserNotFound() bool {
+	return e.StatusCode == http.StatusNotFound && strings.Contains(strings.ToLower(e.Message), "user could not be found")
 }
 
 func validateStytchOAuthDomain(domain string) error {
