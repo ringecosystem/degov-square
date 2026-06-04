@@ -118,14 +118,43 @@ func NewStytchOAuthClient(cfg StytchOAuthClientConfig) *StytchOAuthClient {
 
 func (c *StytchOAuthClient) AuthorizeStart(ctx context.Context, req StytchOAuthAuthorizeStartRequest) (StytchOAuthAuthorizeStartResponse, error) {
 	var resp StytchOAuthAuthorizeStartResponse
-	err := c.post(ctx, c.authorizeStartPath(), req, &resp)
+	err := c.post(ctx, c.authorizeStartPath(), req.payload(), &resp)
 	return resp, err
 }
 
 func (c *StytchOAuthClient) AuthorizeSubmit(ctx context.Context, req StytchOAuthAuthorizeSubmitRequest) (StytchOAuthAuthorizeSubmitResponse, error) {
 	var resp StytchOAuthAuthorizeSubmitResponse
-	err := c.post(ctx, c.authorizeSubmitPath(), req, &resp)
+	err := c.post(ctx, c.authorizeSubmitPath(), req.payload(), &resp)
 	return resp, err
+}
+
+func (r StytchOAuthAuthorizeStartRequest) payload() StytchOAuthAuthorizeRequest {
+	req := r.StytchOAuthAuthorizeRequest
+	return StytchOAuthAuthorizeRequest{
+		ClientID:     req.ClientID,
+		RedirectURI:  req.RedirectURI,
+		ResponseType: req.ResponseType,
+		Scopes:       append([]string(nil), req.Scopes...),
+		UserID:       req.UserID,
+	}
+}
+
+func (r StytchOAuthAuthorizeSubmitRequest) payload() StytchOAuthAuthorizeSubmitRequest {
+	req := r.StytchOAuthAuthorizeRequest
+	return StytchOAuthAuthorizeSubmitRequest{
+		StytchOAuthAuthorizeRequest: StytchOAuthAuthorizeRequest{
+			ClientID:      req.ClientID,
+			RedirectURI:   req.RedirectURI,
+			ResponseType:  req.ResponseType,
+			Scopes:        append([]string(nil), req.Scopes...),
+			UserID:        req.UserID,
+			State:         req.State,
+			Nonce:         req.Nonce,
+			CodeChallenge: req.CodeChallenge,
+			Resources:     append([]string(nil), req.Resources...),
+		},
+		ConsentGranted: r.ConsentGranted,
+	}
 }
 
 func (c *StytchOAuthClient) authorizeStartPath() string {
