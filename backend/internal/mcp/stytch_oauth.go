@@ -190,10 +190,14 @@ func validateStytchOAuthDomain(domain string) error {
 	if parsed.Scheme != "https" {
 		return errors.New("Stytch OAuth domain must use https")
 	}
-	switch parsed.Hostname() {
+	hostname := strings.ToLower(parsed.Hostname())
+	switch hostname {
 	case "api.stytch.com", "test.stytch.com":
 		return nil
 	default:
+		if strings.HasSuffix(hostname, ".customers.stytch.com") {
+			return nil
+		}
 		return errors.New("Stytch OAuth domain host is not allowed")
 	}
 }

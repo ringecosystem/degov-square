@@ -259,13 +259,23 @@ func TestStytchOAuthHandlerReturnsGenericSubmitError(t *testing.T) {
 func TestValidateStytchOAuthDomain(t *testing.T) {
 	t.Parallel()
 
-	for _, domain := range []string{"https://api.stytch.com", "https://test.stytch.com"} {
+	for _, domain := range []string{
+		"https://api.stytch.com",
+		"https://test.stytch.com",
+		"https://splendid-pharaoh-6918.customers.stytch.com",
+	} {
 		if err := validateStytchOAuthDomain(domain); err != nil {
 			t.Fatalf("validateStytchOAuthDomain(%q) returned error: %v", domain, err)
 		}
 	}
 
-	for _, domain := range []string{"", "http://api.stytch.com", "https://evil.example", "https://api.stytch.com.evil.example"} {
+	for _, domain := range []string{
+		"",
+		"http://api.stytch.com",
+		"https://evil.example",
+		"https://api.stytch.com.evil.example",
+		"https://customers.stytch.com.evil.example",
+	} {
 		if err := validateStytchOAuthDomain(domain); err == nil {
 			t.Fatalf("validateStytchOAuthDomain(%q) returned nil, want error", domain)
 		}
