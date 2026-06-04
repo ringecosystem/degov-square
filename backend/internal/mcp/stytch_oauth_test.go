@@ -3,6 +3,7 @@ package mcp
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -77,6 +78,68 @@ func TestStytchOAuthClientConsumerStartRequest(t *testing.T) {
 	}
 	if !resp.ConsentRequired {
 		t.Fatal("consent_required = false, want true")
+	}
+}
+
+func TestStytchOAuthClientConsumerStartCreatesMissingExternalIDUser(t *testing.T) {
+	allowUnsafeStytchOAuthTestDomain(t)
+
+	var startCalls int
+	var createBody map[string]any
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if got, want := r.Header.Get("Authorization"), "Basic "+base64.StdEncoding.EncodeToString([]byte("project-test:secret-test")); got != want {
+			t.Fatalf("authorization = %q, want %q", got, want)
+		}
+
+		switch r.URL.Path {
+		case "/v1/idp/oauth/authorize/start":
+			startCalls++
+			if startCalls == 1 {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusNotFound)
+				_, _ = w.Write([]byte(`{"error_message":"User could not be found."}`))
+				return
+			}
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(`{"client":{"client_id":"client-test","client_name":"Test App"},"consent_required":true,"scope_results":[],"status_code":200}`))
+		case "/v1/users":
+			if err := json.NewDecoder(r.Body).Decode(&createBody); err != nil {
+				t.Fatalf("decode create user body: %v", err)
+			}
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(`{"user_id":"user-test","external_id":"degov-square:user-123","status_code":200}`))
+		default:
+			t.Fatalf("unexpected path %q", r.URL.Path)
+		}
+	}))
+	defer server.Close()
+
+	client := NewStytchOAuthClient(StytchOAuthClientConfig{
+		Domain:    server.URL,
+		ProjectID: "project-test",
+		Secret:    "secret-test",
+	})
+
+	resp, err := client.AuthorizeStart(context.Background(), StytchOAuthAuthorizeStartRequest{
+		StytchOAuthAuthorizeRequest: StytchOAuthAuthorizeRequest{
+			ClientID:     "client-test",
+			RedirectURI:  "https://client.example/callback",
+			ResponseType: "code",
+			Scopes:       []string{"openid", "degov.mcp.read"},
+			UserID:       "degov-square:user-123",
+		},
+	})
+	if err != nil {
+		t.Fatalf("AuthorizeStart returned error: %v", err)
+	}
+	if got, want := startCalls, 2; got != want {
+		t.Fatalf("start calls = %d, want %d", got, want)
+	}
+	assertJSONValue(t, createBody, "external_id", "degov-square:user-123")
+	if resp.Client.ClientName != "Test App" {
+		t.Fatalf("client_name = %q, want Test App", resp.Client.ClientName)
 	}
 }
 
