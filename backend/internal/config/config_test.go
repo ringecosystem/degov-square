@@ -62,7 +62,7 @@ func TestMCPConfigDefaults(t *testing.T) {
 	if got := cfg.GetMCPStytchOAuthSecret(); got != "" {
 		t.Fatalf("GetMCPStytchOAuthSecret() = %q, want empty", got)
 	}
-	if got, want := cfg.GetMCPStytchOAuthUserIDPrefix(), "degov-square:"; got != want {
+	if got, want := cfg.GetMCPStytchOAuthUserIDPrefix(), "degov-square-"; got != want {
 		t.Fatalf("GetMCPStytchOAuthUserIDPrefix() = %q, want %q", got, want)
 	}
 	if cfg.GetMCPProposalSummaryGenerateEnabled() {

@@ -122,7 +122,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("MCP_STYTCH_OAUTH_DOMAIN", "")
 	v.SetDefault("MCP_STYTCH_OAUTH_PROJECT_ID", "")
 	v.SetDefault("MCP_STYTCH_OAUTH_SECRET", "")
-	v.SetDefault("MCP_STYTCH_OAUTH_USER_ID_PREFIX", "degov-square:")
+	v.SetDefault("MCP_STYTCH_OAUTH_USER_ID_PREFIX", "degov-square-")
 	v.SetDefault("MCP_PROPOSAL_SUMMARY_GENERATE_ENABLED", false)
 	v.SetDefault("MCP_PROPOSAL_SUMMARY_TIMEOUT", "30s")
 

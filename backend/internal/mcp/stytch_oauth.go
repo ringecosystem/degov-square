@@ -180,9 +180,15 @@ func (c *StytchOAuthClient) createUser(ctx context.Context, externalID string) e
 	}
 	return c.post(ctx, "/v1/users", struct {
 		ExternalID string `json:"external_id"`
+		Email      string `json:"email"`
 	}{
 		ExternalID: externalID,
+		Email:      stytchOAuthPlaceholderEmail(externalID),
 	}, &resp)
+}
+
+func stytchOAuthPlaceholderEmail(externalID string) string {
+	return externalID + "@mcp.degov.ai"
 }
 
 func (c *StytchOAuthClient) post(ctx context.Context, path string, payload any, target any) error {
@@ -304,7 +310,7 @@ func cleanStytchError(body []byte) string {
 
 func NewStytchOAuthHandler(cfg StytchOAuthHandlerConfig) *StytchOAuthHandler {
 	if cfg.UserIDPrefix == "" {
-		cfg.UserIDPrefix = "degov-square:"
+		cfg.UserIDPrefix = "degov-square-"
 	}
 	return &StytchOAuthHandler{cfg: cfg}
 }

@@ -36,7 +36,7 @@ func TestStytchOAuthClientConsumerStartRequest(t *testing.T) {
 		assertJSONValue(t, body, "client_id", "client-test")
 		assertJSONValue(t, body, "redirect_uri", "https://client.example/callback")
 		assertJSONValue(t, body, "response_type", "code")
-		assertJSONValue(t, body, "user_id", "degov-square:user-123")
+		assertJSONValue(t, body, "user_id", "degov-square-user-123")
 		assertJSONArray(t, body, "scopes", []string{"openid", "degov.mcp.read"})
 		for _, key := range []string{"state", "nonce", "code_challenge", "code_challenge_method", "resources"} {
 			if _, ok := body[key]; ok {
@@ -62,7 +62,7 @@ func TestStytchOAuthClientConsumerStartRequest(t *testing.T) {
 			RedirectURI:         "https://client.example/callback",
 			ResponseType:        "code",
 			Scopes:              []string{"openid", "degov.mcp.read"},
-			UserID:              "degov-square:user-123",
+			UserID:              "degov-square-user-123",
 			State:               "state-test",
 			Nonce:               "nonce-test",
 			CodeChallenge:       "challenge-test",
@@ -109,7 +109,7 @@ func TestStytchOAuthClientConsumerStartCreatesMissingExternalIDUser(t *testing.T
 			}
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
-			_, _ = w.Write([]byte(`{"user_id":"user-test","external_id":"degov-square:user-123","status_code":200}`))
+			_, _ = w.Write([]byte(`{"user_id":"user-test","external_id":"degov-square-user-123","status_code":200}`))
 		default:
 			t.Fatalf("unexpected path %q", r.URL.Path)
 		}
@@ -128,7 +128,7 @@ func TestStytchOAuthClientConsumerStartCreatesMissingExternalIDUser(t *testing.T
 			RedirectURI:  "https://client.example/callback",
 			ResponseType: "code",
 			Scopes:       []string{"openid", "degov.mcp.read"},
-			UserID:       "degov-square:user-123",
+			UserID:       "degov-square-user-123",
 		},
 	})
 	if err != nil {
@@ -137,7 +137,8 @@ func TestStytchOAuthClientConsumerStartCreatesMissingExternalIDUser(t *testing.T
 	if got, want := startCalls, 2; got != want {
 		t.Fatalf("start calls = %d, want %d", got, want)
 	}
-	assertJSONValue(t, createBody, "external_id", "degov-square:user-123")
+	assertJSONValue(t, createBody, "external_id", "degov-square-user-123")
+	assertJSONValue(t, createBody, "email", "degov-square-user-123@mcp.degov.ai")
 	if resp.Client.ClientName != "Test App" {
 		t.Fatalf("client_name = %q, want Test App", resp.Client.ClientName)
 	}
@@ -222,7 +223,7 @@ func TestStytchOAuthHandlerSubmitReturnsRedirectURI(t *testing.T) {
 	}
 	handler := NewStytchOAuthHandler(StytchOAuthHandlerConfig{
 		Client:        client,
-		UserIDPrefix:  "degov-square:",
+		UserIDPrefix:  "degov-square-",
 		OAuthResource: "https://square.degov.ai/mcp",
 	})
 
@@ -243,7 +244,7 @@ func TestStytchOAuthHandlerSubmitReturnsRedirectURI(t *testing.T) {
 	if got, want := body.RedirectURI, "https://client.example/callback?code=abc"; got != want {
 		t.Fatalf("redirect_uri = %q, want %q", got, want)
 	}
-	if got, want := client.submitRequest.UserID, "degov-square:user-123"; got != want {
+	if got, want := client.submitRequest.UserID, "degov-square-user-123"; got != want {
 		t.Fatalf("submit user_id = %q, want %q", got, want)
 	}
 	assertStringSlice(t, client.submitRequest.Scopes, []string{"openid", "degov.mcp.read"})
@@ -258,7 +259,7 @@ func TestStytchOAuthHandlerStartUsesAuthenticatedSquareUserID(t *testing.T) {
 	}
 	handler := NewStytchOAuthHandler(StytchOAuthHandlerConfig{
 		Client:       client,
-		UserIDPrefix: "degov-square:",
+		UserIDPrefix: "degov-square-",
 	})
 
 	req := httptest.NewRequest(http.MethodPost, "/api/oauth/stytch/authorize/start", bytes.NewReader([]byte(`{"client_id":"client-test","redirect_uri":"https://client.example/callback"}`)))
@@ -271,7 +272,7 @@ func TestStytchOAuthHandlerStartUsesAuthenticatedSquareUserID(t *testing.T) {
 	if rec.Code != http.StatusOK {
 		t.Fatalf("status = %d, want %d, body %q", rec.Code, http.StatusOK, rec.Body.String())
 	}
-	if got, want := client.startRequest.UserID, "degov-square:user-123"; got != want {
+	if got, want := client.startRequest.UserID, "degov-square-user-123"; got != want {
 		t.Fatalf("start user_id = %q, want %q", got, want)
 	}
 }
@@ -280,7 +281,7 @@ func TestStytchOAuthHandlerReturnsGenericStartError(t *testing.T) {
 	client := &fakeStytchOAuthClient{err: errors.New("project-test secret-test upstream detail")}
 	handler := NewStytchOAuthHandler(StytchOAuthHandlerConfig{
 		Client:       client,
-		UserIDPrefix: "degov-square:",
+		UserIDPrefix: "degov-square-",
 	})
 
 	req := httptest.NewRequest(http.MethodPost, "/api/oauth/stytch/authorize/start", bytes.NewReader([]byte(`{"client_id":"client-test","redirect_uri":"https://client.example/callback"}`)))
@@ -306,7 +307,7 @@ func TestStytchOAuthHandlerReturnsGenericSubmitError(t *testing.T) {
 	client := &fakeStytchOAuthClient{err: errors.New("project-test secret-test upstream detail")}
 	handler := NewStytchOAuthHandler(StytchOAuthHandlerConfig{
 		Client:       client,
-		UserIDPrefix: "degov-square:",
+		UserIDPrefix: "degov-square-",
 	})
 
 	req := httptest.NewRequest(http.MethodPost, "/api/oauth/stytch/authorize/submit", bytes.NewReader([]byte(`{"client_id":"client-test","redirect_uri":"https://client.example/callback","consent_granted":true}`)))
