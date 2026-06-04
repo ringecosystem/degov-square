@@ -37,8 +37,10 @@ func TestStytchOAuthClientConsumerStartRequest(t *testing.T) {
 		assertJSONValue(t, body, "response_type", "code")
 		assertJSONValue(t, body, "user_id", "degov-square:user-123")
 		assertJSONArray(t, body, "scopes", []string{"openid", "degov.mcp.read"})
-		if _, ok := body["resources"]; ok {
-			t.Fatal("start request included resources; want resources only on submit")
+		for _, key := range []string{"state", "nonce", "code_challenge", "code_challenge_method", "resources"} {
+			if _, ok := body[key]; ok {
+				t.Fatalf("start request included %q; want submit-only OAuth parameters omitted", key)
+			}
 		}
 
 		w.Header().Set("Content-Type", "application/json")
@@ -55,11 +57,16 @@ func TestStytchOAuthClientConsumerStartRequest(t *testing.T) {
 
 	resp, err := client.AuthorizeStart(context.Background(), StytchOAuthAuthorizeStartRequest{
 		StytchOAuthAuthorizeRequest: StytchOAuthAuthorizeRequest{
-			ClientID:     "client-test",
-			RedirectURI:  "https://client.example/callback",
-			ResponseType: "code",
-			Scopes:       []string{"openid", "degov.mcp.read"},
-			UserID:       "degov-square:user-123",
+			ClientID:            "client-test",
+			RedirectURI:         "https://client.example/callback",
+			ResponseType:        "code",
+			Scopes:              []string{"openid", "degov.mcp.read"},
+			UserID:              "degov-square:user-123",
+			State:               "state-test",
+			Nonce:               "nonce-test",
+			CodeChallenge:       "challenge-test",
+			CodeChallengeMethod: "S256",
+			Resources:           []string{"https://square.degov.ai/mcp"},
 		},
 	})
 	if err != nil {
@@ -89,9 +96,11 @@ func TestStytchOAuthClientConsumerSubmitRequest(t *testing.T) {
 		assertJSONValue(t, body, "state", "state-test")
 		assertJSONValue(t, body, "nonce", "nonce-test")
 		assertJSONValue(t, body, "code_challenge", "challenge-test")
-		assertJSONValue(t, body, "code_challenge_method", "S256")
 		assertJSONValue(t, body, "consent_granted", true)
 		assertJSONArray(t, body, "resources", []string{"https://square.degov.ai/mcp"})
+		if _, ok := body["code_challenge_method"]; ok {
+			t.Fatal("submit request included code_challenge_method; want Stytch-compatible payload")
+		}
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
