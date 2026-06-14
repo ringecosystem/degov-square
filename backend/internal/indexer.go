@@ -13,7 +13,9 @@ import (
 // DataMetrics represents the data metrics structure from GraphQL response
 type DataMetrics struct {
 	ProposalsCount          *int   `json:"proposalsCount"`
-	MemberCount             int    `json:"memberCount"`
+	MemberCount             *int   `json:"memberCount"`
+	HoldersCount            *int   `json:"holdersCount"`
+	ContributorCount        *int   `json:"contributorCount"`
 	PowerSum                string `json:"powerSum"`
 	VotesCount              int    `json:"votesCount"`
 	VotesWeightAbstainSum   string `json:"votesWeightAbstainSum"`
@@ -24,17 +26,24 @@ type DataMetrics struct {
 	ID                      string `json:"id"`
 }
 
+func (m DataMetrics) MemberCountValue() *int {
+	if m.HoldersCount != nil {
+		return m.HoldersCount
+	}
+	return m.MemberCount
+}
+
 // DataMetricsResponse represents the GraphQL response structure
 type DataMetricsResponse struct {
 	DataMetrics []DataMetrics `json:"dataMetrics"`
 }
 
-type ProposalConnection struct {
+type ProposalPage struct {
 	TotalCount int `json:"totalCount"`
 }
 
-type ProposalConnectionResponse struct {
-	ProposalsConnection ProposalConnection `json:"proposalsConnection"`
+type ProposalPageResponse struct {
+	ProposalsPage ProposalPage `json:"proposalsPage"`
 }
 
 // Proposal represents the structure of a governance proposal.
@@ -154,6 +163,8 @@ func (d *DegovIndexer) QueryGlobalDataMetrics(scope ProposalScope) (*DataMetrics
 			dataMetrics(where: $where) {
 				proposalsCount
 				memberCount
+				holdersCount
+				contributorCount
 				powerSum
 				votesCount
 				votesWeightAbstainSum
@@ -202,25 +213,30 @@ func (d *DegovIndexer) QueryGlobalDataMetrics(scope ProposalScope) (*DataMetrics
 
 func (d *DegovIndexer) QueryProposalsCount(scope ProposalScope) (int, error) {
 	query := `
-		query QueryProposalsCount($where: ProposalWhereInput) {
-			proposalsConnection(orderBy: [id_ASC], where: $where) {
+		query QueryProposalsCount($where: ProposalWhereInput, $limit: Int!, $offset: Int!) {
+			proposalsPage(where: $where, limit: $limit, offset: $offset) {
 				totalCount
+				items {
+					id
+				}
 			}
 		}
 	`
 
 	req := graphql.NewRequest(query)
 	req.Var("where", scope.withScope(nil))
+	req.Var("limit", 1)
+	req.Var("offset", 0)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	var response ProposalConnectionResponse
+	var response ProposalPageResponse
 	if err := d.client.Run(ctx, req, &response); err != nil {
 		return 0, fmt.Errorf("failed to execute QueryProposalsCount: %w", err)
 	}
 
-	return response.ProposalsConnection.TotalCount, nil
+	return response.ProposalsPage.TotalCount, nil
 }
 
 func (d *DegovIndexer) InspectProposal(scope ProposalScope, proposalId string) (*Proposal, error) {
@@ -637,10 +653,10 @@ type DelegatesResponse struct {
 
 // QueryDelegatorsTo queries all delegators who delegated to the given address (excluding self-delegation)
 // Returns true if there are delegators other than the address itself
-func (d *DegovIndexer) QueryDelegatorsTo(ctx context.Context, toAddress string) ([]Delegate, error) {
+func (d *DegovIndexer) QueryDelegatorsTo(ctx context.Context, scope ProposalScope, toAddress string) ([]Delegate, error) {
 	query := `
-		query QueryDelegates($toDelegate: String!, $fromDelegate: String!) {
-			delegates(where: {toDelegate_eq: $toDelegate, fromDelegate_not_eq: $fromDelegate}) {
+		query QueryDelegates($where: DelegateWhereInput) {
+			delegates(where: $where) {
 				id
 				power
 				fromDelegate
@@ -650,8 +666,10 @@ func (d *DegovIndexer) QueryDelegatorsTo(ctx context.Context, toAddress string) 
 	`
 
 	req := graphql.NewRequest(query)
-	req.Var("toDelegate", toAddress)
-	req.Var("fromDelegate", toAddress)
+	req.Var("where", scope.withScope(map[string]any{
+		"toDelegate_eq":       toAddress,
+		"fromDelegate_not_eq": toAddress,
+	}))
 
 	var response DelegatesResponse
 	if err := d.client.Run(ctx, req, &response); err != nil {
@@ -662,8 +680,8 @@ func (d *DegovIndexer) QueryDelegatorsTo(ctx context.Context, toAddress string) 
 }
 
 // HasDelegatorsOtherThanSelf checks if there are any delegators to the given address (excluding self)
-func (d *DegovIndexer) HasDelegatorsOtherThanSelf(ctx context.Context, toAddress string) (bool, error) {
-	delegates, err := d.QueryDelegatorsTo(ctx, toAddress)
+func (d *DegovIndexer) HasDelegatorsOtherThanSelf(ctx context.Context, scope ProposalScope, toAddress string) (bool, error) {
+	delegates, err := d.QueryDelegatorsTo(ctx, scope, toAddress)
 	if err != nil {
 		return false, err
 	}
