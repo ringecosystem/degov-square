@@ -51,8 +51,12 @@ export async function loadConfig(): Promise<ConfigData> {
   }
 }
 
-export async function getProposalsCount(indexerUrl: string): Promise<number> {
+export async function getProposalsCount(indexerUrl: string, daoCode?: string): Promise<number> {
   try {
+    const where = {
+      id_eq: 'global',
+      ...(daoCode ? { daoCode_eq: daoCode } : {})
+    };
     const response = await fetch(indexerUrl, {
       method: 'POST',
       headers: {
@@ -60,12 +64,15 @@ export async function getProposalsCount(indexerUrl: string): Promise<number> {
       },
       body: JSON.stringify({
         query: `
-          query MyQuery {
-            dataMetrics {
+          query MyQuery($where: DataMetricWhereInput) {
+            dataMetrics(where: $where) {
               proposalsCount
             }
           }
-        `
+        `,
+        variables: {
+          where
+        }
       })
     });
 
