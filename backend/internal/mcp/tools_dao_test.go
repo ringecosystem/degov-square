@@ -2,6 +2,7 @@ package mcp
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"strings"
 	"testing"
@@ -196,6 +197,53 @@ func TestDaoToolsRejectInvalidDaoCode(t *testing.T) {
 	}
 }
 
+func TestDaoToolInputSchemasAreConstrained(t *testing.T) {
+	t.Parallel()
+
+	session, closeSession := newTestMCPSession(t, Config{
+		Name:             "degov-square",
+		Version:          "test-version",
+		DaoService:       &fakeDaoService{},
+		DaoConfigService: &fakeDaoConfigService{},
+	})
+	defer closeSession()
+
+	result, err := session.ListTools(context.Background(), nil)
+	if err != nil {
+		t.Fatalf("ListTools() error = %v", err)
+	}
+
+	listDaosSchema := toolInputSchema(t, result.Tools, "list_daos")
+	codes := schemaProperty(t, listDaosSchema, "codes")
+	if got := codes["type"]; got != "array" {
+		t.Fatalf("list_daos codes type = %v, want array", got)
+	}
+	codesItems := codes["items"].(map[string]any)
+	if got := codesItems["type"]; got != "string" {
+		t.Fatalf("list_daos codes item type = %v, want string", got)
+	}
+	if got := codesItems["pattern"]; got != daoCodePattern.String() {
+		t.Fatalf("list_daos codes pattern = %v, want %s", got, daoCodePattern.String())
+	}
+
+	state := schemaProperty(t, listDaosSchema, "state")
+	if got := state["type"]; got != "array" {
+		t.Fatalf("list_daos state type = %v, want array", got)
+	}
+	stateItems := state["items"].(map[string]any)
+	if got := stateItems["type"]; got != "string" {
+		t.Fatalf("list_daos state item type = %v, want string", got)
+	}
+	assertStringEnum(t, stateItems["enum"], []string{"ACTIVE", "DRAFT", "INACTIVE"})
+
+	getDaoConfigSchema := toolInputSchema(t, result.Tools, "get_dao_config")
+	format := schemaProperty(t, getDaoConfigSchema, "format")
+	if got := format["type"]; got != "string" {
+		t.Fatalf("get_dao_config format type = %v, want string", got)
+	}
+	assertStringEnum(t, format["enum"], []string{"json", "yaml"})
+}
+
 func TestDaoToolsReturnStructuredNotFoundError(t *testing.T) {
 	t.Parallel()
 
@@ -223,6 +271,58 @@ func TestDaoToolsReturnStructuredNotFoundError(t *testing.T) {
 	}
 	if !strings.Contains(rpcErr.Message, "not found") {
 		t.Fatalf("error message %q does not mention not found", rpcErr.Message)
+	}
+}
+
+func toolInputSchema(t *testing.T, tools []*sdkmcp.Tool, name string) map[string]any {
+	t.Helper()
+
+	for _, tool := range tools {
+		if tool.Name != name {
+			continue
+		}
+		data, err := json.Marshal(tool.InputSchema)
+		if err != nil {
+			t.Fatalf("Marshal %s input schema: %v", name, err)
+		}
+		var schema map[string]any
+		if err := json.Unmarshal(data, &schema); err != nil {
+			t.Fatalf("Unmarshal %s input schema: %v", name, err)
+		}
+		return schema
+	}
+	t.Fatalf("%s not found in tool listing", name)
+	return nil
+}
+
+func schemaProperty(t *testing.T, schema map[string]any, name string) map[string]any {
+	t.Helper()
+
+	properties, ok := schema["properties"].(map[string]any)
+	if !ok {
+		t.Fatalf("schema properties type = %T, want map[string]any", schema["properties"])
+	}
+	property, ok := properties[name].(map[string]any)
+	if !ok {
+		t.Fatalf("schema property %s type = %T, want map[string]any", name, properties[name])
+	}
+	return property
+}
+
+func assertStringEnum(t *testing.T, value any, want []string) {
+	t.Helper()
+
+	values, ok := value.([]any)
+	if !ok {
+		t.Fatalf("enum type = %T, want []any", value)
+	}
+	if len(values) != len(want) {
+		t.Fatalf("enum len = %d, want %d", len(values), len(want))
+	}
+	for i, value := range values {
+		if value != want[i] {
+			t.Fatalf("enum[%d] = %v, want %s", i, value, want[i])
+		}
 	}
 }
 

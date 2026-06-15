@@ -2,10 +2,12 @@ package mcp
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"regexp"
 	"strings"
 
+	"github.com/google/jsonschema-go/jsonschema"
 	"github.com/modelcontextprotocol/go-sdk/jsonrpc"
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 	dbmodels "github.com/ringecosystem/degov-square/database/models"
@@ -21,6 +23,7 @@ func addDaoTools(server *sdkmcp.Server, cfg Config) {
 		Title:       "List DAOs",
 		Description: "Return a bounded list of public DAO summaries.",
 		Annotations: readOnlyToolAnnotations(),
+		InputSchema: listDaosInputSchema(),
 	}, func(ctx context.Context, req *sdkmcp.CallToolRequest, input listDaosInput) (*sdkmcp.CallToolResult, listDaosOutput, error) {
 		serviceInput, err := toListDaosServiceInput(input)
 		if err != nil {
@@ -81,6 +84,7 @@ func addDaoTools(server *sdkmcp.Server, cfg Config) {
 		Title:       "Get DAO Config",
 		Description: "Return the public DAO registry config for one DAO code.",
 		Annotations: readOnlyToolAnnotations(),
+		InputSchema: getDaoConfigInputSchema(),
 	}, func(ctx context.Context, req *sdkmcp.CallToolRequest, input getDaoConfigInput) (*sdkmcp.CallToolResult, daoConfigOutput, error) {
 		daoCode, err := normalizeDaoCode(input.DaoCode)
 		if err != nil {
@@ -106,6 +110,62 @@ func addDaoTools(server *sdkmcp.Server, cfg Config) {
 			Content: content,
 		}, nil
 	})
+}
+
+func listDaosInputSchema() *jsonschema.Schema {
+	return &jsonschema.Schema{
+		Type: "object",
+		Properties: map[string]*jsonschema.Schema{
+			"codes": {
+				Type:        "array",
+				Description: "Optional DAO codes to filter by, for example ring-dao.",
+				Items: &jsonschema.Schema{
+					Type:    "string",
+					Pattern: daoCodePattern.String(),
+				},
+				MaxItems: jsonschema.Ptr(20),
+			},
+			"state": {
+				Type:        "array",
+				Description: "Optional DAO states to filter by.",
+				Items: &jsonschema.Schema{
+					Type: "string",
+					Enum: []any{
+						string(dbmodels.DaoStateActive),
+						string(dbmodels.DaoStateDraft),
+						string(dbmodels.DaoStateInactive),
+					},
+				},
+				MaxItems: jsonschema.Ptr(3),
+			},
+			"limit": {
+				Type:        "integer",
+				Description: "Maximum number of DAOs to return. Values above 100 are capped.",
+				Minimum:     jsonschema.Ptr(1.0),
+				Maximum:     jsonschema.Ptr(float64(maxListDaosLimit)),
+			},
+		},
+	}
+}
+
+func getDaoConfigInputSchema() *jsonschema.Schema {
+	return &jsonschema.Schema{
+		Type:     "object",
+		Required: []string{"daoCode"},
+		Properties: map[string]*jsonschema.Schema{
+			"daoCode": {
+				Type:        "string",
+				Description: "DAO code, for example ring-dao.",
+				Pattern:     daoCodePattern.String(),
+			},
+			"format": {
+				Type:        "string",
+				Description: "Config format. Defaults to json.",
+				Enum:        []any{"json", "yaml"},
+				Default:     json.RawMessage(`"json"`),
+			},
+		},
+	}
 }
 
 func normalizeListDaosLimit(limit int) int {
