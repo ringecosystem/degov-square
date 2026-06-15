@@ -227,14 +227,10 @@ func TestDaoToolInputSchemasAreConstrained(t *testing.T) {
 	}
 
 	state := schemaProperty(t, listDaosSchema, "state")
-	if got := state["type"]; got != "array" {
-		t.Fatalf("list_daos state type = %v, want array", got)
+	if got := state["type"]; got != "string" {
+		t.Fatalf("list_daos state type = %v, want string", got)
 	}
-	stateItems := state["items"].(map[string]any)
-	if got := stateItems["type"]; got != "string" {
-		t.Fatalf("list_daos state item type = %v, want string", got)
-	}
-	assertStringEnum(t, stateItems["enum"], []string{"ACTIVE", "DRAFT", "INACTIVE"})
+	assertStringEnum(t, state["enum"], []string{"ACTIVE", "DRAFT", "INACTIVE", "active", "draft", "inactive"})
 
 	getDaoConfigSchema := toolInputSchema(t, result.Tools, "get_dao_config")
 	format := schemaProperty(t, getDaoConfigSchema, "format")

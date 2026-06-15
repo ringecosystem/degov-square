@@ -164,6 +164,24 @@ func TestIndexerToolAnnotationsAreReadOnly(t *testing.T) {
 	}
 }
 
+func TestIndexerToolInputSchemasAreConstrained(t *testing.T) {
+	server := newTestProposalServer(t)
+	session, closeSession := newProposalTestSession(t, server)
+	defer closeSession()
+
+	result, err := session.ListTools(context.Background(), nil)
+	if err != nil {
+		t.Fatalf("ListTools() error = %v", err)
+	}
+
+	listContributorsSchema := toolInputSchema(t, result.Tools, "list_contributors")
+	orderBy := schemaProperty(t, listContributorsSchema, "orderBy")
+	if got := orderBy["type"]; got != "string" {
+		t.Fatalf("list_contributors orderBy type = %v, want string", got)
+	}
+	assertStringEnum(t, orderBy["enum"], []string{"power_desc", "power_asc", "id_asc"})
+}
+
 func TestToolAnnotationsSetRequiredHints(t *testing.T) {
 	session, closeSession := newTestMCPSession(t, Config{
 		Name:    "test-server",

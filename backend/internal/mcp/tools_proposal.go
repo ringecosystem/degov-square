@@ -8,7 +8,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/jsonschema-go/jsonschema"
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
+	dbmodels "github.com/ringecosystem/degov-square/database/models"
 	gqlmodels "github.com/ringecosystem/degov-square/graph/models"
 	degovinternal "github.com/ringecosystem/degov-square/internal"
 	"github.com/ringecosystem/degov-square/services"
@@ -22,6 +24,7 @@ func addProposalTools(server *sdkmcp.Server, cfg Config) {
 		Title:       "List Proposals",
 		Description: "Return bounded governance proposal rows for a DAO.",
 		Annotations: readOnlyToolAnnotations(),
+		InputSchema: listProposalsInputSchema(),
 	}, listProposalsTool)
 
 	sdkmcp.AddTool(server, &sdkmcp.Tool{
@@ -39,6 +42,51 @@ func addProposalTools(server *sdkmcp.Server, cfg Config) {
 		Description: "Return the cached governance proposal state for a DAO.",
 		Annotations: readOnlyToolAnnotations(),
 	}, getProposalStateTool)
+}
+
+func listProposalsInputSchema() *jsonschema.Schema {
+	return &jsonschema.Schema{
+		Type:     "object",
+		Required: []string{"daoCode"},
+		Properties: map[string]*jsonschema.Schema{
+			"daoCode": {
+				Type:        "string",
+				Description: "DAO code, for example ring-dao.",
+			},
+			"state": {
+				Type:        "string",
+				Description: "Optional proposal state filter.",
+				Enum: []any{
+					string(dbmodels.ProposalStateUnknown),
+					string(dbmodels.ProposalStatePending),
+					string(dbmodels.ProposalStateActive),
+					string(dbmodels.ProposalStateCanceled),
+					string(dbmodels.ProposalStateDefeated),
+					string(dbmodels.ProposalStateSucceeded),
+					string(dbmodels.ProposalStateQueued),
+					string(dbmodels.ProposalStateExecuted),
+					string(dbmodels.ProposalStateExpired),
+					strings.ToLower(string(dbmodels.ProposalStateUnknown)),
+					strings.ToLower(string(dbmodels.ProposalStatePending)),
+					strings.ToLower(string(dbmodels.ProposalStateActive)),
+					strings.ToLower(string(dbmodels.ProposalStateCanceled)),
+					strings.ToLower(string(dbmodels.ProposalStateDefeated)),
+					strings.ToLower(string(dbmodels.ProposalStateSucceeded)),
+					strings.ToLower(string(dbmodels.ProposalStateQueued)),
+					strings.ToLower(string(dbmodels.ProposalStateExecuted)),
+					strings.ToLower(string(dbmodels.ProposalStateExpired)),
+				},
+			},
+			"limit": {
+				Type:        "integer",
+				Description: "Maximum number of proposals to return.",
+			},
+			"offset": {
+				Type:        "integer",
+				Description: "Number of proposals to skip.",
+			},
+		},
+	}
 }
 
 func listProposalsTool(ctx context.Context, req *sdkmcp.CallToolRequest, input listProposalsInput) (*sdkmcp.CallToolResult, listProposalsOutput, error) {

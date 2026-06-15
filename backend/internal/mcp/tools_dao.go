@@ -126,23 +126,20 @@ func listDaosInputSchema() *jsonschema.Schema {
 				MaxItems: jsonschema.Ptr(20),
 			},
 			"state": {
-				Type:        "array",
-				Description: "Optional DAO states to filter by.",
-				Items: &jsonschema.Schema{
-					Type: "string",
-					Enum: []any{
-						string(dbmodels.DaoStateActive),
-						string(dbmodels.DaoStateDraft),
-						string(dbmodels.DaoStateInactive),
-					},
+				Type:        "string",
+				Description: "Optional DAO state to filter by.",
+				Enum: []any{
+					string(dbmodels.DaoStateActive),
+					string(dbmodels.DaoStateDraft),
+					string(dbmodels.DaoStateInactive),
+					strings.ToLower(string(dbmodels.DaoStateActive)),
+					strings.ToLower(string(dbmodels.DaoStateDraft)),
+					strings.ToLower(string(dbmodels.DaoStateInactive)),
 				},
-				MaxItems: jsonschema.Ptr(3),
 			},
 			"limit": {
 				Type:        "integer",
 				Description: "Maximum number of DAOs to return. Values above 100 are capped.",
-				Minimum:     jsonschema.Ptr(1.0),
-				Maximum:     jsonschema.Ptr(float64(maxListDaosLimit)),
 			},
 		},
 	}
@@ -191,18 +188,15 @@ func toListDaosServiceInput(input listDaosInput) (*types.ListDaosInput, error) {
 		}
 		serviceInput.Codes = &codes
 	}
-	if len(input.State) > 0 {
-		states := make([]dbmodels.DaoState, 0, len(input.State))
-		for _, state := range input.State {
-			normalized := dbmodels.DaoState(strings.ToUpper(strings.TrimSpace(state)))
-			switch normalized {
-			case dbmodels.DaoStateActive, dbmodels.DaoStateDraft, dbmodels.DaoStateInactive:
-				states = append(states, normalized)
-			default:
-				return nil, invalidParamsError("state must be ACTIVE, DRAFT, or INACTIVE")
-			}
+	if strings.TrimSpace(input.State) != "" {
+		normalized := dbmodels.DaoState(strings.ToUpper(strings.TrimSpace(input.State)))
+		switch normalized {
+		case dbmodels.DaoStateActive, dbmodels.DaoStateDraft, dbmodels.DaoStateInactive:
+			states := []dbmodels.DaoState{normalized}
+			serviceInput.State = &states
+		default:
+			return nil, invalidParamsError("state must be ACTIVE, DRAFT, or INACTIVE")
 		}
-		serviceInput.State = &states
 	}
 	return serviceInput, nil
 }

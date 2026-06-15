@@ -21,7 +21,7 @@ type daoConfigService interface {
 
 type listDaosInput struct {
 	Codes []string `json:"codes,omitempty" jsonschema:"DAO codes to filter by."`
-	State []string `json:"state,omitempty" jsonschema:"DAO states to filter by."`
+	State string   `json:"state,omitempty" jsonschema:"DAO state to filter by."`
 	Limit int      `json:"limit,omitempty" jsonschema:"Maximum number of DAOs to return. Values above 100 are capped."`
 }
 
