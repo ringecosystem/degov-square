@@ -4,10 +4,10 @@ go 1.25.0
 
 require (
 	github.com/99designs/gqlgen v0.17.90
-	github.com/JohannesKaufmann/html-to-markdown/v2 v2.5.0
+	github.com/JohannesKaufmann/html-to-markdown/v2 v2.5.1
 	github.com/bwmarrin/snowflake v0.3.0
-	github.com/ethereum/go-ethereum v1.17.2
-	github.com/go-co-op/gocron/v2 v2.21.1
+	github.com/ethereum/go-ethereum v1.17.3
+	github.com/go-co-op/gocron/v2 v2.21.2
 	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/golang-migrate/migrate/v4 v4.19.1
 	github.com/gomarkdown/markdown v0.0.0-20250810172220-2e2c11897d1a
@@ -22,7 +22,7 @@ require (
 	github.com/sendgrid/sendgrid-go v3.16.1+incompatible
 	github.com/spf13/viper v1.21.0
 	github.com/spruceid/siwe-go v0.2.1
-	github.com/vanng822/go-premailer v1.33.0
+	github.com/vanng822/go-premailer v1.34.0
 	github.com/vektah/gqlparser/v2 v2.5.33
 	github.com/wealdtech/go-ens/v3 v3.6.0
 	go.uber.org/zap v1.28.0
@@ -76,7 +76,7 @@ require (
 	github.com/lib/pq v1.10.9 // indirect
 	github.com/matryer/is v1.4.1 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
-	github.com/mattn/go-isatty v0.0.21 // indirect
+	github.com/mattn/go-isatty v0.0.22 // indirect
 	github.com/mattn/go-runewidth v0.0.19 // indirect
 	github.com/mattn/go-sqlite3 v1.14.22 // indirect
 	github.com/minio/sha256-simd v1.0.0 // indirect
@@ -119,11 +119,11 @@ require (
 	go.opentelemetry.io/otel/trace v1.40.0 // indirect
 	go.uber.org/multierr v1.10.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
-	golang.org/x/crypto v0.49.0 // indirect
-	golang.org/x/net v0.52.0 // indirect
+	golang.org/x/crypto v0.50.0 // indirect
+	golang.org/x/net v0.53.0 // indirect
 	golang.org/x/oauth2 v0.35.0 // indirect
 	golang.org/x/sync v0.20.0 // indirect
-	golang.org/x/sys v0.42.0 // indirect
-	golang.org/x/text v0.35.0 // indirect
+	golang.org/x/sys v0.43.0 // indirect
+	golang.org/x/text v0.36.0 // indirect
 	lukechampine.com/blake3 v1.1.6 // indirect
 )
