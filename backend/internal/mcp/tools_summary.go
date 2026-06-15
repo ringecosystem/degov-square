@@ -19,9 +19,7 @@ func addProposalSummaryTool(server *sdkmcp.Server, cfg Config) {
 		Name:        "summarize_proposal",
 		Title:       "Summarize Proposal",
 		Description: "Return a cached proposal summary, or generate one only when MCP summary generation is enabled.",
-		Annotations: &sdkmcp.ToolAnnotations{
-			ReadOnlyHint: true,
-		},
+		Annotations: readOnlyToolAnnotations(),
 	}, func(ctx context.Context, req *sdkmcp.CallToolRequest, input summarizeProposalInput) (*sdkmcp.CallToolResult, summarizeProposalOutput, error) {
 		return summarizeProposalTool(ctx, cfg, input)
 	})

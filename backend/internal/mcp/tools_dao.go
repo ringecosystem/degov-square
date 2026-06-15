@@ -20,9 +20,7 @@ func addDaoTools(server *sdkmcp.Server, cfg Config) {
 		Name:        "list_daos",
 		Title:       "List DAOs",
 		Description: "Return a bounded list of public DAO summaries.",
-		Annotations: &sdkmcp.ToolAnnotations{
-			ReadOnlyHint: true,
-		},
+		Annotations: readOnlyToolAnnotations(),
 	}, func(ctx context.Context, req *sdkmcp.CallToolRequest, input listDaosInput) (*sdkmcp.CallToolResult, listDaosOutput, error) {
 		serviceInput, err := toListDaosServiceInput(input)
 		if err != nil {
@@ -60,9 +58,7 @@ func addDaoTools(server *sdkmcp.Server, cfg Config) {
 		Name:        "get_dao",
 		Title:       "Get DAO",
 		Description: "Return public DAO metadata for one DAO code.",
-		Annotations: &sdkmcp.ToolAnnotations{
-			ReadOnlyHint: true,
-		},
+		Annotations: readOnlyToolAnnotations(),
 	}, func(ctx context.Context, req *sdkmcp.CallToolRequest, input getDaoInput) (*sdkmcp.CallToolResult, daoDetailOutput, error) {
 		daoCode, err := normalizeDaoCode(input.DaoCode)
 		if err != nil {
@@ -84,9 +80,7 @@ func addDaoTools(server *sdkmcp.Server, cfg Config) {
 		Name:        "get_dao_config",
 		Title:       "Get DAO Config",
 		Description: "Return the public DAO registry config for one DAO code.",
-		Annotations: &sdkmcp.ToolAnnotations{
-			ReadOnlyHint: true,
-		},
+		Annotations: readOnlyToolAnnotations(),
 	}, func(ctx context.Context, req *sdkmcp.CallToolRequest, input getDaoConfigInput) (*sdkmcp.CallToolResult, daoConfigOutput, error) {
 		daoCode, err := normalizeDaoCode(input.DaoCode)
 		if err != nil {

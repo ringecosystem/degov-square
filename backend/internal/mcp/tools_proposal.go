@@ -21,18 +21,14 @@ func addProposalTools(server *sdkmcp.Server, cfg Config) {
 		Name:        "list_proposals",
 		Title:       "List Proposals",
 		Description: "Return bounded governance proposal rows for a DAO.",
-		Annotations: &sdkmcp.ToolAnnotations{
-			ReadOnlyHint: true,
-		},
+		Annotations: readOnlyToolAnnotations(),
 	}, listProposalsTool)
 
 	sdkmcp.AddTool(server, &sdkmcp.Tool{
 		Name:        "get_proposal",
 		Title:       "Get Proposal",
 		Description: "Return a governance proposal detail payload for a DAO.",
-		Annotations: &sdkmcp.ToolAnnotations{
-			ReadOnlyHint: true,
-		},
+		Annotations: readOnlyToolAnnotations(),
 	}, func(ctx context.Context, req *sdkmcp.CallToolRequest, input getProposalInput) (*sdkmcp.CallToolResult, getProposalOutput, error) {
 		return getProposalTool(ctx, cfg, input)
 	})
@@ -41,9 +37,7 @@ func addProposalTools(server *sdkmcp.Server, cfg Config) {
 		Name:        "get_proposal_state",
 		Title:       "Get Proposal State",
 		Description: "Return the cached governance proposal state for a DAO.",
-		Annotations: &sdkmcp.ToolAnnotations{
-			ReadOnlyHint: true,
-		},
+		Annotations: readOnlyToolAnnotations(),
 	}, getProposalStateTool)
 }
 

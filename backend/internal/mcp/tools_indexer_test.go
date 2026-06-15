@@ -164,6 +164,34 @@ func TestIndexerToolAnnotationsAreReadOnly(t *testing.T) {
 	}
 }
 
+func TestToolAnnotationsSetRequiredHints(t *testing.T) {
+	session, closeSession := newTestMCPSession(t, Config{
+		Name:    "test-server",
+		Version: "test-version",
+	})
+	defer closeSession()
+
+	result, err := session.ListTools(context.Background(), nil)
+	if err != nil {
+		t.Fatalf("ListTools() error = %v", err)
+	}
+
+	for _, tool := range result.Tools {
+		if tool.Annotations == nil {
+			t.Fatalf("%s annotations = nil", tool.Name)
+		}
+		if !tool.Annotations.ReadOnlyHint {
+			t.Fatalf("%s readOnlyHint = false, want true", tool.Name)
+		}
+		if tool.Annotations.OpenWorldHint == nil || *tool.Annotations.OpenWorldHint {
+			t.Fatalf("%s openWorldHint = %v, want false", tool.Name, tool.Annotations.OpenWorldHint)
+		}
+		if tool.Annotations.DestructiveHint == nil || *tool.Annotations.DestructiveHint {
+			t.Fatalf("%s destructiveHint = %v, want false", tool.Name, tool.Annotations.DestructiveHint)
+		}
+	}
+}
+
 func TestIndexerToolsRejectUnknownDAO(t *testing.T) {
 	server := newTestProposalServer(t)
 

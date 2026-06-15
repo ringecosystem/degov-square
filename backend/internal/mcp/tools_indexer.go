@@ -19,9 +19,7 @@ func addIndexerTools(server *sdkmcp.Server, cfg Config) {
 		Name:        "get_contributor",
 		Title:       "Get Contributor",
 		Description: "Return an indexer-backed governance contributor for a DAO.",
-		Annotations: &sdkmcp.ToolAnnotations{
-			ReadOnlyHint: true,
-		},
+		Annotations: readOnlyToolAnnotations(),
 	}, func(ctx context.Context, req *sdkmcp.CallToolRequest, input getContributorInput) (*sdkmcp.CallToolResult, getContributorOutput, error) {
 		return getContributorTool(ctx, cfg, input)
 	})
@@ -30,9 +28,7 @@ func addIndexerTools(server *sdkmcp.Server, cfg Config) {
 		Name:        "list_contributors",
 		Title:       "List Contributors",
 		Description: "Return bounded indexer-backed governance contributors for a DAO.",
-		Annotations: &sdkmcp.ToolAnnotations{
-			ReadOnlyHint: true,
-		},
+		Annotations: readOnlyToolAnnotations(),
 	}, func(ctx context.Context, req *sdkmcp.CallToolRequest, input listContributorsInput) (*sdkmcp.CallToolResult, listContributorsOutput, error) {
 		return listContributorsTool(ctx, cfg, input)
 	})
@@ -41,9 +37,7 @@ func addIndexerTools(server *sdkmcp.Server, cfg Config) {
 		Name:        "list_proposal_votes",
 		Title:       "List Proposal Votes",
 		Description: "Return bounded indexer-backed vote rows for a DAO proposal.",
-		Annotations: &sdkmcp.ToolAnnotations{
-			ReadOnlyHint: true,
-		},
+		Annotations: readOnlyToolAnnotations(),
 	}, func(ctx context.Context, req *sdkmcp.CallToolRequest, input listProposalVotesInput) (*sdkmcp.CallToolResult, listProposalVotesOutput, error) {
 		return listProposalVotesTool(ctx, cfg, input)
 	})

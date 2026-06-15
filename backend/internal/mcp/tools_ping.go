@@ -19,9 +19,7 @@ func addPingTool(server *sdkmcp.Server, cfg Config) {
 		Name:        "ping",
 		Title:       "Ping",
 		Description: "Return the MCP service health status.",
-		Annotations: &sdkmcp.ToolAnnotations{
-			ReadOnlyHint: true,
-		},
+		Annotations: readOnlyToolAnnotations(),
 	}, func(ctx context.Context, req *sdkmcp.CallToolRequest, input pingInput) (*sdkmcp.CallToolResult, pingOutput, error) {
 		return nil, pingOutput{
 			Status:  "ok",

@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -28,6 +29,11 @@ import (
 )
 
 var Version string
+
+const (
+	openAIAppsChallengePath     = "/.well-known/openai-apps-challenge"
+	openAIAppsChallengeTokenEnv = "OPENAI_APPS_CHALLENGE_TOKEN"
+)
 
 func main() {
 	if Version == "" {
@@ -143,6 +149,7 @@ func startServer() {
 	)
 
 	mux := http.NewServeMux()
+	registerOpenAIAppsChallengeRoute(mux)
 
 	graphiql := playground.Handler("GraphQL playground", "/graphql", playground.WithGraphiqlEnablePluginExplorer(true))
 	mux.Handle("/graphiql", graphiql)
@@ -196,6 +203,28 @@ func startServer() {
 	)
 	err := http.ListenAndServe(":"+port, httpHandler)
 	slog.Error("failed to listen server", "error", err)
+}
+
+func registerOpenAIAppsChallengeRoute(mux *http.ServeMux) {
+	mux.HandleFunc(openAIAppsChallengePath, openAIAppsChallengeHandler)
+}
+
+func openAIAppsChallengeHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet && r.Method != http.MethodHead {
+		w.Header().Set("Allow", "GET, HEAD")
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	token := strings.TrimSpace(os.Getenv(openAIAppsChallengeTokenEnv))
+	if token == "" {
+		http.NotFound(w, r)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	w.Header().Set("Cache-Control", "no-store")
+	_, _ = w.Write([]byte(token))
 }
 
 func registerStytchOAuthRoutes(mux *http.ServeMux, middlewareChain *middleware.Chain, cfg *config.Config, httpClient *http.Client) {
