@@ -57,6 +57,18 @@ export function Footer() {
                 >
                   Docs
                 </Link>
+                <Link
+                  href="/privacy"
+                  className="text-muted-foreground block text-[14px] leading-[1.2] font-normal transition-colors hover:opacity-80"
+                >
+                  Privacy Policy
+                </Link>
+                <Link
+                  href="/terms"
+                  className="text-muted-foreground block text-[14px] leading-[1.2] font-normal transition-colors hover:opacity-80"
+                >
+                  Terms of Service
+                </Link>
               </div>
             </div>
 
@@ -95,9 +107,7 @@ export function Footer() {
           </div>
 
           {/* Copyright at bottom on mobile */}
-          <p className="text-muted-foreground text-[14px] font-normal md:hidden">
-            ©{year} RingDAO
-          </p>
+          <p className="text-muted-foreground text-[14px] font-normal md:hidden">©{year} RingDAO</p>
         </div>
       </footer>
     </>
