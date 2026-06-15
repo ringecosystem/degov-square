@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 
 import { LegalPage } from '@/components/legal-page';
 
@@ -61,7 +62,28 @@ const sections = [
     title: 'Your choices',
     body: [
       'You may choose not to connect a wallet or provide optional profile or notification information. You can also manage wallet connections, browser storage, and cookie settings through your browser, wallet, or device.',
-      'If you want to request access, correction, deletion, or other privacy assistance for non-public information you provided to DeGov Square, contact us through the Ring Ecosystem GitHub discussions or the public contact channels listed on helixbox.ai.'
+      <>
+        If you want to request access, correction, deletion, or other privacy assistance for
+        non-public information you provided to DeGov Square, contact us through{' '}
+        <Link
+          href="https://github.com/orgs/ringecosystem/discussions"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-foreground underline underline-offset-4 hover:opacity-80"
+        >
+          Ring Ecosystem GitHub discussions
+        </Link>{' '}
+        or the public contact channels listed on{' '}
+        <Link
+          href="https://helixbox.ai"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-foreground underline underline-offset-4 hover:opacity-80"
+        >
+          helixbox.ai
+        </Link>
+        .
+      </>
     ]
   },
   {
@@ -73,7 +95,27 @@ const sections = [
   {
     title: 'Contact',
     body: [
-      'For privacy questions, support, or commercial hosting inquiries, use Ring Ecosystem discussions at https://github.com/orgs/ringecosystem/discussions or the public contact channels listed at https://helixbox.ai.'
+      <>
+        For privacy questions, support, or commercial hosting inquiries, use{' '}
+        <Link
+          href="https://github.com/orgs/ringecosystem/discussions"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-foreground underline underline-offset-4 hover:opacity-80"
+        >
+          Ring Ecosystem GitHub discussions
+        </Link>{' '}
+        or the public contact channels listed at{' '}
+        <Link
+          href="https://helixbox.ai"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-foreground underline underline-offset-4 hover:opacity-80"
+        >
+          helixbox.ai
+        </Link>
+        .
+      </>
     ]
   }
 ];

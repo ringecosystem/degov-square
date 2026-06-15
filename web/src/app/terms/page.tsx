@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 
 import { LegalPage } from '@/components/legal-page';
 
@@ -74,7 +75,27 @@ const sections = [
   {
     title: 'Contact',
     body: [
-      'For support, commercial hosting inquiries, or governance participation, use Ring Ecosystem discussions at https://github.com/orgs/ringecosystem/discussions or the public contact channels listed at https://helixbox.ai.'
+      <>
+        For support, commercial hosting inquiries, or governance participation, use{' '}
+        <Link
+          href="https://github.com/orgs/ringecosystem/discussions"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-foreground underline underline-offset-4 hover:opacity-80"
+        >
+          Ring Ecosystem GitHub discussions
+        </Link>{' '}
+        or the public contact channels listed at{' '}
+        <Link
+          href="https://helixbox.ai"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-foreground underline underline-offset-4 hover:opacity-80"
+        >
+          helixbox.ai
+        </Link>
+        .
+      </>
     ]
   }
 ];

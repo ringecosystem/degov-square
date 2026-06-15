@@ -1,14 +1,15 @@
 import Link from 'next/link';
+import type { ReactNode } from 'react';
 
 type LegalSection = {
   title: string;
-  body: string[];
+  body: ReactNode[];
 };
 
 type LegalPageProps = {
   title: string;
   updatedAt: string;
-  intro: string[];
+  intro: ReactNode[];
   sections: LegalSection[];
 };
 
@@ -25,8 +26,8 @@ export function LegalPage({ title, updatedAt, intro, sections }: LegalPageProps)
         </div>
 
         <div className="flex flex-col gap-[16px]">
-          {intro.map((paragraph) => (
-            <p key={paragraph} className="text-muted-foreground text-[16px] leading-[1.7]">
+          {intro.map((paragraph, index) => (
+            <p key={index} className="text-muted-foreground text-[16px] leading-[1.7]">
               {paragraph}
             </p>
           ))}
@@ -36,8 +37,8 @@ export function LegalPage({ title, updatedAt, intro, sections }: LegalPageProps)
           {sections.map((section) => (
             <section key={section.title} className="flex flex-col gap-[12px]">
               <h2 className="text-[22px] leading-[1.25] font-semibold">{section.title}</h2>
-              {section.body.map((paragraph) => (
-                <p key={paragraph} className="text-muted-foreground text-[16px] leading-[1.7]">
+              {section.body.map((paragraph, index) => (
+                <p key={index} className="text-muted-foreground text-[16px] leading-[1.7]">
                   {paragraph}
                 </p>
               ))}
