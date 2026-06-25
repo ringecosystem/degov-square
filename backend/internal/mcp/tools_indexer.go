@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/jsonschema-go/jsonschema"
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 	gqlmodels "github.com/ringecosystem/degov-square/graph/models"
 	degovinternal "github.com/ringecosystem/degov-square/internal"
@@ -19,9 +20,7 @@ func addIndexerTools(server *sdkmcp.Server, cfg Config) {
 		Name:        "get_contributor",
 		Title:       "Get Contributor",
 		Description: "Return an indexer-backed governance contributor for a DAO.",
-		Annotations: &sdkmcp.ToolAnnotations{
-			ReadOnlyHint: true,
-		},
+		Annotations: readOnlyToolAnnotations(),
 	}, func(ctx context.Context, req *sdkmcp.CallToolRequest, input getContributorInput) (*sdkmcp.CallToolResult, getContributorOutput, error) {
 		return getContributorTool(ctx, cfg, input)
 	})
@@ -30,9 +29,8 @@ func addIndexerTools(server *sdkmcp.Server, cfg Config) {
 		Name:        "list_contributors",
 		Title:       "List Contributors",
 		Description: "Return bounded indexer-backed governance contributors for a DAO.",
-		Annotations: &sdkmcp.ToolAnnotations{
-			ReadOnlyHint: true,
-		},
+		Annotations: readOnlyToolAnnotations(),
+		InputSchema: listContributorsInputSchema(),
 	}, func(ctx context.Context, req *sdkmcp.CallToolRequest, input listContributorsInput) (*sdkmcp.CallToolResult, listContributorsOutput, error) {
 		return listContributorsTool(ctx, cfg, input)
 	})
@@ -41,12 +39,37 @@ func addIndexerTools(server *sdkmcp.Server, cfg Config) {
 		Name:        "list_proposal_votes",
 		Title:       "List Proposal Votes",
 		Description: "Return bounded indexer-backed vote rows for a DAO proposal.",
-		Annotations: &sdkmcp.ToolAnnotations{
-			ReadOnlyHint: true,
-		},
+		Annotations: readOnlyToolAnnotations(),
 	}, func(ctx context.Context, req *sdkmcp.CallToolRequest, input listProposalVotesInput) (*sdkmcp.CallToolResult, listProposalVotesOutput, error) {
 		return listProposalVotesTool(ctx, cfg, input)
 	})
+}
+
+func listContributorsInputSchema() *jsonschema.Schema {
+	return &jsonschema.Schema{
+		Type:     "object",
+		Required: []string{"daoCode"},
+		Properties: map[string]*jsonschema.Schema{
+			"daoCode": {
+				Type:        "string",
+				Description: "DAO code, for example ring-dao.",
+				Pattern:     daoCodePattern.String(),
+			},
+			"limit": {
+				Type:        "integer",
+				Description: "Maximum number of contributors to return.",
+			},
+			"offset": {
+				Type:        "integer",
+				Description: "Number of contributors to skip.",
+			},
+			"orderBy": {
+				Type:        "string",
+				Description: "Contributor sort order. Defaults to power_desc.",
+				Enum:        []any{"power_desc", "power_asc", "id_asc"},
+			},
+		},
+	}
 }
 
 func getContributorTool(ctx context.Context, cfg Config, input getContributorInput) (*sdkmcp.CallToolResult, getContributorOutput, error) {

@@ -360,6 +360,43 @@ func TestProposalToolsListIncludesGetProposalState(t *testing.T) {
 	t.Fatal("get_proposal_state not found in tool listing")
 }
 
+func TestProposalToolInputSchemasAreConstrained(t *testing.T) {
+	server := newTestProposalServer(t)
+	session, closeSession := newProposalTestSession(t, server)
+	defer closeSession()
+
+	result, err := session.ListTools(context.Background(), nil)
+	if err != nil {
+		t.Fatalf("ListTools() error = %v", err)
+	}
+
+	listProposalsSchema := toolInputSchema(t, result.Tools, "list_proposals")
+	state := schemaProperty(t, listProposalsSchema, "state")
+	if got := state["type"]; got != "string" {
+		t.Fatalf("list_proposals state type = %v, want string", got)
+	}
+	assertStringEnum(t, state["enum"], []string{
+		"UNKNOWN",
+		"PENDING",
+		"ACTIVE",
+		"CANCELED",
+		"DEFEATED",
+		"SUCCEEDED",
+		"QUEUED",
+		"EXECUTED",
+		"EXPIRED",
+		"unknown",
+		"pending",
+		"active",
+		"canceled",
+		"defeated",
+		"succeeded",
+		"queued",
+		"executed",
+		"expired",
+	})
+}
+
 func TestProposalToolsListOmitsStandaloneENSTools(t *testing.T) {
 	server := newTestProposalServer(t)
 	session, closeSession := newProposalTestSession(t, server)
@@ -572,7 +609,7 @@ func TestProposalToolsReturnClearErrors(t *testing.T) {
 			name:      "invalid state",
 			tool:      "list_proposals",
 			arguments: map[string]any{"daoCode": "ring-dao", "state": "bad"},
-			wantError: "invalid_state",
+			wantError: "does not equal any of",
 		},
 		{
 			name:      "invalid dao code",

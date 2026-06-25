@@ -35,6 +35,31 @@ func TestCORSAllowsMCPStreamableHTTPHeaders(t *testing.T) {
 	}
 }
 
+func TestOpenAIAppsChallengeRoute(t *testing.T) {
+	mux := http.NewServeMux()
+	registerOpenAIAppsChallengeRoute(mux)
+
+	req := httptest.NewRequest(http.MethodGet, openAIAppsChallengePath, nil)
+	rec := httptest.NewRecorder()
+	mux.ServeHTTP(rec, req)
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("missing token status = %d, want %d", rec.Code, http.StatusNotFound)
+	}
+
+	t.Setenv(openAIAppsChallengeTokenEnv, "challenge-token")
+	rec = httptest.NewRecorder()
+	mux.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("challenge status = %d, want %d", rec.Code, http.StatusOK)
+	}
+	if got := strings.TrimSpace(rec.Body.String()); got != "challenge-token" {
+		t.Fatalf("challenge body = %q, want %q", got, "challenge-token")
+	}
+	if got := rec.Header().Get("Content-Type"); !strings.HasPrefix(got, "text/plain") {
+		t.Fatalf("content type = %q, want text/plain", got)
+	}
+}
+
 func TestRegisterStytchOAuthRoutesOnlyWhenEnabled(t *testing.T) {
 	t.Setenv("MCP_STYTCH_OAUTH_ENABLED", "false")
 	if err := config.InitConfig(); err != nil {

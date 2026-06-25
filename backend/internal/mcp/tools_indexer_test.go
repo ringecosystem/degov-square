@@ -164,6 +164,52 @@ func TestIndexerToolAnnotationsAreReadOnly(t *testing.T) {
 	}
 }
 
+func TestIndexerToolInputSchemasAreConstrained(t *testing.T) {
+	server := newTestProposalServer(t)
+	session, closeSession := newProposalTestSession(t, server)
+	defer closeSession()
+
+	result, err := session.ListTools(context.Background(), nil)
+	if err != nil {
+		t.Fatalf("ListTools() error = %v", err)
+	}
+
+	listContributorsSchema := toolInputSchema(t, result.Tools, "list_contributors")
+	orderBy := schemaProperty(t, listContributorsSchema, "orderBy")
+	if got := orderBy["type"]; got != "string" {
+		t.Fatalf("list_contributors orderBy type = %v, want string", got)
+	}
+	assertStringEnum(t, orderBy["enum"], []string{"power_desc", "power_asc", "id_asc"})
+}
+
+func TestToolAnnotationsSetRequiredHints(t *testing.T) {
+	session, closeSession := newTestMCPSession(t, Config{
+		Name:    "test-server",
+		Version: "test-version",
+	})
+	defer closeSession()
+
+	result, err := session.ListTools(context.Background(), nil)
+	if err != nil {
+		t.Fatalf("ListTools() error = %v", err)
+	}
+
+	for _, tool := range result.Tools {
+		if tool.Annotations == nil {
+			t.Fatalf("%s annotations = nil", tool.Name)
+		}
+		if !tool.Annotations.ReadOnlyHint {
+			t.Fatalf("%s readOnlyHint = false, want true", tool.Name)
+		}
+		if tool.Annotations.OpenWorldHint == nil || *tool.Annotations.OpenWorldHint {
+			t.Fatalf("%s openWorldHint = %v, want false", tool.Name, tool.Annotations.OpenWorldHint)
+		}
+		if tool.Annotations.DestructiveHint == nil || *tool.Annotations.DestructiveHint {
+			t.Fatalf("%s destructiveHint = %v, want false", tool.Name, tool.Annotations.DestructiveHint)
+		}
+	}
+}
+
 func TestIndexerToolsRejectUnknownDAO(t *testing.T) {
 	server := newTestProposalServer(t)
 
