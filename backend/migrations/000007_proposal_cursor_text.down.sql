@@ -7,7 +7,7 @@ BEGIN
     ) THEN
         RAISE EXCEPTION 'cannot narrow last_tracked_proposal_id to varchar(255): values longer than 255 characters exist';
     END IF;
-END
+END;
 $$;
 
 ALTER TABLE dgv_dao ALTER COLUMN last_tracked_proposal_id TYPE varchar(255);

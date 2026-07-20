@@ -39,6 +39,7 @@ func TestLastTrackedProposalIDUsesTextColumn(t *testing.T) {
 		"IF EXISTS",
 		"length(last_tracked_proposal_id) > 255",
 		"RAISE EXCEPTION",
+		"END;\n$$;",
 		"ALTER COLUMN last_tracked_proposal_id TYPE varchar(255)",
 	} {
 		if !strings.Contains(downSQL, required) {

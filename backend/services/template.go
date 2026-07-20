@@ -218,7 +218,7 @@ func (s *TemplateService) GenerateTemplateByNotificationRecord(record *dbmodels.
 	}
 
 	if record.Type == dbmodels.SubscribeFeatureVoteEmitted {
-		voteIndexer, err := degovIndexer.QueryVote(*record.VoteID)
+		voteIndexer, err := degovIndexer.QueryVote(scope, proposal.ProposalID, *record.VoteID)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get vote info: %w", err)
 		}
