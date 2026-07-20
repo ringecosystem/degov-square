@@ -7,7 +7,47 @@ import (
 
 	dbmodels "github.com/ringecosystem/degov-square/database/models"
 	gqlmodels "github.com/ringecosystem/degov-square/graph/models"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
 )
+
+func TestProposalCursorPreservesLongIndexerID(t *testing.T) {
+	db, err := gorm.Open(sqlite.Open("file:"+t.Name()+"?mode=memory&cache=shared"), &gorm.Config{})
+	if err != nil {
+		t.Fatalf("open sqlite db: %v", err)
+	}
+	if err := db.Exec(`
+		CREATE TABLE dgv_dao (
+			code TEXT PRIMARY KEY,
+			last_tracked_block_number INTEGER NOT NULL DEFAULT 0,
+			last_tracked_proposal_id TEXT NOT NULL DEFAULT ''
+		)
+	`).Error; err != nil {
+		t.Fatalf("create dao table: %v", err)
+	}
+	if err := db.Exec("INSERT INTO dgv_dao (code) VALUES (?)", "ring-dao").Error; err != nil {
+		t.Fatalf("seed dao: %v", err)
+	}
+
+	service := &DaoService{db: db}
+	proposalID := strings.Repeat("proposal-id-", 34)
+	if len(proposalID) <= 255 {
+		t.Fatalf("test proposal id length = %d, want > 255", len(proposalID))
+	}
+	if err := service.UpdateDaoLastTrackedProposalCursor("ring-dao", 123, proposalID); err != nil {
+		t.Fatalf("UpdateDaoLastTrackedProposalCursor() error = %v", err)
+	}
+	blockNumber, storedProposalID, err := service.GetLastTrackedProposalCursor("ring-dao")
+	if err != nil {
+		t.Fatalf("GetLastTrackedProposalCursor() error = %v", err)
+	}
+	if got, want := blockNumber, int64(123); got != want {
+		t.Fatalf("block number = %d, want %d", got, want)
+	}
+	if got, want := storedProposalID, proposalID; got != want {
+		t.Fatalf("proposal id length = %d, want preserved length %d", len(got), len(want))
+	}
+}
 
 func TestConvertToGqlDaoMapsTagsAndDomains(t *testing.T) {
 	t.Parallel()
