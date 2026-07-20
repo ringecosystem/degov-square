@@ -427,34 +427,44 @@ func TestQueryVotesValidatesProposalParentCardinality(t *testing.T) {
 	}
 }
 
-func TestQueryVotePagesNestedVotersUntilFound(t *testing.T) {
+func TestQueryVoteUsesDirectNestedIDFilter(t *testing.T) {
 	type graphqlRequest struct {
+		Query     string         `json:"query"`
 		Variables map[string]any `json:"variables"`
 	}
 
-	firstPage := make([]VoteCast, 50)
-	for i := range firstPage {
-		firstPage[i] = VoteCast{ID: fmt.Sprintf("vote-%02d", i)}
-	}
 	requestCount := 0
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requestCount++
 		var req graphqlRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			t.Fatalf("decode request: %v", err)
 		}
-		if got, want := req.Variables["limit"], float64(50); got != want {
-			t.Fatalf("limit = %#v, want %#v", got, want)
+		if strings.Contains(req.Query, "voteCasts") || strings.Contains(req.Query, "VoteCastWhereInput") {
+			t.Fatalf("query uses removed top-level vote shape: %s", req.Query)
 		}
-		if got, want := req.Variables["offset"], float64(requestCount*50); got != want {
-			t.Fatalf("offset = %#v, want %#v", got, want)
+		if !strings.Contains(req.Query, "query QueryVote($where: ProposalWhereInput!, $voterWhere: VoteCastGroupWhereInput!)") {
+			t.Fatalf("query = %s, want approved voter where input", req.Query)
 		}
-		votes := firstPage
-		if requestCount == 1 {
-			votes = []VoteCast{{ID: "target-vote", Voter: "0x1"}}
+		if !strings.Contains(req.Query, "proposals(orderBy: [id_ASC], limit: 2, where: $where)") {
+			t.Fatalf("query = %s, want deterministic parent lookup", req.Query)
 		}
-		requestCount++
+		if !strings.Contains(req.Query, "voters(where: $voterWhere, orderBy: [id_ASC], limit: 2)") {
+			t.Fatalf("query = %s, want direct bounded vote lookup", req.Query)
+		}
+		if _, exists := req.Variables["offset"]; exists {
+			t.Fatalf("unexpected offset scan variable: %#v", req.Variables)
+		}
+		where := req.Variables["where"].(map[string]any)
+		if got, want := where["proposalId_eq"], "proposal-1"; got != want {
+			t.Fatalf("proposalId_eq = %#v, want %#v", got, want)
+		}
+		voterWhere := req.Variables["voterWhere"].(map[string]any)
+		if got, want := voterWhere["id_eq"], "target-vote"; got != want {
+			t.Fatalf("id_eq = %#v, want %#v", got, want)
+		}
 		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(map[string]any{"data": map[string]any{"proposals": []map[string]any{{"voters": votes}}}})
+		_, _ = w.Write([]byte(`{"data":{"proposals":[{"voters":[{"id":"target-vote","voter":"0x1"}]}]}}`))
 	}))
 	defer server.Close()
 
@@ -462,7 +472,7 @@ func TestQueryVotePagesNestedVotersUntilFound(t *testing.T) {
 	if err != nil {
 		t.Fatalf("QueryVote() error = %v", err)
 	}
-	if got, want := requestCount, 2; got != want {
+	if got, want := requestCount, 1; got != want {
 		t.Fatalf("request count = %d, want %d", got, want)
 	}
 	if got, want := vote.ID, "target-vote"; got != want {
@@ -473,38 +483,36 @@ func TestQueryVotePagesNestedVotersUntilFound(t *testing.T) {
 	}
 }
 
-func TestQueryVoteReturnsNotFoundAfterShortPage(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"data":{"proposals":[{"voters":[{"id":"another-vote"}]}]}}`))
-	}))
-	defer server.Close()
-
-	_, err := NewDegovIndexer(server.URL).QueryVote(ProposalScope{DaoCode: "ring-dao"}, "proposal-1", "missing-vote")
-	if err == nil || !strings.Contains(err.Error(), "no vote found") {
-		t.Fatalf("QueryVote() error = %v, want not found", err)
+func TestQueryVoteValidatesDirectLookupCardinality(t *testing.T) {
+	tests := []struct {
+		name      string
+		response  string
+		wantError string
+	}{
+		{name: "zero parents", response: `{"data":{"proposals":[]}}`, wantError: "no vote found"},
+		{name: "zero votes", response: `{"data":{"proposals":[{"voters":[]}]}}`, wantError: "no vote found"},
+		{name: "multiple parents", response: `{"data":{"proposals":[{"voters":[]},{"voters":[]}]}}`, wantError: "multiple proposals"},
+		{name: "duplicate exact votes", response: `{"data":{"proposals":[{"voters":[{"id":"target-vote"},{"id":"target-vote"}]}]}}`, wantError: "multiple votes"},
 	}
-}
 
-func TestQueryVoteRejectsRepeatedFullVoterPage(t *testing.T) {
-	votes := make([]VoteCast, 50)
-	for i := range votes {
-		votes[i] = VoteCast{ID: fmt.Sprintf("vote-%02d", i)}
-	}
-	requestCount := 0
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		requestCount++
-		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(map[string]any{"data": map[string]any{"proposals": []map[string]any{{"voters": votes}}}})
-	}))
-	defer server.Close()
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			requestCount := 0
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				requestCount++
+				w.Header().Set("Content-Type", "application/json")
+				_, _ = w.Write([]byte(tt.response))
+			}))
+			defer server.Close()
 
-	_, err := NewDegovIndexer(server.URL).QueryVote(ProposalScope{DaoCode: "ring-dao"}, "proposal-1", "missing-vote")
-	if err == nil || !strings.Contains(err.Error(), "no progress") {
-		t.Fatalf("QueryVote() error = %v, want pagination progress error", err)
-	}
-	if got, want := requestCount, 2; got != want {
-		t.Fatalf("request count = %d, want %d", got, want)
+			_, err := NewDegovIndexer(server.URL).QueryVote(ProposalScope{DaoCode: "ring-dao"}, "proposal-1", "target-vote")
+			if err == nil || !strings.Contains(err.Error(), tt.wantError) {
+				t.Fatalf("QueryVote() error = %v, want %q", err, tt.wantError)
+			}
+			if got, want := requestCount, 1; got != want {
+				t.Fatalf("request count = %d, want %d", got, want)
+			}
+		})
 	}
 }
 

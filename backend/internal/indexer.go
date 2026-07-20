@@ -498,32 +498,48 @@ func (d *DegovIndexer) QueryContributor(ctx context.Context, scope ProposalScope
 }
 
 func (d *DegovIndexer) QueryVote(scope ProposalScope, proposalId string, id string) (*VoteCast, error) {
+	query := `
+		query QueryVote($where: ProposalWhereInput!, $voterWhere: VoteCastGroupWhereInput!) {
+			proposals(orderBy: [id_ASC], limit: 2, where: $where) {
+				voters(where: $voterWhere, orderBy: [id_ASC], limit: 2) {
+					reason
+					support
+					voter
+					weight
+					transactionHash
+					id
+					blockNumber
+					blockTimestamp
+				}
+			}
+		}
+	`
+
+	req := graphql.NewRequest(query)
+	req.Var("where", scope.withScope(map[string]any{
+		"proposalId_eq": proposalId,
+	}))
+	req.Var("voterWhere", map[string]any{"id_eq": id})
+
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	const limit = 50
-	seenIDs := make(map[string]struct{})
-	for offset := 0; ; offset += limit {
-		votes, err := d.QueryVotes(ctx, scope, offset, limit, proposalId)
-		if err != nil {
-			return nil, fmt.Errorf("failed to query vote page at offset %d: %w", offset, err)
+	var response ProposalVotersResponse
+	if err := d.client.Run(ctx, req, &response); err != nil {
+		return nil, fmt.Errorf("failed to execute QueryVote: %w", err)
+	}
+	if len(response.Proposals) > 1 {
+		return nil, fmt.Errorf("multiple proposals found for proposalId %s", proposalId)
+	}
+	if len(response.Proposals) == 1 {
+		votes := response.Proposals[0].Voters
+		if len(votes) > 1 {
+			return nil, fmt.Errorf("multiple votes found with id %s", id)
 		}
-		newIDs := 0
-		for _, vote := range votes {
-			if vote.ID == id {
-				return &vote, nil
-			}
-			if _, exists := seenIDs[vote.ID]; exists {
-				continue
-			}
-			seenIDs[vote.ID] = struct{}{}
-			newIDs++
-		}
-		if len(votes) < limit {
-			break
-		}
-		if newIDs == 0 {
-			return nil, fmt.Errorf("vote pagination made no progress at offset %d", offset)
+		if len(votes) == 1 {
+			vote := votes[0]
+			vote.ProposalID = proposalId
+			return &vote, nil
 		}
 	}
 
