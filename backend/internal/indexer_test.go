@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -81,6 +82,100 @@ func TestQueryProposalsByBlockNumberRequestsOneServerCursorBatch(t *testing.T) {
 	}
 	if got, want := []string{proposals[0].ID, proposals[1].ID, proposals[2].ID}, []string{"z", longID, "later-block"}; fmt.Sprint(got) != fmt.Sprint(want) {
 		t.Fatalf("proposal ids = %#v, want %#v", got, want)
+	}
+}
+
+func TestQueryProposalsByBlockNumberContinuesBeyondFullBatch(t *testing.T) {
+	type graphqlRequest struct {
+		Variables map[string]any `json:"variables"`
+	}
+
+	longID := strings.Repeat("z", 369)
+	firstBatch := []Proposal{{ID: "same-block-z", BlockNumber: "100"}}
+	for i := 0; i < 28; i++ {
+		firstBatch = append(firstBatch, Proposal{ID: fmt.Sprintf("id-%02d", i), BlockNumber: "101"})
+	}
+	firstBatch = append(firstBatch, Proposal{ID: longID, BlockNumber: "101"})
+	secondBatch := []Proposal{
+		{ID: longID + "z", BlockNumber: "101"},
+		{ID: "later-block", BlockNumber: "102"},
+	}
+
+	requestCount := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var req graphqlRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			t.Fatalf("decode request: %v", err)
+		}
+		where := req.Variables["where"].(map[string]any)
+		cursor := where["OR"].([]any)
+		nextBlock := cursor[0].(map[string]any)
+		sameBlock := cursor[1].(map[string]any)
+
+		response := firstBatch
+		if requestCount == 0 {
+			if got, want := nextBlock["blockNumber_gt"], "100"; got != want {
+				t.Fatalf("first blockNumber_gt = %#v, want %#v", got, want)
+			}
+			if got, want := sameBlock["blockNumber_eq"], "100"; got != want {
+				t.Fatalf("first blockNumber_eq = %#v, want %#v", got, want)
+			}
+			if got, want := sameBlock["id_gt"], "same-block-m"; got != want {
+				t.Fatalf("first id_gt = %#v, want %#v", got, want)
+			}
+		} else {
+			response = secondBatch
+			if got, want := nextBlock["blockNumber_gt"], "101"; got != want {
+				t.Fatalf("second blockNumber_gt = %#v, want string %#v", got, want)
+			}
+			if got, want := sameBlock["blockNumber_eq"], "101"; got != want {
+				t.Fatalf("second blockNumber_eq = %#v, want string %#v", got, want)
+			}
+			if got, want := sameBlock["id_gt"], longID; got != want {
+				t.Fatalf("second id_gt length = %d, want preserved length %d", len(fmt.Sprint(got)), len(want))
+			}
+		}
+		requestCount++
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{"data": map[string]any{"proposals": response}})
+	}))
+	defer server.Close()
+
+	indexer := NewDegovIndexer(server.URL)
+	first, err := indexer.QueryProposalsByBlockNumber(ProposalScope{DaoCode: "ring-dao"}, 100, "same-block-m")
+	if err != nil {
+		t.Fatalf("first QueryProposalsByBlockNumber() error = %v", err)
+	}
+	if got, want := len(first), 30; got != want {
+		t.Fatalf("first batch length = %d, want %d", got, want)
+	}
+	last := first[len(first)-1]
+	lastBlockNumber, err := strconv.ParseInt(last.BlockNumber, 10, 64)
+	if err != nil {
+		t.Fatalf("parse last block number: %v", err)
+	}
+	second, err := indexer.QueryProposalsByBlockNumber(ProposalScope{DaoCode: "ring-dao"}, lastBlockNumber, last.ID)
+	if err != nil {
+		t.Fatalf("second QueryProposalsByBlockNumber() error = %v", err)
+	}
+	if got, want := requestCount, 2; got != want {
+		t.Fatalf("request count = %d, want %d", got, want)
+	}
+
+	combined := append(append([]Proposal(nil), first...), second...)
+	want := append(append([]Proposal(nil), firstBatch...), secondBatch...)
+	if got := len(combined); got != len(want) {
+		t.Fatalf("combined length = %d, want %d", got, len(want))
+	}
+	seen := make(map[string]struct{}, len(combined))
+	for i := range combined {
+		if combined[i].ID != want[i].ID || combined[i].BlockNumber != want[i].BlockNumber {
+			t.Fatalf("combined[%d] = (%q, %q), want (%q, %q)", i, combined[i].BlockNumber, combined[i].ID, want[i].BlockNumber, want[i].ID)
+		}
+		if _, exists := seen[combined[i].ID]; exists {
+			t.Fatalf("duplicate proposal id %q", combined[i].ID)
+		}
+		seen[combined[i].ID] = struct{}{}
 	}
 }
 
