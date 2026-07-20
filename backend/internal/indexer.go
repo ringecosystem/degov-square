@@ -3,6 +3,7 @@ package internal
 import (
 	"context"
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -102,6 +103,12 @@ type VoteCastsResponse struct {
 	VoteCasts []VoteCast `json:"voteCasts"`
 }
 
+type ProposalVotersResponse struct {
+	Proposals []struct {
+		Voters []VoteCast `json:"voters"`
+	} `json:"proposals"`
+}
+
 type Contributor struct {
 	ID                      string  `json:"id"`
 	Power                   string  `json:"power"`
@@ -140,6 +147,7 @@ func (s ProposalScope) withScope(where map[string]any) map[string]any {
 type DegovIndexer struct {
 	client   *graphql.Client
 	endpoint string
+	now      func() time.Time
 }
 
 // NewDegovIndexer creates a new DegovIndexer instance with the given endpoint
@@ -148,6 +156,7 @@ func NewDegovIndexer(endpoint string) *DegovIndexer {
 	return &DegovIndexer{
 		client:   client,
 		endpoint: endpoint,
+		now:      time.Now,
 	}
 }
 
@@ -309,41 +318,44 @@ func (d *DegovIndexer) InspectProposalWithContext(ctx context.Context, scope Pro
 // QueryProposalsByBlockNumber queries proposals after the given blockNumber/id cursor.
 func (d *DegovIndexer) QueryProposalsByBlockNumber(scope ProposalScope, afterBlockNumber int64, afterProposalID string) ([]Proposal, error) {
 	const limit = 30
-	proposals := make([]Proposal, 0, limit)
-
-	if afterBlockNumber > 0 {
-		sameBlockFilter := map[string]any{
-			"blockNumber_eq": strconv.FormatInt(afterBlockNumber, 10),
-		}
-		if strings.TrimSpace(afterProposalID) != "" {
-			sameBlockFilter["id_gt"] = afterProposalID
-		}
-
-		sameBlockProposals, err := d.queryProposalsByBlockNumber(scope, sameBlockFilter, limit)
-		if err != nil {
-			return nil, err
-		}
-
-		proposals = append(proposals, sameBlockProposals...)
-		if len(proposals) >= limit {
-			return proposals, nil
-		}
-	}
-
-	nextBlockProposals, err := d.queryProposalsByBlockNumber(scope, map[string]any{
-		"blockNumber_gt": strconv.FormatInt(afterBlockNumber, 10),
-	}, limit-len(proposals))
+	allProposals, err := d.queryProposalsByBlockNumber(scope, limit)
 	if err != nil {
 		return nil, err
 	}
 
-	return append(proposals, nextBlockProposals...), nil
+	type proposalWithBlockNumber struct {
+		proposal    Proposal
+		blockNumber int64
+	}
+	proposals := make([]proposalWithBlockNumber, 0, len(allProposals))
+	for _, proposal := range allProposals {
+		blockNumber, err := strconv.ParseInt(proposal.BlockNumber, 10, 64)
+		if err != nil {
+			return nil, fmt.Errorf("invalid blockNumber %q for proposal %q: %w", proposal.BlockNumber, proposal.ID, err)
+		}
+		if blockNumber > afterBlockNumber || (blockNumber == afterBlockNumber && proposal.ID > afterProposalID) {
+			proposals = append(proposals, proposalWithBlockNumber{proposal: proposal, blockNumber: blockNumber})
+		}
+	}
+
+	sort.Slice(proposals, func(i, j int) bool {
+		if proposals[i].blockNumber != proposals[j].blockNumber {
+			return proposals[i].blockNumber < proposals[j].blockNumber
+		}
+		return proposals[i].proposal.ID < proposals[j].proposal.ID
+	})
+
+	result := make([]Proposal, len(proposals))
+	for i := range proposals {
+		result[i] = proposals[i].proposal
+	}
+	return result, nil
 }
 
-func (d *DegovIndexer) queryProposalsByBlockNumber(scope ProposalScope, whereFilter map[string]any, limit int) ([]Proposal, error) {
+func (d *DegovIndexer) queryProposalsByBlockNumber(scope ProposalScope, limit int) ([]Proposal, error) {
 	query := `
-		query QueryProposalsByBlockNumber($limit: Int!, $where: ProposalWhereInput) {
-			proposals(orderBy: [blockNumber_ASC_NULLS_FIRST, id_ASC], limit: $limit, where: $where) {
+		query QueryProposalsByBlockNumber($limit: Int!, $offset: Int!, $where: ProposalWhereInput) {
+			proposals(orderBy: [blockTimestamp_DESC_NULLS_LAST, id_ASC], limit: $limit, offset: $offset, where: $where) {
 				id
 				chainId
 				daoCode
@@ -379,19 +391,42 @@ func (d *DegovIndexer) queryProposalsByBlockNumber(scope ProposalScope, whereFil
 		}
 	`
 
-	req := graphql.NewRequest(query)
-	req.Var("limit", limit)
-	req.Var("where", scope.withScope(whereFilter))
-
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	var response ProposalsResponse
-	if err := d.client.Run(ctx, req, &response); err != nil {
-		return nil, fmt.Errorf("failed to execute QueryProposalsByBlockNumber: %w", err)
+	var proposals []Proposal
+	seenIDs := make(map[string]struct{})
+	seenPages := make(map[string]struct{})
+	for offset := 0; ; offset += limit {
+		req := graphql.NewRequest(query)
+		req.Var("limit", limit)
+		req.Var("offset", offset)
+		req.Var("where", scope.withScope(nil))
+
+		var response ProposalsResponse
+		if err := d.client.Run(ctx, req, &response); err != nil {
+			return nil, fmt.Errorf("failed to execute QueryProposalsByBlockNumber: %w", err)
+		}
+
+		pageKey := ""
+		for _, proposal := range response.Proposals {
+			pageKey += "\x00" + proposal.ID
+			if _, exists := seenIDs[proposal.ID]; exists {
+				continue
+			}
+			seenIDs[proposal.ID] = struct{}{}
+			proposals = append(proposals, proposal)
+		}
+		if len(response.Proposals) < limit {
+			break
+		}
+		if _, exists := seenPages[pageKey]; exists {
+			break
+		}
+		seenPages[pageKey] = struct{}{}
 	}
 
-	return response.Proposals, nil
+	return proposals, nil
 }
 
 func (d *DegovIndexer) QueryVotesOffset(ctx context.Context, scope ProposalScope, offset int, proposalId string) ([]VoteCast, error) {
@@ -400,17 +435,18 @@ func (d *DegovIndexer) QueryVotesOffset(ctx context.Context, scope ProposalScope
 
 func (d *DegovIndexer) QueryVotes(ctx context.Context, scope ProposalScope, offset int, limit int, proposalId string) ([]VoteCast, error) {
 	query := `
-		query QueryVotesOffset($limit: Int!, $offset: Int!, $where: VoteCastWhereInput!) {
-			voteCasts(orderBy: blockNumber_ASC_NULLS_FIRST, limit: $limit, offset: $offset, where: $where) {
-				proposalId
-				reason
-				support
-				voter
-				weight
-				transactionHash
-				id
-				blockNumber
-				blockTimestamp
+		query QueryVotesOffset($limit: Int!, $offset: Int!, $where: ProposalWhereInput!) {
+			proposals(where: $where) {
+				voters(orderBy: [blockTimestamp_ASC_NULLS_LAST, id_ASC], limit: $limit, offset: $offset) {
+					reason
+					support
+					voter
+					weight
+					transactionHash
+					id
+					blockNumber
+					blockTimestamp
+				}
 			}
 		}
 	`
@@ -421,12 +457,19 @@ func (d *DegovIndexer) QueryVotes(ctx context.Context, scope ProposalScope, offs
 		"proposalId_eq": proposalId,
 	}))
 
-	var response VoteCastsResponse
+	var response ProposalVotersResponse
 	if err := d.client.Run(ctx, req, &response); err != nil {
 		return nil, fmt.Errorf("failed to execute QueryVotesOffset: %w", err)
 	}
 
-	return response.VoteCasts, nil
+	var votes []VoteCast
+	for _, proposal := range response.Proposals {
+		for _, vote := range proposal.Voters {
+			vote.ProposalID = proposalId
+			votes = append(votes, vote)
+		}
+	}
+	return votes, nil
 }
 
 func (d *DegovIndexer) QueryContributors(ctx context.Context, scope ProposalScope, offset int, limit int, orderBy string) ([]Contributor, error) {
@@ -566,7 +609,7 @@ func (d *DegovIndexer) QueryExpiringProposals(scope ProposalScope) ([]Proposal, 
 	  proposals(
 	    limit: $limit
 	    offset: $offset
-	    orderBy: blockTimestamp_ASC_NULLS_FIRST
+	    orderBy: [blockTimestamp_DESC_NULLS_LAST, id_ASC]
 	    where: $where
 	  ) {
 	    id
@@ -603,39 +646,54 @@ func (d *DegovIndexer) QueryExpiringProposals(scope ProposalScope) ([]Proposal, 
 	`
 
 	const limit = 50
-	var offset = 0
-	var allProposals []Proposal
+	var proposals []Proposal
 
-	now := time.Now()
+	now := d.now()
 	startTimestamp := now.UnixMilli()
-	endTimestamp := now.Add(2 * 24 * 60 * time.Minute).UnixMilli()
+	endTimestamp := now.Add(48 * time.Hour).UnixMilli()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	for {
+	seenIDs := make(map[string]struct{})
+	seenPages := make(map[string]struct{})
+	for offset := 0; ; offset += limit {
 		req := graphql.NewRequest(query)
 
 		req.Var("limit", limit)
 		req.Var("offset", offset)
-		req.Var("where", scope.withScope(map[string]any{
-			"voteEndTimestamp_gte": startTimestamp,
-			"voteEndTimestamp_lt":  endTimestamp,
-		}))
+		req.Var("where", scope.withScope(nil))
 
 		var response ProposalsResponse
 
 		if err := d.client.Run(ctx, req, &response); err != nil {
 			return nil, fmt.Errorf("graphql query failed on offset %d: %w", offset, err)
 		}
-		if len(response.Proposals) == 0 {
+		pageKey := ""
+		for _, proposal := range response.Proposals {
+			pageKey += "\x00" + proposal.ID
+			if _, exists := seenIDs[proposal.ID]; exists {
+				continue
+			}
+			seenIDs[proposal.ID] = struct{}{}
+			voteEndTimestamp, err := strconv.ParseInt(proposal.VoteEndTimestamp, 10, 64)
+			if err != nil {
+				continue
+			}
+			if voteEndTimestamp >= startTimestamp && voteEndTimestamp < endTimestamp {
+				proposals = append(proposals, proposal)
+			}
+		}
+		if len(response.Proposals) < limit {
 			break
 		}
-		allProposals = append(allProposals, response.Proposals...)
-		offset += len(response.Proposals)
+		if _, exists := seenPages[pageKey]; exists {
+			break
+		}
+		seenPages[pageKey] = struct{}{}
 	}
 
-	return allProposals, nil
+	return proposals, nil
 }
 
 // Delegate represents a delegation record

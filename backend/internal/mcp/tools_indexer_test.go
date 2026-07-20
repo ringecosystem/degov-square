@@ -76,7 +76,7 @@ func TestGetContributorToolIncludesENSNameWhenAvailable(t *testing.T) {
 }
 
 func TestListProposalVotesToolReturnsVoterIdentities(t *testing.T) {
-	indexer := newMCPIndexerServer(t, `{"data":{"voteCasts":[{"id":"vote-1","proposalId":"0xproposal","voter":"0x0000000000000000000000000000000000000001","support":1,"weight":"100","reason":"","transactionHash":"0xtx","blockNumber":"1","blockTimestamp":"2"}]}}`)
+	indexer := newMCPIndexerServer(t, `{"data":{"proposals":[{"voters":[{"id":"vote-1","voter":"0x0000000000000000000000000000000000000001","support":1,"weight":"100","reason":"","transactionHash":"0xtx","blockNumber":"1","blockTimestamp":"2"}]}]}}`)
 	defer indexer.Close()
 
 	server := newTestProposalServer(t)
