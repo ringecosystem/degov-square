@@ -12,13 +12,17 @@ const shareImageUrl = 'https://degov.ai/images/degov-social-card.png';
 const shareImageAlt = 'DeGov Square DAO Directory — discover public DAO governance.';
 const directorySourceUrl = 'https://github.com/ringecosystem/degov-registry';
 
-function isHttpUrl(value: string) {
+function getHttpUrl(value: string) {
   try {
     const url = new URL(value);
-    return url.protocol === 'http:' || url.protocol === 'https:';
+    if (url.protocol === 'http:' || url.protocol === 'https:') {
+      return url.toString();
+    }
   } catch {
-    return false;
+    return null;
   }
+
+  return null;
 }
 
 export const metadata: Metadata = {
@@ -61,7 +65,8 @@ export const dynamic = 'force-dynamic';
 export default async function Home() {
   const initialDirectory = await getPublicDaoDirectory();
   const representativeDaos = initialDirectory.daos
-    .filter((dao) => isHttpUrl(dao.website))
+    .map((dao) => ({ ...dao, websiteUrl: getHttpUrl(dao.website) }))
+    .filter((dao): dao is typeof dao & { websiteUrl: string } => Boolean(dao.websiteUrl))
     .slice(0, 6);
   const directoryReadAt = new Date().toISOString().replace(/\.\d{3}Z$/, 'Z');
   const directoryCountText = initialDirectory.failed
@@ -104,7 +109,7 @@ export default async function Home() {
             {representativeDaos.map((dao) => (
               <Link
                 key={dao.id}
-                href={dao.website}
+                href={dao.websiteUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="border-border hover:bg-accent rounded-[4px] border px-[10px] py-[6px] text-[14px] transition-colors"
