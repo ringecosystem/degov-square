@@ -7,8 +7,8 @@ const title = 'DeGov Square DAO Directory';
 const description =
   'Discover public DAO governance sites, proposal activity, supported networks, and DeGov-managed governance communities.';
 const canonicalUrl = 'https://square.degov.ai/';
-const shareImageUrl =
-  'https://raw.githubusercontent.com/ringecosystem/degov-registry/refs/heads/main/assets/common/degov-1024.png';
+const shareImageUrl = 'https://degov.ai/images/degov-social-card.png';
+const shareImageAlt = 'DeGov Square DAO Directory — discover public DAO governance.';
 
 export const metadata: Metadata = {
   title,
@@ -25,17 +25,23 @@ export const metadata: Metadata = {
     images: [
       {
         url: shareImageUrl,
-        width: 1024,
-        height: 1024,
-        alt: 'DeGov Square'
+        width: 1200,
+        height: 630,
+        alt: shareImageAlt,
+        type: 'image/png'
       }
     ]
   },
   twitter: {
-    card: 'summary',
+    card: 'summary_large_image',
     title,
     description,
-    images: [shareImageUrl]
+    images: [
+      {
+        url: shareImageUrl,
+        alt: shareImageAlt
+      }
+    ]
   }
 };
 

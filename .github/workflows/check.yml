@@ -29,6 +29,11 @@ jobs:
         run: |
           pnpm run test:private-route-indexing
 
+      - name: Check social preview
+        working-directory: web
+        run: |
+          pnpm run test:social-preview
+
       - name: Check Build
         working-directory: web
         run: |
