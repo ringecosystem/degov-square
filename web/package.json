@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",
+    "test:content-provenance": "node scripts/check-content-provenance.mjs",
     "test:private-route-indexing": "node scripts/check-private-route-indexing.mjs",
     "test:social-preview": "node scripts/check-social-preview.mjs",
     "start": "next start",
