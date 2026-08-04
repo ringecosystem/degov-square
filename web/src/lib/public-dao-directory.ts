@@ -1,6 +1,6 @@
 import { createPublicClient } from '@/lib/graphql/client';
 import { QUERY_DAOS } from '@/lib/graphql/queries';
-import type { DaosResponse } from '@/lib/graphql/types';
+import type { Dao } from '@/lib/graphql/types';
 
 import { transformDaoData } from './dao-directory';
 
@@ -11,10 +11,14 @@ export type PublicDaoDirectoryResult = {
   failed: boolean;
 };
 
+type PublicDaosResponse = {
+  daos: Dao[];
+};
+
 export async function getPublicDaoDirectory(): Promise<PublicDaoDirectoryResult> {
   try {
     const client = createPublicClient();
-    const data = await client.request<DaosResponse>(QUERY_DAOS);
+    const data = await client.request<PublicDaosResponse>(QUERY_DAOS);
 
     return {
       daos: (data.daos ?? [])

@@ -16,6 +16,9 @@ export function Analytics() {
   }
 
   const pageLocation = new URL(pathname, APP_URL).toString();
+  const analyticsTagLiteral = JSON.stringify(GOOGLE_ANALYTICS_TAG);
+  const pathnameLiteral = JSON.stringify(pathname);
+  const pageLocationLiteral = JSON.stringify(pageLocation);
 
   return (
     <>
@@ -28,9 +31,9 @@ export function Analytics() {
           window.dataLayer = window.dataLayer || [];
           function gtag(){dataLayer.push(arguments);}
           gtag('js', new Date());
-          gtag('config', '${GOOGLE_ANALYTICS_TAG}', {
-            page_path: '${pathname}',
-            page_location: '${pageLocation}'
+          gtag('config', ${analyticsTagLiteral}, {
+            page_path: ${pathnameLiteral},
+            page_location: ${pageLocationLiteral}
           });
         `}
       </Script>
