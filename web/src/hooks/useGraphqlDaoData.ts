@@ -1,28 +1,8 @@
 import { useMemo } from 'react';
 
 import { useQueryDaosPublic, useQueryDaos } from '@/lib/graphql';
-import type { Dao } from '@/lib/graphql/types';
+import { transformDaoData } from '@/lib/dao-directory';
 import { useAuthStore } from '@/stores/auth';
-import type { DaoInfo } from '@/utils/config';
-
-function transformDaoData(dao: Dao, index: number): DaoInfo {
-  return {
-    id: dao.id,
-    name: dao.name,
-    code: dao.code,
-    daoIcon: dao.logo,
-    network: dao.chainName || `Chain ${dao.chainId}`,
-    networkIcon: dao.chainLogo,
-    proposals: dao.metricsCountProposals,
-    favorite: dao.liked,
-    settable: true,
-    website: dao.endpoint || '',
-    indexer: '',
-    chainId: dao.chainId.toString(),
-    chips: dao.chips,
-    lastProposal: dao.lastProposal
-  };
-}
 
 export function useGraphqlDaoData() {
   const { isAuthenticated } = useAuthStore();
@@ -39,7 +19,7 @@ export function useGraphqlDaoData() {
 
     return graphqlData.daos
       ?.filter((dao) => !dao.tags?.includes('demo'))
-      .map((dao, index) => transformDaoData(dao, index));
+      .map((dao) => transformDaoData(dao));
   }, [graphqlData]);
 
   return {
