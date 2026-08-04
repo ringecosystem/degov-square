@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",
+    "test:private-route-indexing": "node scripts/check-private-route-indexing.mjs",
     "start": "next start",
     "lint": "next lint"
   },

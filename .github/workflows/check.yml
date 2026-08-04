@@ -24,6 +24,11 @@ jobs:
         run: |
           pnpm install
 
+      - name: Check private route indexing
+        working-directory: web
+        run: |
+          pnpm run test:private-route-indexing
+
       - name: Check Build
         working-directory: web
         run: |
