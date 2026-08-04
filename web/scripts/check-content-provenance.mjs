@@ -21,9 +21,15 @@ assertContains(
   'Directory provenance URL'
 );
 assertContains(pageSource, 'Last server read:', 'Directory freshness text');
+assertContains(pageSource, 'function isHttpUrl(value: string)', 'Representative link URL guard');
 assertContains(
   pageSource,
-  'representativeDaos = initialDirectory.daos.filter((dao) => dao.website).slice(0, 6)',
+  "url.protocol === 'http:' || url.protocol === 'https:'",
+  'HTTP URL guard'
+);
+assertContains(
+  pageSource,
+  '.filter((dao) => isHttpUrl(dao.website))',
   'Representative DAO selection'
 );
 assertContains(pageSource, 'aria-label="Representative public DAOs"', 'Representative DAO links');
