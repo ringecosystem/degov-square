@@ -3,6 +3,7 @@ import Link from 'next/link';
 
 import { LikeButton } from '@/components/like-button';
 import { Separator } from '@/components/ui/separator';
+import { trackSquareDaoClick } from '@/lib/analytics';
 import type { DaoInfo } from '@/utils/config';
 import { formatNetworkName } from '@/utils/helper';
 
@@ -20,6 +21,7 @@ export const DaoItem = (dao: DaoItemProps) => {
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-[10px] hover:underline"
+            onClick={() => trackSquareDaoClick(dao.code, website)}
           >
             <Image src={daoIcon} alt={name} width={32} height={32} className="rounded-full" />
             <p className="text-[18px] font-semibold">{name}</p>

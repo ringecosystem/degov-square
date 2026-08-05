@@ -34,6 +34,11 @@ jobs:
         run: |
           pnpm run test:social-preview
 
+      - name: Check DAO discovery analytics
+        working-directory: web
+        run: |
+          pnpm run test:dao-discovery-analytics
+
       - name: Check structured data
         working-directory: web
         run: |
