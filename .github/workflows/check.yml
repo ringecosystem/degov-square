@@ -34,6 +34,11 @@ jobs:
         run: |
           pnpm run test:social-preview
 
+      - name: Check structured data
+        working-directory: web
+        run: |
+          pnpm run test:structured-data
+
       - name: Check Build
         working-directory: web
         run: |
@@ -47,7 +52,7 @@ jobs:
 
       - uses: actions/setup-go@v6
         with:
-          go-version: '1.25.0'
+          go-version: "1.25.0"
           cache-dependency-path: backend/go.sum
 
       - uses: taiki-e/install-action@just

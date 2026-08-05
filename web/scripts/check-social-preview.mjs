@@ -15,7 +15,7 @@ const assertContains = (source, expected, label) => {
   assert.ok(source.includes(expected), `${label} must include ${expected}`);
 };
 
-assertContains(pageSource, "const canonicalUrl = 'https://square.degov.ai/';", 'Square canonical');
+assertContains(pageSource, 'const canonicalUrl = SQUARE_CANONICAL_URL;', 'Square canonical');
 assertContains(pageSource, `const shareImageUrl = '${expectedImageUrl}';`, 'Square share image');
 assertContains(pageSource, 'width: 1200', 'Open Graph image width');
 assertContains(pageSource, 'height: 630', 'Open Graph image height');

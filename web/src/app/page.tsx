@@ -1,5 +1,9 @@
 import { HomeClient } from './_components/home-client';
 import { getPublicDaoDirectory } from '@/lib/public-dao-directory';
+import {
+  buildSquareDirectoryStructuredData,
+  SQUARE_CANONICAL_URL
+} from '@/lib/square-structured-data';
 
 import Link from 'next/link';
 import type { Metadata } from 'next';
@@ -7,7 +11,7 @@ import type { Metadata } from 'next';
 const title = 'DeGov Square DAO Directory';
 const description =
   'Discover public DAO governance sites, proposal activity, supported networks, and DeGov-managed governance communities.';
-const canonicalUrl = 'https://square.degov.ai/';
+const canonicalUrl = SQUARE_CANONICAL_URL;
 const shareImageUrl = 'https://degov.ai/images/degov-social-card.png';
 const shareImageAlt = 'DeGov Square DAO Directory — discover public DAO governance.';
 const directorySourceUrl = 'https://github.com/ringecosystem/degov-registry';
@@ -72,6 +76,7 @@ export default async function Home() {
   const directoryCountText = initialDirectory.failed
     ? 'temporarily unavailable in server HTML'
     : `${initialDirectory.daos.length} public DAOs`;
+  const directoryStructuredData = buildSquareDirectoryStructuredData(representativeDaos);
 
   return (
     <main>
@@ -125,6 +130,14 @@ export default async function Home() {
           </p>
         )}
       </section>
+      {directoryStructuredData ? (
+        <script
+          id="square-directory-structured-data"
+          type="application/ld+json"
+          suppressHydrationWarning
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(directoryStructuredData) }}
+        />
+      ) : null}
       <HomeClient
         initialDaoData={initialDirectory.daos}
         initialLoadFailed={initialDirectory.failed}
