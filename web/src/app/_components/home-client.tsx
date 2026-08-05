@@ -10,6 +10,7 @@ import { SortableCell } from '@/components/sortable-cell';
 import { Button } from '@/components/ui/button';
 import TagGroup from '@/components/ui/tag-group';
 import { useGraphqlDaoData } from '@/hooks/useGraphqlDaoData';
+import { trackSquareDaoClick } from '@/lib/analytics';
 import { useMiniApp } from '@/provider/miniapp';
 import type { DaoInfo } from '@/utils/config';
 import { formatNetworkName, formatTimeAgo } from '@/utils/helper';
@@ -97,6 +98,7 @@ export function HomeClient({ initialDaoData, initialLoadFailed }: HomeClientProp
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-[10px] hover:underline"
+              onClick={() => trackSquareDaoClick(value.code, value.website)}
             >
               <Image
                 src={value?.daoIcon}
