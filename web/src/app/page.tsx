@@ -2,6 +2,7 @@ import { HomeClient } from './_components/home-client';
 import { getPublicDaoDirectory } from '@/lib/public-dao-directory';
 import {
   buildSquareDirectoryStructuredData,
+  serializeJsonLd,
   SQUARE_CANONICAL_URL
 } from '@/lib/square-structured-data';
 
@@ -135,7 +136,7 @@ export default async function Home() {
           id="square-directory-structured-data"
           type="application/ld+json"
           suppressHydrationWarning
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(directoryStructuredData) }}
+          dangerouslySetInnerHTML={{ __html: serializeJsonLd(directoryStructuredData) }}
         />
       ) : null}
       <HomeClient

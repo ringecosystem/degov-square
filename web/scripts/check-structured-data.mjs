@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 import {
   buildSquareDirectoryStructuredData,
   DEGOV_PUBLISHER_ID,
+  serializeJsonLd,
   SQUARE_CANONICAL_URL,
   SQUARE_COLLECTION_ID,
   SQUARE_ITEM_LIST_ID,
@@ -25,7 +26,9 @@ const hiddenDao = { name: 'Hidden DAO', websiteUrl: 'https://hidden.example/' };
 const structuredData = buildSquareDirectoryStructuredData(visibleDaos);
 assert.ok(structuredData, 'visible directory items must produce structured data');
 
-const parsed = JSON.parse(JSON.stringify(structuredData));
+const serialized = serializeJsonLd(structuredData);
+assert.ok(!serialized.includes('<'), 'serialized JSON-LD must escape literal < characters');
+const parsed = JSON.parse(serialized);
 const website = parsed.find((item) => item['@type'] === 'WebSite');
 const collectionPage = parsed.find((item) => item['@type'] === 'CollectionPage');
 assert.ok(website, 'Square directory structured data must include WebSite');
@@ -72,6 +75,14 @@ assert.equal(
   null,
   'directory structured data must be omitted without visible items'
 );
+assert.ok(
+  serializeJsonLd(
+    buildSquareDirectoryStructuredData([
+      { name: 'Bad </script><script>alert(1)</script>', websiteUrl: 'https://example.com/' }
+    ])
+  ).includes('\\u003c/script>'),
+  'JSON-LD serialization must harden script-closing DAO names'
+);
 
 const pageSource = read('src/app/page.tsx');
 assert.ok(
@@ -79,6 +90,12 @@ assert.ok(
     'const directoryStructuredData = buildSquareDirectoryStructuredData(representativeDaos);'
   ),
   'page must derive JSON-LD from the same representative DAO items shown in initial HTML'
+);
+assert.ok(
+  pageSource.includes(
+    'dangerouslySetInnerHTML={{ __html: serializeJsonLd(directoryStructuredData) }}'
+  ),
+  'page must inject escaped JSON-LD rather than raw JSON.stringify output'
 );
 assert.ok(
   pageSource.includes('id="square-directory-structured-data"'),
