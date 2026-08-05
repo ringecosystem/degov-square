@@ -10,7 +10,7 @@ const assertContains = (source, expected, label) => {
   assert.ok(source.includes(expected), `${label} must include ${expected}`);
 };
 
-assertContains(pageSource, "const canonicalUrl = 'https://square.degov.ai/';", 'Square canonical');
+assertContains(pageSource, 'const canonicalUrl = SQUARE_CANONICAL_URL;', 'Square canonical');
 assertContains(pageSource, '<h1', 'Square homepage');
 assertContains(pageSource, 'DeGov Square DAO Directory', 'Square H1 text');
 assertContains(pageSource, 'Square indexes public DAO governance sites', 'Directory description');
