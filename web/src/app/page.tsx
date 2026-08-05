@@ -1,319 +1,148 @@
-'use client';
-import Image from 'next/image';
+import { HomeClient } from './_components/home-client';
+import { getPublicDaoDirectory } from '@/lib/public-dao-directory';
+import {
+  buildSquareDirectoryStructuredData,
+  serializeJsonLd,
+  SQUARE_CANONICAL_URL
+} from '@/lib/square-structured-data';
+
 import Link from 'next/link';
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import type { Metadata } from 'next';
 
-import type { ColumnType } from '@/components/custom-table';
-import { CustomTable } from '@/components/custom-table';
-import { LikeButton } from '@/components/like-button';
-import { SortableCell } from '@/components/sortable-cell';
-import { Button } from '@/components/ui/button';
-import TagGroup from '@/components/ui/tag-group';
-import { useGraphqlDaoData } from '@/hooks/useGraphqlDaoData';
-import { useMiniApp } from '@/provider/miniapp';
-import type { DaoInfo } from '@/utils/config';
-import { formatNetworkName, formatTimeAgo } from '@/utils/helper';
+const title = 'DeGov Square DAO Directory';
+const description =
+  'Discover public DAO governance sites, proposal activity, supported networks, and DeGov-managed governance communities.';
+const canonicalUrl = SQUARE_CANONICAL_URL;
+const shareImageUrl = 'https://degov.ai/images/degov-social-card.png';
+const shareImageAlt = 'DeGov Square DAO Directory — discover public DAO governance.';
+const directorySourceUrl = 'https://github.com/ringecosystem/degov-registry';
 
-import { DaoList } from './_components/daoList';
-import { MobileSearchDialog } from './_components/MobileSearchDialog';
-
-type SortState = 'asc' | 'desc';
-
-export default function Home() {
-  const { daoData, isLoading } = useGraphqlDaoData();
-  const { isMiniApp, markReady } = useMiniApp();
-  const readySentRef = useRef(false);
-
-  const [sortState, setSortState] = useState<SortState | undefined>(undefined);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [openSearchDialog, setOpenSearchDialog] = useState(false);
-  const [selectedNetwork, setSelectedNetwork] = useState<string>('');
-
-  const filteredAndSortedData = useMemo(() => {
-    let filtered = daoData;
-
-    if (selectedNetwork) {
-      filtered = filtered.filter(
-        (dao) => dao.network.toLowerCase() === selectedNetwork.toLowerCase()
-      );
+function getHttpUrl(value: string) {
+  try {
+    const url = new URL(value);
+    if (url.protocol === 'http:' || url.protocol === 'https:') {
+      return url.toString();
     }
+  } catch {
+    return null;
+  }
 
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase().trim();
-      filtered = filtered.filter(
-        (dao) =>
-          dao.name.toLowerCase().includes(query) ||
-          dao.network.toLowerCase().includes(query) ||
-          dao.code.toLowerCase().includes(query)
-      );
-    }
+  return null;
+}
 
-    if (sortState) {
-      filtered = [...filtered].sort((a, b) => {
-        const aProposals = a.proposals || 0;
-        const bProposals = b.proposals || 0;
-        return sortState === 'asc' ? aProposals - bProposals : bProposals - aProposals;
-      });
-      return filtered;
-    }
-
-    const sortByLastProposal = (a: DaoInfo, b: DaoInfo) => {
-      const aTime = a.lastProposal?.proposalCreatedAt;
-      const bTime = b.lastProposal?.proposalCreatedAt;
-
-      if (aTime && bTime) {
-        return new Date(bTime).getTime() - new Date(aTime).getTime();
+export const metadata: Metadata = {
+  title,
+  description,
+  alternates: {
+    canonical: canonicalUrl
+  },
+  openGraph: {
+    type: 'website',
+    siteName: 'DeGov Square',
+    title,
+    description,
+    url: canonicalUrl,
+    images: [
+      {
+        url: shareImageUrl,
+        width: 1200,
+        height: 630,
+        alt: shareImageAlt,
+        type: 'image/png'
       }
-
-      if (aTime && !bTime) return -1;
-      if (!aTime && bTime) return 1;
-
-      return 0;
-    };
-
-    const favorites = filtered.filter((dao) => dao.favorite).sort(sortByLastProposal);
-    const others = filtered.filter((dao) => !dao.favorite).sort(sortByLastProposal);
-
-    return [...favorites, ...others];
-  }, [daoData, searchQuery, selectedNetwork, sortState]);
-
-  const columns: ColumnType<DaoInfo>[] = [
-    {
-      title: 'Name',
-      key: 'name',
-      className: 'w-[34.48%] text-left',
-      render(value) {
-        return (
-          <div className="flex items-center gap-[10px]">
-            <Link
-              href={value?.website}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-[10px] hover:underline"
-            >
-              <Image
-                src={value?.daoIcon}
-                alt="dao"
-                width={34}
-                height={34}
-                className="rounded-full"
-              />
-              <span className="text-[16px]">{value?.name}</span>
-            </Link>
-            <TagGroup dao={value} />
-          </div>
-        );
+    ]
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title,
+    description,
+    images: [
+      {
+        url: shareImageUrl,
+        alt: shareImageAlt
       }
-    },
-    {
-      title: 'Network',
-      key: 'network',
-      className: 'w-[18.97%] text-left',
-      render(value) {
-        return (
-          <div
-            className="flex cursor-pointer items-center justify-start gap-[10px] transition-opacity hover:opacity-80"
-            onClick={() => {
-              setSelectedNetwork(value?.network || '');
-              setSearchQuery('');
-            }}
-          >
-            <Image
-              src={value?.networkIcon}
-              alt="network"
-              width={24}
-              height={24}
-              className="rounded-full"
-            />
-            <span className="text-[16px]">{formatNetworkName(value?.network)}</span>
-          </div>
-        );
-      }
-    },
-    {
-      title: 'Last Proposal',
-      key: 'lastProposal',
-      className: 'w-[18.97%] text-left',
-      render(value) {
-        const proposalLink = value?.lastProposal?.proposalLink;
-        const proposalTime = value?.lastProposal?.proposalCreatedAt;
+    ]
+  }
+};
 
-        if (!proposalLink) {
-          return <span className="text-[16px]">No proposals yet</span>;
-        }
+export const dynamic = 'force-dynamic';
 
-        return (
-          <Link
-            href={proposalLink}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-[6px] text-[16px] hover:underline"
-            title="View latest proposal"
-          >
-            <span className="text-[16px]">{formatTimeAgo(proposalTime || '')}</span>
-          </Link>
-        );
-      }
-    },
-    {
-      title: <SortableCell onClick={setSortState} sortState={sortState} />,
-      key: 'proposals',
-      className: 'w-[18.97%] text-center',
-      render(value) {
-        return <span className="text-[16px]">{value?.proposals}</span>;
-      }
-    },
-    {
-      title: 'Action',
-      key: 'action',
-      className: 'w-[8.62%] text-right',
-      render(value) {
-        return (
-          <div className="flex items-center justify-end gap-[10px]">
-            {/* <Link
-              href={`/setting/${value?.id}`}
-              className="cursor-pointer transition-opacity hover:opacity-80"
-            >
-              <Image src="/setting.svg" alt="setting" width={20} height={20} />
-            </Link> */}
-            <LikeButton dao={value} isLiked={value.favorite} className="flex-shrink-0" />
-          </div>
-        );
-      }
-    }
-  ];
-
-  const handleSearch = useCallback((query: string) => {
-    setSearchQuery(query);
-    setSelectedNetwork('');
-    setOpenSearchDialog(false);
-  }, []);
-
-  const handleDesktopSearch = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchQuery(e.target.value);
-    setSelectedNetwork('');
-  }, []);
-
-  const clearSearch = useCallback(() => {
-    setSearchQuery('');
-    setSelectedNetwork('');
-  }, []);
-
-  const openMobileSearch = useCallback(() => {
-    setOpenSearchDialog(true);
-  }, []);
-
-  useEffect(() => {
-    if (!isMiniApp || isLoading || readySentRef.current) return;
-    readySentRef.current = true;
-    void markReady();
-  }, [isMiniApp, isLoading, markReady]);
-
-  useEffect(() => {
-    return () => {
-      setSortState(undefined);
-    };
-  }, []);
+export default async function Home() {
+  const initialDirectory = await getPublicDaoDirectory();
+  const representativeDaos = initialDirectory.daos
+    .map((dao) => ({ ...dao, websiteUrl: getHttpUrl(dao.website) }))
+    .filter((dao): dao is typeof dao & { websiteUrl: string } => Boolean(dao.websiteUrl))
+    .slice(0, 6);
+  const directoryReadAt = new Date().toISOString().replace(/\.\d{3}Z$/, 'Z');
+  const directoryCountText = initialDirectory.failed
+    ? 'temporarily unavailable in server HTML'
+    : `${initialDirectory.daos.length} public DAOs`;
+  const directoryStructuredData = buildSquareDirectoryStructuredData(representativeDaos);
 
   return (
-    <div className="container flex flex-col gap-[20px]">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-[10px]">
-          <span className="text-[18px] font-semibold">
-            All DAOs({filteredAndSortedData.length}
-            {(searchQuery || selectedNetwork) &&
-              daoData.length !== filteredAndSortedData.length && (
-                <span className="text-muted-foreground">/{daoData.length}</span>
-              )}
-            )
-          </span>
+    <main>
+      <section className="container flex flex-col gap-[12px] pt-[8px] pb-[24px] md:pb-[32px]">
+        <div className="flex flex-col gap-[8px]">
+          <h1 className="text-[28px] leading-[1.15] font-semibold md:text-[40px]">
+            DeGov Square DAO Directory
+          </h1>
+          <p className="text-muted-foreground max-w-[760px] text-[15px] leading-[1.6] md:text-[16px]">
+            Square indexes public DAO governance sites, supported networks, and proposal activity
+            from DeGov registry-backed directory data.
+          </p>
         </div>
-        <div className="flex items-center gap-[20px]">
-          <div className="bg-card flex h-[36px] w-[109px] items-center gap-[13px] rounded-[19px] border px-[17px] py-[9px] md:h-auto md:w-[388px] md:gap-[10px]">
-            <Image src="/search.svg" alt="search" width={16} height={16} />
-            <input
-              className="placeholder:text-muted-foreground hidden h-[17px] w-full outline-none placeholder:text-[14px] md:block"
-              placeholder="Search by DAO name or Chain name"
-              value={selectedNetwork ? formatNetworkName(selectedNetwork) : searchQuery}
-              onChange={handleDesktopSearch}
-            />
-            <button
-              className="text-muted-foreground block text-[14px] md:hidden"
-              onClick={openMobileSearch}
+        <div className="text-muted-foreground flex flex-col gap-[8px] text-[14px] leading-[1.6] md:flex-row md:flex-wrap md:gap-x-[24px]">
+          <p>
+            Directory count:{' '}
+            <strong className="text-foreground font-medium">{directoryCountText}</strong>.
+          </p>
+          <p>
+            Source:{' '}
+            <Link
+              href={directorySourceUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-foreground underline underline-offset-4"
             >
-              Search
-            </button>
-            {(searchQuery || selectedNetwork) && (
-              <button
-                onClick={clearSearch}
-                className="text-muted-foreground hover:text-foreground hidden items-center justify-center md:flex"
-                title="Clear search"
-              >
-                <Image src="/close.svg" alt="clear" width={12} height={12} />
-              </button>
-            )}
-          </div>
-          <div className="hidden gap-[20px] md:flex">
-            <Button variant="outline" className="hidden rounded-[100px]" asChild>
-              <Link href="/add/existing">Add Existing DAO</Link>
-            </Button>
-            <Button
-              variant="outline"
-              className="!border-foreground rounded-[100px] p-[10px]"
-              asChild
-            >
+              DeGov public DAO registry
+            </Link>
+            .
+          </p>
+          <p>Last server read: {directoryReadAt}.</p>
+        </div>
+        {representativeDaos.length > 0 ? (
+          <nav aria-label="Representative public DAOs" className="flex flex-wrap gap-[8px]">
+            {representativeDaos.map((dao) => (
               <Link
-                href="https://docs.degov.ai/integration/deploy"
+                key={dao.id}
+                href={dao.websiteUrl}
                 target="_blank"
                 rel="noopener noreferrer"
+                className="border-border hover:bg-accent rounded-[4px] border px-[10px] py-[6px] text-[14px] transition-colors"
               >
-                Self Host
+                {dao.name}
               </Link>
-            </Button>
-          </div>
-        </div>
-      </div>
-
-      {
-        <>
-          <CustomTable
-            columns={columns}
-            dataSource={filteredAndSortedData}
-            className="hidden md:block"
-            rowKey="id"
-            isLoading={isLoading}
-            emptyText="No DAOs found"
-          />
-          <DaoList
-            daoInfo={filteredAndSortedData}
-            isLoading={isLoading}
-            onNetworkClick={(network) => {
-              setSelectedNetwork(network);
-              setSearchQuery('');
-            }}
-          />
-        </>
-      }
-
-      <div className="flex flex-col py-[20px] md:hidden">
-        <Button variant="outline" className="!border-foreground rounded-[100px] p-[10px]" asChild>
-          <Link
-            href="https://docs.degov.ai/integration/deploy"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Self Host
-          </Link>
-        </Button>
-      </div>
-      <MobileSearchDialog
-        open={openSearchDialog}
-        onOpenChange={setOpenSearchDialog}
-        onConfirm={handleSearch}
-        initialQuery={searchQuery}
-        selectedNetwork={selectedNetwork}
-        formatNetworkName={formatNetworkName}
+            ))}
+          </nav>
+        ) : (
+          <p className="text-muted-foreground text-[14px] leading-[1.6]">
+            Representative DAO links are temporarily unavailable in server HTML; the browser
+            directory retries against the public API.
+          </p>
+        )}
+      </section>
+      {directoryStructuredData ? (
+        <script
+          id="square-directory-structured-data"
+          type="application/ld+json"
+          suppressHydrationWarning
+          dangerouslySetInnerHTML={{ __html: serializeJsonLd(directoryStructuredData) }}
+        />
+      ) : null}
+      <HomeClient
+        initialDaoData={initialDirectory.daos}
+        initialLoadFailed={initialDirectory.failed}
       />
-    </div>
+    </main>
   );
 }

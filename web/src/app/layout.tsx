@@ -1,5 +1,4 @@
 import { Geist, Geist_Mono } from 'next/font/google';
-import Script from 'next/script';
 import './globals.css';
 import { ToastContainer } from 'react-toastify';
 
@@ -12,14 +11,15 @@ import {
   APP_URL,
   APP_ICON_URL,
   APP_SPLASH_IMAGE_URL,
-  APP_SPLASH_BACKGROUND_COLOR,
-  GOOGLE_ANALYTICS_TAG
+  APP_SPLASH_BACKGROUND_COLOR
 } from '@/config/base';
 import { ConfirmProvider } from '@/provider/confirm';
 import { DAppProvider } from '@/provider/dapp';
 import { MiniAppProvider } from '@/provider/miniapp';
 import { QueryProvider } from '@/provider/query';
 import { NextThemeProvider } from '@/provider/theme';
+
+import { Analytics } from './analytics';
 
 import type { Metadata } from 'next';
 
@@ -87,22 +87,7 @@ export default function RootLayout({
           </QueryProvider>
         </NextThemeProvider>
 
-        {GOOGLE_ANALYTICS_TAG && (
-          <Script
-            src={`https://www.googletagmanager.com/gtag/js?id=${GOOGLE_ANALYTICS_TAG}`}
-            strategy="afterInteractive"
-          />
-        )}
-        {GOOGLE_ANALYTICS_TAG && (
-          <Script id="google-analytics" strategy="afterInteractive">
-            {`
-              window.dataLayer = window.dataLayer || [];
-              function gtag(){dataLayer.push(arguments);}
-              gtag('js', new Date());
-              gtag('config', '${GOOGLE_ANALYTICS_TAG}');
-            `}
-          </Script>
-        )}
+        <Analytics />
       </body>
     </html>
   );

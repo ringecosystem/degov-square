@@ -1,7 +1,6 @@
 'use client';
 
 import { ShieldCheck } from 'lucide-react';
-import { useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { ConnectButton } from '@/components/connect-button';
@@ -18,8 +17,12 @@ import {
 import { getToken, useAuthStore } from '@/stores/auth';
 
 export const OAuthAuthorizeClient = () => {
-  const searchParams = useSearchParams();
-  const queryString = searchParams.toString();
+  const [queryString, setQueryString] = useState('');
+
+  useEffect(() => {
+    setQueryString(window.location.hash.slice(1) || window.location.search.slice(1));
+  }, []);
+
   const authorizeParams = useMemo(
     () => getOAuthAuthorizeParams(new URLSearchParams(queryString)),
     [queryString]

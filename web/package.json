@@ -6,6 +6,10 @@
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",
+    "test:content-provenance": "node scripts/check-content-provenance.mjs",
+    "test:private-route-indexing": "node scripts/check-private-route-indexing.mjs",
+    "test:social-preview": "node scripts/check-social-preview.mjs",
+    "test:structured-data": "node --experimental-strip-types scripts/check-structured-data.mjs",
     "start": "next start",
     "lint": "next lint"
   },
