@@ -2,16 +2,8 @@ export const SQUARE_CANONICAL_URL = 'https://square.degov.ai/';
 export const DEGOV_PUBLISHER_ID = 'https://degov.ai/#organization';
 export const SQUARE_WEBSITE_ID = `${SQUARE_CANONICAL_URL}#website`;
 export const SQUARE_COLLECTION_ID = `${SQUARE_CANONICAL_URL}#dao-directory`;
-export const SQUARE_ITEM_LIST_ID = `${SQUARE_CANONICAL_URL}#dao-directory-items`;
 
-export type SquareDirectoryStructuredDataItem = {
-  name: string;
-  websiteUrl: string;
-};
-
-export function buildSquareDirectoryStructuredData(items: SquareDirectoryStructuredDataItem[]) {
-  if (items.length === 0) return null;
-
+export function buildSquareDirectoryStructuredData() {
   return [
     {
       '@context': 'https://schema.org',
@@ -36,18 +28,6 @@ export function buildSquareDirectoryStructuredData(items: SquareDirectoryStructu
       },
       publisher: {
         '@id': DEGOV_PUBLISHER_ID
-      },
-      mainEntity: {
-        '@id': SQUARE_ITEM_LIST_ID,
-        '@type': 'ItemList',
-        name: 'Representative public DAOs',
-        numberOfItems: items.length,
-        itemListElement: items.map((item, index) => ({
-          '@type': 'ListItem',
-          position: index + 1,
-          name: item.name,
-          url: item.websiteUrl
-        }))
       }
     }
   ];

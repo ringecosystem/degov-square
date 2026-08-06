@@ -7,6 +7,7 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "test:content-provenance": "node scripts/check-content-provenance.mjs",
+    "test:rendered-content-provenance": "node scripts/check-rendered-content-provenance.mjs",
     "test:dao-discovery-analytics": "node --experimental-strip-types scripts/check-dao-discovery-analytics.mjs",
     "test:private-route-indexing": "node scripts/check-private-route-indexing.mjs",
     "test:social-preview": "node scripts/check-social-preview.mjs",

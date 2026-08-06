@@ -17,19 +17,6 @@ const shareImageUrl = 'https://degov.ai/images/degov-social-card.png';
 const shareImageAlt = 'DeGov Square DAO Directory — discover public DAO governance.';
 const directorySourceUrl = 'https://github.com/ringecosystem/degov-registry';
 
-function getHttpUrl(value: string) {
-  try {
-    const url = new URL(value);
-    if (url.protocol === 'http:' || url.protocol === 'https:') {
-      return url.toString();
-    }
-  } catch {
-    return null;
-  }
-
-  return null;
-}
-
 export const metadata: Metadata = {
   title,
   description,
@@ -69,15 +56,10 @@ export const dynamic = 'force-dynamic';
 
 export default async function Home() {
   const initialDirectory = await getPublicDaoDirectory();
-  const representativeDaos = initialDirectory.daos
-    .map((dao) => ({ ...dao, websiteUrl: getHttpUrl(dao.website) }))
-    .filter((dao): dao is typeof dao & { websiteUrl: string } => Boolean(dao.websiteUrl))
-    .slice(0, 6);
-  const directoryReadAt = new Date().toISOString().replace(/\.\d{3}Z$/, 'Z');
   const directoryCountText = initialDirectory.failed
     ? 'temporarily unavailable in server HTML'
     : `${initialDirectory.daos.length} public DAOs`;
-  const directoryStructuredData = buildSquareDirectoryStructuredData(representativeDaos);
+  const directoryStructuredData = buildSquareDirectoryStructuredData();
 
   return (
     <main>
@@ -108,37 +90,14 @@ export default async function Home() {
             </Link>
             .
           </p>
-          <p>Last server read: {directoryReadAt}.</p>
         </div>
-        {representativeDaos.length > 0 ? (
-          <nav aria-label="Representative public DAOs" className="flex flex-wrap gap-[8px]">
-            {representativeDaos.map((dao) => (
-              <Link
-                key={dao.id}
-                href={dao.websiteUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="border-border hover:bg-accent rounded-[4px] border px-[10px] py-[6px] text-[14px] transition-colors"
-              >
-                {dao.name}
-              </Link>
-            ))}
-          </nav>
-        ) : (
-          <p className="text-muted-foreground text-[14px] leading-[1.6]">
-            Representative DAO links are temporarily unavailable in server HTML; the browser
-            directory retries against the public API.
-          </p>
-        )}
       </section>
-      {directoryStructuredData ? (
-        <script
-          id="square-directory-structured-data"
-          type="application/ld+json"
-          suppressHydrationWarning
-          dangerouslySetInnerHTML={{ __html: serializeJsonLd(directoryStructuredData) }}
-        />
-      ) : null}
+      <script
+        id="square-directory-structured-data"
+        type="application/ld+json"
+        suppressHydrationWarning
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(directoryStructuredData) }}
+      />
       <HomeClient
         initialDaoData={initialDirectory.daos}
         initialLoadFailed={initialDirectory.failed}

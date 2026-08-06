@@ -20,31 +20,41 @@ assertContains(
   "const directorySourceUrl = 'https://github.com/ringecosystem/degov-registry';",
   'Directory provenance URL'
 );
-assertContains(pageSource, 'Last server read:', 'Directory freshness text');
-assertContains(pageSource, 'function getHttpUrl(value: string)', 'Representative link URL guard');
-assertContains(
-  pageSource,
-  "url.protocol === 'http:' || url.protocol === 'https:'",
-  'HTTP URL guard'
-);
-assertContains(pageSource, 'return url.toString();', 'Representative URL normalization');
-assertContains(
-  pageSource,
-  '.map((dao) => ({ ...dao, websiteUrl: getHttpUrl(dao.website) }))',
-  'Representative DAO URL normalization'
-);
-assertContains(
-  pageSource,
-  '.filter((dao): dao is typeof dao & { websiteUrl: string } => Boolean(dao.websiteUrl))',
-  'Representative DAO selection'
-);
-assertContains(pageSource, 'href={dao.websiteUrl}', 'Representative DAO safe href');
-assertContains(pageSource, 'aria-label="Representative public DAOs"', 'Representative DAO links');
-assertContains(
-  pageSource,
-  'Representative DAO links are temporarily unavailable in server HTML',
-  'Directory unavailable fallback'
-);
 assertContains(pageSource, 'initialLoadFailed={initialDirectory.failed}', 'Client retry state');
+assertContains(pageSource, 'initialDaoData={initialDirectory.daos}', 'Initial directory data');
+
+assert.ok(
+  !pageSource.includes('Last server read:') && !pageSource.includes('new Date()'),
+  'page must not present request/render time as directory freshness'
+);
+assert.ok(
+  !pageSource.includes('representativeDaos') &&
+    !pageSource.includes('Representative public DAOs') &&
+    !pageSource.includes('.slice(0, 6)'),
+  'page must not emit a duplicate arbitrary representative DAO navigation'
+);
+
+const homeClientSource = readFileSync(join(webRoot, 'src/app/_components/home-client.tsx'), 'utf8');
+const daoListSource = readFileSync(join(webRoot, 'src/app/_components/daoList.tsx'), 'utf8');
+const daoItemSource = readFileSync(join(webRoot, 'src/app/_components/daoItem.tsx'), 'utf8');
+
+assertContains(
+  homeClientSource,
+  'const displayDaoData = daoData.length > 0 ? daoData : initialDaoData;',
+  'HomeClient initial DAO authority'
+);
+assertContains(
+  homeClientSource,
+  'dataSource={filteredAndSortedData}',
+  'Desktop initial directory table'
+);
+assertContains(
+  homeClientSource,
+  'daoInfo={filteredAndSortedData}',
+  'Mobile initial directory list'
+);
+assertContains(homeClientSource, 'href={value?.website}', 'Desktop DAO links');
+assertContains(daoListSource, '<DaoItem {...v} key={v.id}', 'Mobile DAO item render');
+assertContains(daoItemSource, 'href={website}', 'Mobile DAO links');
 
 console.log('Verified Square content provenance contract.');
