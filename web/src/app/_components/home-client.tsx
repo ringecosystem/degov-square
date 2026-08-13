@@ -22,10 +22,9 @@ type SortState = 'asc' | 'desc';
 
 interface HomeClientProps {
   initialDaoData: DaoInfo[];
-  initialLoadFailed: boolean;
 }
 
-export function HomeClient({ initialDaoData, initialLoadFailed }: HomeClientProps) {
+export function HomeClient({ initialDaoData }: HomeClientProps) {
   const { daoData, isLoading } = useGraphqlDaoData();
   const { isMiniApp, markReady } = useMiniApp();
   const readySentRef = useRef(false);
@@ -227,7 +226,7 @@ export function HomeClient({ initialDaoData, initialLoadFailed }: HomeClientProp
   return (
     <div className="container flex flex-col gap-[20px]">
       <div className="flex items-center justify-between">
-        <div className="flex flex-col gap-[4px]">
+        <div className="flex items-center gap-[10px]">
           <span className="text-[18px] font-semibold">
             All DAOs({filteredAndSortedData.length}
             {(searchQuery || selectedNetwork) &&
@@ -236,15 +235,6 @@ export function HomeClient({ initialDaoData, initialLoadFailed }: HomeClientProp
               )}
             )
           </span>
-          <span className="text-muted-foreground text-[14px]">
-            Discover public DAO governance sites, networks, and proposal activity.
-          </span>
-          {initialLoadFailed && filteredAndSortedData.length === 0 ? (
-            <span className="text-muted-foreground text-[14px]">
-              DAO directory data is temporarily unavailable. The interactive directory will retry in
-              the browser.
-            </span>
-          ) : null}
         </div>
         <div className="flex items-center gap-[20px]">
           <div className="bg-card flex h-[36px] w-[109px] items-center gap-[13px] rounded-[19px] border px-[17px] py-[9px] md:h-auto md:w-[388px] md:gap-[10px]">
