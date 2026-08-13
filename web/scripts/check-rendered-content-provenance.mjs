@@ -90,13 +90,20 @@ try {
   const successHtml = await fetchRenderedHome();
   assert.match(successHtml, /Fixture Governance DAO/);
   assert.match(successHtml, /href="https:\/\/fixture\.degov\.ai\/"/);
-  assert.doesNotMatch(successHtml, /Representative public DAOs|Last server read:|ItemList/);
+  assert.match(successHtml, /All DAOs/);
+  assert.doesNotMatch(
+    successHtml,
+    /Representative public DAOs|Last server read:|ItemList|Square indexes public DAO governance sites|DeGov public DAO registry|Directory count:/
+  );
 
   fixtureFails = true;
   const failureHtml = await fetchRenderedHome();
-  assert.match(failureHtml, /temporarily unavailable in server HTML/);
-  assert.match(failureHtml, /DAO directory data is temporarily unavailable/);
+  assert.match(failureHtml, /All DAOs/);
   assert.doesNotMatch(failureHtml, /Fixture Governance DAO|href="https:\/\/fixture\.degov\.ai\/"/);
+  assert.doesNotMatch(
+    failureHtml,
+    /temporarily unavailable in server HTML|DAO directory data is temporarily unavailable|Representative DAO links are temporarily unavailable|Directory count:/
+  );
 
   console.log('Verified rendered Square content provenance contract.');
 } finally {
