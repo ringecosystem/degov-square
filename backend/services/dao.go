@@ -87,6 +87,25 @@ func (s *DaoService) GetByCode(code string) (*gqlmodels.Dao, error) {
 	return s.convertToGqlDao(dbDao), nil
 }
 
+// HasFeature reports whether a DAO explicitly enables a feature.
+func (s *DaoService) HasFeature(code, feature string) (bool, error) {
+	var dao dbmodels.Dao
+	if err := s.db.Select("features").Where("code = ?", code).First(&dao).Error; err != nil {
+		return false, err
+	}
+
+	var features []string
+	if err := json.Unmarshal([]byte(dao.Features), &features); err != nil {
+		return false, nil
+	}
+	for _, candidate := range features {
+		if candidate == feature {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
 // ListDAOCodesWithFeature returns DAO codes that have a specific feature enabled
 // Features are stored as JSON array in the database, e.g., ["fulfill", "notify"]
 func (s *DaoService) ListDAOCodesWithFeature(feature string) ([]string, error) {
