@@ -42,3 +42,25 @@ func TestProposalSimulationHandlerRejectsWhenConcurrencyIsFull(t *testing.T) {
 		t.Fatalf("busy response = %d %s", recorder.Code, recorder.Body.String())
 	}
 }
+
+func TestProposalSimulationClientIPTrustsOnlyPrivateProxy(t *testing.T) {
+	publicRequest := httptest.NewRequest(http.MethodPost, "/", nil)
+	publicRequest.RemoteAddr = "203.0.113.10:1234"
+	publicRequest.Header.Set("X-Real-IP", "198.51.100.20")
+	if got := proposalSimulationClientIP(publicRequest); got != "203.0.113.10" {
+		t.Fatalf("public direct client IP = %q", got)
+	}
+
+	proxyRequest := httptest.NewRequest(http.MethodPost, "/", nil)
+	proxyRequest.RemoteAddr = "10.0.0.2:1234"
+	proxyRequest.Header.Set("X-Forwarded-For", "198.51.100.20, 10.0.0.2")
+	if got := proposalSimulationClientIP(proxyRequest); got != "198.51.100.20" {
+		t.Fatalf("trusted proxy client IP = %q", got)
+	}
+
+	proxyRequest.Header.Set("X-Real-IP", "not-an-ip")
+	proxyRequest.Header.Set("X-Forwarded-For", "also-invalid")
+	if got := proposalSimulationClientIP(proxyRequest); got != "10.0.0.2" {
+		t.Fatalf("invalid forwarded client IP = %q", got)
+	}
+}

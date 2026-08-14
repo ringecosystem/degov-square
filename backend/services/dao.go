@@ -3,6 +3,7 @@ package services
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log/slog"
 	"regexp"
 	"strings"
@@ -96,7 +97,7 @@ func (s *DaoService) HasFeature(code, feature string) (bool, error) {
 
 	var features []string
 	if err := json.Unmarshal([]byte(dao.Features), &features); err != nil {
-		return false, nil
+		return false, fmt.Errorf("decode DAO features: %w", err)
 	}
 	for _, candidate := range features {
 		if candidate == feature {

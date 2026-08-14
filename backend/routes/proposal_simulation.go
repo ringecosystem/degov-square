@@ -130,17 +130,25 @@ func (limiter *proposalSimulationLimiter) Allow(ip, daoCode string, now time.Tim
 }
 
 func proposalSimulationClientIP(request *http.Request) string {
-	if value := strings.TrimSpace(request.Header.Get("X-Real-IP")); value != "" {
-		return value
-	}
-	if value := strings.TrimSpace(strings.Split(request.Header.Get("X-Forwarded-For"), ",")[0]); value != "" {
-		return value
-	}
 	host, _, err := net.SplitHostPort(request.RemoteAddr)
-	if err == nil {
-		return host
+	if err != nil {
+		host = request.RemoteAddr
 	}
-	return request.RemoteAddr
+	directIP := net.ParseIP(strings.TrimSpace(host))
+	if directIP == nil {
+		return request.RemoteAddr
+	}
+	if directIP.IsPrivate() || directIP.IsLoopback() {
+		for _, value := range []string{
+			request.Header.Get("X-Real-IP"),
+			strings.Split(request.Header.Get("X-Forwarded-For"), ",")[0],
+		} {
+			if forwardedIP := net.ParseIP(strings.TrimSpace(value)); forwardedIP != nil {
+				return forwardedIP.String()
+			}
+		}
+	}
+	return directIP.String()
 }
 
 func writeProposalSimulationServiceError(w http.ResponseWriter, err error) {

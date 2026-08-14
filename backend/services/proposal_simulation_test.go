@@ -148,6 +148,15 @@ func TestProposalSimulationCapabilityRequiresFeatureAndProvider(t *testing.T) {
 	}
 }
 
+func TestProposalSimulationCapabilityRejectsMalformedFeatures(t *testing.T) {
+	db := newTestProposalSimulationDB(t, "https://rpc.example", `not-json`)
+	service := newProposalSimulationService(db, proposalSimulationConfig{NativeFallback: true})
+
+	if _, err := service.Capability(context.Background(), "demo"); err == nil {
+		t.Fatal("malformed DAO features should return an error")
+	}
+}
+
 func TestProposalSimulationRunsNativeBeforeTenderlyAtSameBlockAndCaches(t *testing.T) {
 	var mu sync.Mutex
 	rpcCalls := map[string]int{}
