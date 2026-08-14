@@ -211,6 +211,14 @@ func (s *ProposalSimulationService) Simulate(ctx context.Context, daoCode, propo
 	}
 	defer client.Close()
 
+	chainID, err := client.ChainID(ctx)
+	if err != nil {
+		return nil, simulationUpstreamError(ctx, err)
+	}
+	if !chainID.IsInt64() || chainID.Int64() != int64(dao.ChainID) {
+		return nil, simulationError("provider_unavailable", fmt.Errorf("RPC chain ID %s does not match DAO chain ID %d", chainID, dao.ChainID))
+	}
+
 	blockNumber, err := client.BlockNumber(ctx)
 	if err != nil {
 		return nil, simulationUpstreamError(ctx, err)
@@ -238,7 +246,8 @@ func (s *ProposalSimulationService) Simulate(ctx context.Context, daoCode, propo
 	}
 
 	call := ethereum.CallMsg{From: validated.Caller, To: &dao.Governor, Value: new(big.Int), Data: validated.ExecuteData}
-	if _, err := client.CallContract(ctx, call, new(big.Int).SetUint64(blockNumber)); err != nil {
+	callResult, err := client.CallContract(ctx, call, new(big.Int).SetUint64(blockNumber))
+	if err != nil {
 		revert, reverted := decodeSimulationRevert(err)
 		if !reverted {
 			return nil, simulationUpstreamError(ctx, err)
@@ -248,6 +257,10 @@ func (s *ProposalSimulationService) Simulate(ctx context.Context, daoCode, propo
 		result.Warnings = append(result.Warnings, "Native RPC simulation does not include traces or state changes.")
 		s.cache.SetDefault(cacheKey, result)
 		return result, nil
+	}
+	outputs, err := governorSimulationABI.Methods["execute"].Outputs.Unpack(callResult)
+	if err != nil || len(outputs) != 1 {
+		return nil, simulationError("provider_unavailable", errors.New("native RPC returned an invalid Governor execute result"))
 	}
 
 	if s.tenderlySupports(dao.ChainID) {
@@ -517,9 +530,7 @@ func (s *ProposalSimulationService) simulateTenderly(
 			ErrorInfo *struct {
 				Message string `json:"error_message"`
 			} `json:"error_info"`
-			CallTrace *struct {
-				Calls json.RawMessage `json:"calls"`
-			} `json:"call_trace"`
+			CallTrace       json.RawMessage `json:"call_trace"`
 			TransactionInfo *struct {
 				Logs         json.RawMessage `json:"logs"`
 				AssetChanges json.RawMessage `json:"asset_changes"`
@@ -538,8 +549,8 @@ func (s *ProposalSimulationService) simulateTenderly(
 	result.Fidelity = "rich"
 	result.Provider = "tenderly"
 	result.GasUsed = rawJSONNumber(payload.Transaction.GasUsed)
-	if payload.Transaction.CallTrace != nil {
-		result.Calls = payload.Transaction.CallTrace.Calls
+	if len(payload.Transaction.CallTrace) > 0 && !bytes.Equal(payload.Transaction.CallTrace, []byte("null")) {
+		result.Calls = payload.Transaction.CallTrace
 	}
 	if payload.Transaction.TransactionInfo != nil {
 		result.Logs = payload.Transaction.TransactionInfo.Logs

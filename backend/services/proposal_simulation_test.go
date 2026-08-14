@@ -165,10 +165,14 @@ func TestProposalSimulationRunsNativeBeforeTenderlyAtSameBlockAndCaches(t *testi
 		rpcCalls[payload.Method]++
 		mu.Unlock()
 		result := "0x"
+		if payload.Method == "eth_chainId" {
+			result = "0x1"
+		}
 		if payload.Method == "eth_blockNumber" {
 			result = "0x123"
 		}
 		if payload.Method == "eth_call" {
+			result = "0x" + strings.Repeat("0", 63) + "1"
 			var transaction map[string]any
 			if err := json.Unmarshal(payload.Params[0], &transaction); err != nil {
 				t.Errorf("decode eth_call transaction: %v", err)
@@ -201,7 +205,7 @@ func TestProposalSimulationRunsNativeBeforeTenderlyAtSameBlockAndCaches(t *testi
 			t.Errorf("Tenderly payload = %#v", payload)
 		}
 		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"transaction":{"status":true,"gas_used":123,"call_trace":{"calls":[]},"transaction_info":{"logs":[],"asset_changes":[],"state_diff":[]}},"simulation":{"id":"sim-1"}}`))
+		_, _ = w.Write([]byte(`{"transaction":{"status":true,"gas_used":123,"call_trace":[],"transaction_info":{"logs":[],"asset_changes":[],"state_diff":[]}},"simulation":{"id":"sim-1"}}`))
 	}))
 	defer tenderlyServer.Close()
 
@@ -234,6 +238,10 @@ func TestProposalSimulationReturnsNativeRevertWithoutTenderly(t *testing.T) {
 		}
 		_ = json.NewDecoder(request.Body).Decode(&payload)
 		w.Header().Set("Content-Type", "application/json")
+		if payload.Method == "eth_chainId" {
+			fmt.Fprintf(w, `{"jsonrpc":"2.0","id":%s,"result":"0x1"}`, payload.ID)
+			return
+		}
 		if payload.Method == "eth_blockNumber" {
 			fmt.Fprintf(w, `{"jsonrpc":"2.0","id":%s,"result":"0x123"}`, payload.ID)
 			return
@@ -255,6 +263,45 @@ func TestProposalSimulationReturnsNativeRevertWithoutTenderly(t *testing.T) {
 	}
 	if result.Status != "reverted" || result.Fidelity != "basic" || result.Revert == nil || tenderlyCalls != 0 {
 		t.Fatalf("revert result = %#v, tenderly calls = %d", result, tenderlyCalls)
+	}
+}
+
+func TestProposalSimulationRejectsWrongChainAndEmptyExecuteResult(t *testing.T) {
+	for _, test := range []struct {
+		name       string
+		chainID    string
+		callResult string
+	}{
+		{name: "wrong chain", chainID: "0x2", callResult: "0x" + strings.Repeat("0", 63) + "1"},
+		{name: "empty execute result", chainID: "0x1", callResult: "0x"},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			rpcServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, request *http.Request) {
+				var payload struct {
+					ID     json.RawMessage `json:"id"`
+					Method string          `json:"method"`
+				}
+				_ = json.NewDecoder(request.Body).Decode(&payload)
+				result := test.callResult
+				switch payload.Method {
+				case "eth_chainId":
+					result = test.chainID
+				case "eth_blockNumber":
+					result = "0x123"
+				}
+				w.Header().Set("Content-Type", "application/json")
+				fmt.Fprintf(w, `{"jsonrpc":"2.0","id":%s,"result":%q}`, payload.ID, result)
+			}))
+			defer rpcServer.Close()
+
+			db := newTestProposalSimulationDB(t, rpcServer.URL, `["proposal-simulation"]`)
+			service := newProposalSimulationService(db, proposalSimulationConfig{NativeFallback: true})
+			_, err := service.Simulate(context.Background(), "demo", testSimulationProposalID, testSimulationRequest())
+			var simulationErr *ProposalSimulationError
+			if !errors.As(err, &simulationErr) || simulationErr.Code != "provider_unavailable" {
+				t.Fatalf("simulation error = %v, want provider_unavailable", err)
+			}
+		})
 	}
 }
 
