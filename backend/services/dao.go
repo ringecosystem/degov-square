@@ -536,6 +536,15 @@ func (s *DaoConfigService) StandardConfig(daoCode string) (*types.DaoConfig, err
 		slog.Error("failed to parse daoconfig", "err", err)
 		return nil, err
 	}
+	cfg := config.GetConfig()
+	ApplyDaoConfigInputOverrides(
+		&daoConfig,
+		cfg.GetString("DAO_CONFIG_MODE"),
+		cfg.GetStringWithDefault(
+			"DAO_CONFIG_NEXT_INDEXER_ENDPOINT_TEMPLATE",
+			"https://indexer.next.degov.ai/{code}/graphql",
+		),
+	)
 	return &daoConfig, nil
 }
 
@@ -573,6 +582,15 @@ func applyDaoConfigOutputOverrides(document map[string]interface{}, daoCode, mod
 	}
 
 	setNestedValue(document, strings.ReplaceAll(nextIndexerEndpointTemplate, "{code}", codeValue), "indexer", "endpoint")
+}
+
+// ApplyDaoConfigInputOverrides keeps backend consumers on the same indexer
+// endpoint that RawConfig exposes to clients for the selected deployment mode.
+func ApplyDaoConfigInputOverrides(daoConfig *types.DaoConfig, mode, nextIndexerEndpointTemplate string) {
+	if daoConfig == nil || strings.ToLower(strings.TrimSpace(mode)) != "next" {
+		return
+	}
+	daoConfig.Indexer.Endpoint = strings.ReplaceAll(nextIndexerEndpointTemplate, "{code}", daoConfig.Code)
 }
 
 func renderDaoConfig(document map[string]interface{}, format gqlmodels.ConfigFormat) (string, error) {

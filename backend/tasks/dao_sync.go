@@ -147,6 +147,16 @@ func (t *DaoSyncTask) processSingleDao(remoteLink GithubConfigLink, daoInfo DaoR
 		return types.DaoConfig{}, fmt.Errorf("missing essential fields in DAO config for code: %s", daoConfig.Config.Code)
 	}
 
+	cfg := config.GetConfig()
+	services.ApplyDaoConfigInputOverrides(
+		daoConfig.Config,
+		cfg.GetString("DAO_CONFIG_MODE"),
+		cfg.GetStringWithDefault(
+			"DAO_CONFIG_NEXT_INDEXER_ENDPOINT_TEMPLATE",
+			"https://indexer.next.degov.ai/{code}/graphql",
+		),
+	)
+
 	activeDaoCodes[daoConfig.Config.Code] = true
 
 	indexer := internal.NewDegovIndexer(daoConfig.Config.Indexer.Endpoint)
