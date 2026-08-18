@@ -240,21 +240,20 @@ func (s *ProposalCommentService) resolveScope(daoCode, rawProposalID string) (st
 	if err != nil {
 		return "", nil, err
 	}
-	proposalID, err := normalizeProposalCommentID(rawProposalID)
+	proposalIDs, err := proposalCommentIDCandidates(rawProposalID)
 	if err != nil {
 		return "", nil, commentError("invalid_proposal_id")
 	}
 
-	var count int64
-	if err := s.db.Model(&dbmodels.ProposalTracking{}).
-		Where("dao_code = ? AND proposal_id = ?", daoCode, proposalID).
-		Count(&count).Error; err != nil {
+	var proposal dbmodels.ProposalTracking
+	if err := s.db.Where("dao_code = ? AND proposal_id IN ?", daoCode, proposalIDs).
+		First(&proposal).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return "", nil, commentError("proposal_not_found")
+		}
 		return "", nil, err
 	}
-	if count == 0 {
-		return "", nil, commentError("proposal_not_found")
-	}
-	return proposalID, dao, nil
+	return proposal.ProposalID, dao, nil
 }
 
 func (s *ProposalCommentService) requireFeature(daoCode string) (*dbmodels.Dao, error) {
@@ -315,7 +314,7 @@ func (s *ProposalCommentService) allowWrite(user *types.UserSessInfo) error {
 	return nil
 }
 
-func normalizeProposalCommentID(value string) (string, error) {
+func proposalCommentIDCandidates(value string) ([]string, error) {
 	value = strings.TrimSpace(value)
 	base := 10
 	if strings.HasPrefix(value, "0x") || strings.HasPrefix(value, "0X") {
@@ -323,13 +322,19 @@ func normalizeProposalCommentID(value string) (string, error) {
 		value = value[2:]
 	}
 	if value == "" {
-		return "", errors.New("empty proposal ID")
+		return nil, errors.New("empty proposal ID")
 	}
 	proposalID, ok := new(big.Int).SetString(value, base)
 	if !ok || proposalID.Sign() < 0 || proposalID.BitLen() > 256 {
-		return "", errors.New("invalid proposal ID")
+		return nil, errors.New("invalid proposal ID")
 	}
-	return proposalID.String(), nil
+
+	hexValue := proposalID.Text(16)
+	candidates := []string{proposalID.String(), "0x" + hexValue}
+	if len(hexValue) < 64 {
+		candidates = append(candidates, "0x"+strings.Repeat("0", 64-len(hexValue))+hexValue)
+	}
+	return candidates, nil
 }
 
 func validateCommentBody(value string) (string, error) {

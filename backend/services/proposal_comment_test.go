@@ -85,6 +85,25 @@ func TestProposalCommentsFeatureScopeAndThreadLifecycle(t *testing.T) {
 	}
 }
 
+func TestProposalCommentsResolveHexTrackingID(t *testing.T) {
+	service := newProposalCommentTestService(t, `["proposal-comments"]`)
+	hexProposalID := "0x26e6249ecca1c50024b5baeca6084b6c6eeae30e2df78fa072f611cf09cd377e"
+	if err := service.db.Exec(
+		`INSERT INTO dgv_proposal_tracking (id, dao_code, proposal_id) VALUES (?, ?, ?)`,
+		"hex-proposal-row", "demo", hexProposalID,
+	).Error; err != nil {
+		t.Fatalf("seed hex proposal: %v", err)
+	}
+
+	page, err := service.List(gqlmodels.ProposalCommentsInput{DaoCode: "demo", ProposalID: hexProposalID})
+	if err != nil {
+		t.Fatalf("List(hex proposal): %v", err)
+	}
+	if len(page.Items) != 0 {
+		t.Fatalf("items = %d, want 0", len(page.Items))
+	}
+}
+
 func TestProposalCommentsOwnershipPaginationAndValidation(t *testing.T) {
 	service := newProposalCommentTestService(t, `["proposal-comments"]`)
 	owner := &types.UserSessInfo{Id: "owner", Address: "0x0000000000000000000000000000000000000001"}
