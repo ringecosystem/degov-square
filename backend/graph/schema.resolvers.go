@@ -93,6 +93,33 @@ func (r *mutationResolver) UnsubscribeProposal(ctx context.Context, input gqlmod
 	})
 }
 
+// CreateProposalComment is the resolver for the createProposalComment field.
+func (r *mutationResolver) CreateProposalComment(ctx context.Context, input gqlmodels.CreateProposalCommentInput) (*gqlmodels.ProposalComment, error) {
+	user, err := r.authUtils.GetUser(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return r.proposalCommentService.Create(user, input)
+}
+
+// UpdateProposalComment is the resolver for the updateProposalComment field.
+func (r *mutationResolver) UpdateProposalComment(ctx context.Context, input gqlmodels.UpdateProposalCommentInput) (*gqlmodels.ProposalComment, error) {
+	user, err := r.authUtils.GetUser(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return r.proposalCommentService.Update(user, input)
+}
+
+// DeleteProposalComment is the resolver for the deleteProposalComment field.
+func (r *mutationResolver) DeleteProposalComment(ctx context.Context, input gqlmodels.DeleteProposalCommentInput) (*gqlmodels.ProposalComment, error) {
+	user, err := r.authUtils.GetUser(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return r.proposalCommentService.Delete(user, input)
+}
+
 // Nonce is the resolver for the nonce field.
 func (r *queryResolver) Nonce(ctx context.Context, input gqlmodels.GetNonceInput) (string, error) {
 	nonce, err := r.authService.Nonce(input)
@@ -284,6 +311,11 @@ func (r *queryResolver) ProposalSummary(ctx context.Context, input gqlmodels.Pro
 		ProposalID: input.ProposalID,
 		DaoCode:    input.DaoCode,
 	})
+}
+
+// ProposalComments is the resolver for the proposalComments field.
+func (r *queryResolver) ProposalComments(ctx context.Context, input gqlmodels.ProposalCommentsInput) (*gqlmodels.ProposalCommentPage, error) {
+	return r.proposalCommentService.List(input)
 }
 
 // Mutation returns MutationResolver implementation.

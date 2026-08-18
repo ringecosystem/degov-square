@@ -56,6 +56,11 @@ enum NotificationChannelType {
   WEBHOOK
 }
 
+enum ProposalCommentState {
+  ACTIVE
+  DELETED
+}
+
 ### ==== entities
 
 type Dao {
@@ -137,6 +142,29 @@ type SubscribedProposal {
 type SubscribedFeature {
   name: String!
   strategy: String!
+}
+
+type ProposalComment {
+  id: ID!
+  daoCode: String!
+  chainId: Int!
+  proposalId: String!
+  authorAddress: String!
+  replyToId: ID
+  body: String
+  state: ProposalCommentState!
+  ctime: Time!
+  utime: Time
+}
+
+type ProposalCommentPageInfo {
+  endCursor: String
+  hasNextPage: Boolean!
+}
+
+type ProposalCommentPage {
+  items: [ProposalComment!]!
+  pageInfo: ProposalCommentPageInfo!
 }
 
 ### === outputs
@@ -335,6 +363,31 @@ input ProposalSummaryInput {
   daoCode: String!
 }
 
+input ProposalCommentsInput {
+  daoCode: String!
+  proposalId: String!
+  first: Int = 20
+  after: String
+}
+
+input CreateProposalCommentInput {
+  daoCode: String!
+  proposalId: String!
+  body: String!
+  replyToId: ID
+}
+
+input UpdateProposalCommentInput {
+  daoCode: String!
+  commentId: ID!
+  body: String!
+}
+
+input DeleteProposalCommentInput {
+  daoCode: String!
+  commentId: ID!
+}
+
 ### ==== graphql
 
 type Query {
@@ -372,6 +425,8 @@ type Query {
   botAddress: String! @auth(required: false) @deprecated(reason: "degov-agent account integration has been removed")
   # Returns a natural-language summary of a proposal.
   proposalSummary(input: ProposalSummaryInput!): String! @auth(required: false)
+
+  proposalComments(input: ProposalCommentsInput!): ProposalCommentPage! @auth(required: false)
 }
 
 type Mutation {
@@ -394,6 +449,10 @@ type Mutation {
   unsubscribeProposal(
     input: UnsubscribeProposalInput!
   ): SubscribedProposalOutput! @auth
+
+  createProposalComment(input: CreateProposalCommentInput!): ProposalComment! @auth
+  updateProposalComment(input: UpdateProposalCommentInput!): ProposalComment! @auth
+  deleteProposalComment(input: DeleteProposalCommentInput!): ProposalComment! @auth
 }
 
 # type Subscription {

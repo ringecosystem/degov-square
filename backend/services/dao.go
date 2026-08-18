@@ -539,6 +539,25 @@ func (s *DaoConfigService) StandardConfig(daoCode string) (*types.DaoConfig, err
 	return &daoConfig, nil
 }
 
+func (s *DaoConfigService) featureNames(daoCode string) ([]string, error) {
+	var dao dbmodels.Dao
+	if err := s.db.Select("features").Where("code = ?", daoCode).First(&dao).Error; err != nil {
+		return nil, err
+	}
+
+	features := []string{}
+	if strings.TrimSpace(dao.Features) == "" {
+		return features, nil
+	}
+	if err := json.Unmarshal([]byte(dao.Features), &features); err != nil {
+		return nil, fmt.Errorf("decode DAO features: %w", err)
+	}
+	if features == nil {
+		features = []string{}
+	}
+	return features, nil
+}
+
 func applyDaoConfigOutputOverrides(document map[string]interface{}, daoCode, mode, nextIndexerEndpointTemplate string) {
 	if strings.ToLower(strings.TrimSpace(mode)) != "next" {
 		return
@@ -587,6 +606,10 @@ func (s *DaoConfigService) RawConfig(input gqlmodels.GetDaoConfigInput) (string,
 	if err != nil {
 		return "", err
 	}
+	features, err := s.featureNames(input.DaoCode)
+	if err != nil {
+		return "", err
+	}
 
 	format := gqlmodels.ConfigFormatYaml
 	if input.Format != nil {
@@ -595,11 +618,6 @@ func (s *DaoConfigService) RawConfig(input gqlmodels.GetDaoConfigInput) (string,
 
 	cfg := config.GetConfig()
 	outputMode := cfg.GetString("DAO_CONFIG_MODE")
-	needsOverride := strings.EqualFold(strings.TrimSpace(outputMode), "next")
-
-	if format != gqlmodels.ConfigFormatJSON && !needsOverride {
-		return daoConfig.Config, nil
-	}
 
 	var document map[string]interface{}
 	if err := yaml.Unmarshal([]byte(daoConfig.Config), &document); err != nil {
@@ -608,6 +626,7 @@ func (s *DaoConfigService) RawConfig(input gqlmodels.GetDaoConfigInput) (string,
 	if document == nil {
 		document = map[string]interface{}{}
 	}
+	document["features"] = features
 
 	applyDaoConfigOutputOverrides(
 		document,
