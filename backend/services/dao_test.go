@@ -84,6 +84,21 @@ func TestRawDaoConfigIncludesRegistryFeatures(t *testing.T) {
 	}
 }
 
+func TestRawDaoConfigMissingDaoReturnsServiceError(t *testing.T) {
+	db, err := gorm.Open(sqlite.Open("file:"+t.Name()+"?mode=memory&cache=shared"), &gorm.Config{})
+	if err != nil {
+		t.Fatalf("open sqlite db: %v", err)
+	}
+	if err := db.Exec(`CREATE TABLE dgv_dao (id TEXT PRIMARY KEY, code TEXT UNIQUE NOT NULL, features TEXT)`).Error; err != nil {
+		t.Fatalf("create DAO table: %v", err)
+	}
+	service := &DaoConfigService{db: db}
+	_, err = service.featureNames("missing")
+	if err == nil || err.Error() != "dao config not found" {
+		t.Fatalf("featureNames() error = %v", err)
+	}
+}
+
 func TestConvertToGqlDaoMapsTagsAndDomains(t *testing.T) {
 	t.Parallel()
 

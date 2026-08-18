@@ -542,6 +542,9 @@ func (s *DaoConfigService) StandardConfig(daoCode string) (*types.DaoConfig, err
 func (s *DaoConfigService) featureNames(daoCode string) ([]string, error) {
 	var dao dbmodels.Dao
 	if err := s.db.Select("features").Where("code = ?", daoCode).First(&dao).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("dao config not found")
+		}
 		return nil, err
 	}
 

@@ -21,10 +21,11 @@ import (
 )
 
 const (
-	proposalCommentsFeature = "proposal-comments"
-	maxCommentBodyRunes     = 10_000
-	maxCommentsPageSize     = 100
-	commentWritesPerMinute  = 20
+	proposalCommentsFeature  = "proposal-comments"
+	maxCommentBodyRunes      = 10_000
+	maxCommentsPageSize      = 100
+	commentWritesPerMinute   = 20
+	maxCommentLimiterEntries = 10_000
 )
 
 type ProposalCommentError struct {
@@ -84,7 +85,7 @@ func (s *ProposalCommentService) List(input gqlmodels.ProposalCommentsInput) (*g
 
 	query := s.db.Where("dao_code = ? AND proposal_id = ?", input.DaoCode, proposalID)
 	if input.After != nil && strings.TrimSpace(*input.After) != "" {
-		cursor, err := decodeProposalCommentCursor(*input.After)
+		cursor, err := decodeProposalCommentCursor(strings.TrimSpace(*input.After))
 		if err != nil {
 			return nil, commentError("invalid_cursor")
 		}
@@ -292,7 +293,17 @@ func (s *ProposalCommentService) allowWrite(user *types.UserSessInfo) error {
 	minute := s.now().UTC().Truncate(time.Minute)
 	s.limiter.mu.Lock()
 	defer s.limiter.mu.Unlock()
-	window := s.limiter.windows[key]
+	window, tracked := s.limiter.windows[key]
+	if !tracked && len(s.limiter.windows) >= maxCommentLimiterEntries {
+		for address, candidate := range s.limiter.windows {
+			if candidate.Minute.Before(minute) {
+				delete(s.limiter.windows, address)
+			}
+		}
+		if len(s.limiter.windows) >= maxCommentLimiterEntries {
+			return commentError("comment_rate_limited")
+		}
+	}
 	if !window.Minute.Equal(minute) {
 		window = proposalCommentWriteWindow{Minute: minute}
 	}
@@ -301,13 +312,6 @@ func (s *ProposalCommentService) allowWrite(user *types.UserSessInfo) error {
 	}
 	window.Count++
 	s.limiter.windows[key] = window
-	if len(s.limiter.windows) > 1_000 {
-		for address, candidate := range s.limiter.windows {
-			if candidate.Minute.Before(minute) {
-				delete(s.limiter.windows, address)
-			}
-		}
-	}
 	return nil
 }
 

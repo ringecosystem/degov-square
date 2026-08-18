@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"testing"
+	"time"
 
 	dbmodels "github.com/ringecosystem/degov-square/database/models"
 	gqlmodels "github.com/ringecosystem/degov-square/graph/models"
@@ -115,6 +116,11 @@ func TestProposalCommentsOwnershipPaginationAndValidation(t *testing.T) {
 	if len(page2.Items) != 1 || page2.PageInfo.HasNextPage {
 		t.Fatalf("page 2 = %#v", page2)
 	}
+	paddedCursor := " \t" + *page1.PageInfo.EndCursor + "\n"
+	paddedPage, err := service.List(gqlmodels.ProposalCommentsInput{DaoCode: "demo", ProposalID: "42", First: &first, After: &paddedCursor})
+	if err != nil || len(paddedPage.Items) != 1 {
+		t.Fatalf("List(padded cursor) = %#v, %v", paddedPage, err)
+	}
 
 	_, err = service.Update(other, gqlmodels.UpdateProposalCommentInput{DaoCode: "demo", CommentID: created[0].ID, Body: "stolen"})
 	assertProposalCommentError(t, err, "comment_not_found_or_forbidden")
@@ -140,6 +146,19 @@ func TestProposalCommentWriteRateLimit(t *testing.T) {
 		}
 	}
 	assertProposalCommentError(t, service.allowWrite(user), "comment_rate_limited")
+}
+
+func TestProposalCommentWriteRateLimitBoundsTrackedWallets(t *testing.T) {
+	service := newProposalCommentTestService(t, `["proposal-comments"]`)
+	minute := service.now().UTC().Truncate(time.Minute)
+	for i := 0; i < maxCommentLimiterEntries; i++ {
+		service.limiter.windows[fmt.Sprintf("wallet-%d", i)] = proposalCommentWriteWindow{Minute: minute, Count: 1}
+	}
+	user := &types.UserSessInfo{Id: "new-owner", Address: "0x0000000000000000000000000000000000000001"}
+	assertProposalCommentError(t, service.allowWrite(user), "comment_rate_limited")
+	if got := len(service.limiter.windows); got != maxCommentLimiterEntries {
+		t.Fatalf("tracked wallets = %d, want %d", got, maxCommentLimiterEntries)
+	}
 }
 
 func assertProposalCommentError(t *testing.T, err error, code string) {
