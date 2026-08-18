@@ -154,7 +154,10 @@ func (s *ProposalCommentService) Create(user *types.UserSessInfo, input gqlmodel
 		if input.ReplyToID != nil {
 			var parent dbmodels.ProposalComment
 			if err := tx.Where("id = ? AND dao_code = ? AND proposal_id = ?", *input.ReplyToID, input.DaoCode, proposalID).First(&parent).Error; err != nil {
-				return commentError("reply_parent_not_found")
+				if errors.Is(err, gorm.ErrRecordNotFound) {
+					return commentError("reply_parent_not_found")
+				}
+				return err
 			}
 			if parent.State != dbmodels.ProposalCommentStateActive {
 				return commentError("reply_parent_deleted")
@@ -265,6 +268,9 @@ func (s *ProposalCommentService) requireFeature(daoCode string) (*dbmodels.Dao, 
 		return nil, commentError("dao_inactive")
 	}
 
+	if strings.TrimSpace(dao.Features) == "" {
+		return nil, commentError("dao_feature_disabled")
+	}
 	var features []string
 	if err := json.Unmarshal([]byte(dao.Features), &features); err != nil {
 		return nil, fmt.Errorf("decode DAO features: %w", err)
@@ -295,6 +301,13 @@ func (s *ProposalCommentService) allowWrite(user *types.UserSessInfo) error {
 	}
 	window.Count++
 	s.limiter.windows[key] = window
+	if len(s.limiter.windows) > 1_000 {
+		for address, candidate := range s.limiter.windows {
+			if candidate.Minute.Before(minute) {
+				delete(s.limiter.windows, address)
+			}
+		}
+	}
 	return nil
 }
 
