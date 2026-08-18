@@ -167,6 +167,28 @@ type ProposalCommentPage {
   pageInfo: ProposalCommentPageInfo!
 }
 
+type ProposalDraft {
+  id: ID!
+  daoCode: String!
+  chainId: Int!
+  title: String!
+  payload: String
+  payloadVersion: Int!
+  revision: Int!
+  ctime: Time!
+  utime: Time!
+}
+
+type ProposalDraftPageInfo {
+  endCursor: String
+  hasNextPage: Boolean!
+}
+
+type ProposalDraftPage {
+  items: [ProposalDraft!]!
+  pageInfo: ProposalDraftPageInfo!
+}
+
 ### === outputs
 
 type GetNonceOutput {
@@ -388,6 +410,32 @@ input DeleteProposalCommentInput {
   commentId: ID!
 }
 
+input ProposalDraftsInput {
+  daoCode: String!
+  first: Int = 20
+  after: String
+}
+
+input ProposalDraftInput {
+  daoCode: String!
+  draftId: ID!
+}
+
+input SaveProposalDraftInput {
+  daoCode: String!
+  draftId: ID
+  clientRequestId: String!
+  title: String!
+  payload: String!
+  payloadVersion: Int!
+  revision: Int
+}
+
+input DeleteProposalDraftInput {
+  daoCode: String!
+  draftId: ID!
+}
+
 ### ==== graphql
 
 type Query {
@@ -427,6 +475,8 @@ type Query {
   proposalSummary(input: ProposalSummaryInput!): String! @auth(required: false)
 
   proposalComments(input: ProposalCommentsInput!): ProposalCommentPage! @auth(required: false)
+  myProposalDrafts(input: ProposalDraftsInput!): ProposalDraftPage! @auth
+  proposalDraft(input: ProposalDraftInput!): ProposalDraft! @auth
 }
 
 type Mutation {
@@ -453,6 +503,8 @@ type Mutation {
   createProposalComment(input: CreateProposalCommentInput!): ProposalComment! @auth
   updateProposalComment(input: UpdateProposalCommentInput!): ProposalComment! @auth
   deleteProposalComment(input: DeleteProposalCommentInput!): ProposalComment! @auth
+  saveProposalDraft(input: SaveProposalDraftInput!): ProposalDraft! @auth
+  deleteProposalDraft(input: DeleteProposalDraftInput!): Boolean! @auth
 }
 
 # type Subscription {
