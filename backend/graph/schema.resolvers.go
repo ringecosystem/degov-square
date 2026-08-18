@@ -120,6 +120,24 @@ func (r *mutationResolver) DeleteProposalComment(ctx context.Context, input gqlm
 	return r.proposalCommentService.Delete(user, input)
 }
 
+// SaveProposalDraft is the resolver for the saveProposalDraft field.
+func (r *mutationResolver) SaveProposalDraft(ctx context.Context, input gqlmodels.SaveProposalDraftInput) (*gqlmodels.ProposalDraft, error) {
+	user, err := r.authUtils.GetUser(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return r.proposalDraftService.Save(user, input)
+}
+
+// DeleteProposalDraft is the resolver for the deleteProposalDraft field.
+func (r *mutationResolver) DeleteProposalDraft(ctx context.Context, input gqlmodels.DeleteProposalDraftInput) (bool, error) {
+	user, err := r.authUtils.GetUser(ctx)
+	if err != nil {
+		return false, err
+	}
+	return r.proposalDraftService.Delete(user, input)
+}
+
 // Nonce is the resolver for the nonce field.
 func (r *queryResolver) Nonce(ctx context.Context, input gqlmodels.GetNonceInput) (string, error) {
 	nonce, err := r.authService.Nonce(input)
@@ -316,6 +334,24 @@ func (r *queryResolver) ProposalSummary(ctx context.Context, input gqlmodels.Pro
 // ProposalComments is the resolver for the proposalComments field.
 func (r *queryResolver) ProposalComments(ctx context.Context, input gqlmodels.ProposalCommentsInput) (*gqlmodels.ProposalCommentPage, error) {
 	return r.proposalCommentService.List(input)
+}
+
+// MyProposalDrafts is the resolver for the myProposalDrafts field.
+func (r *queryResolver) MyProposalDrafts(ctx context.Context, input gqlmodels.ProposalDraftsInput) (*gqlmodels.ProposalDraftPage, error) {
+	user, err := r.authUtils.GetUser(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return r.proposalDraftService.List(user, input)
+}
+
+// ProposalDraft is the resolver for the proposalDraft field.
+func (r *queryResolver) ProposalDraft(ctx context.Context, input gqlmodels.ProposalDraftInput) (*gqlmodels.ProposalDraft, error) {
+	user, err := r.authUtils.GetUser(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return r.proposalDraftService.Get(user, input)
 }
 
 // Mutation returns MutationResolver implementation.
