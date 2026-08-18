@@ -26,6 +26,7 @@ type Resolver struct {
 	treasuryService        *services.TreasuryService
 	proposalService        *services.ProposalService
 	proposalSummaryService *services.ProposalSummaryService
+	proposalCommentService *services.ProposalCommentService
 }
 
 func NewResolver() *Resolver {
@@ -44,5 +45,6 @@ func NewResolver() *Resolver {
 		treasuryService:        services.NewTreasuryService(),
 		proposalService:        services.NewProposalService(),
 		proposalSummaryService: services.NewProposalSummaryService(),
+		proposalCommentService: services.NewProposalCommentService(),
 	}
 }
