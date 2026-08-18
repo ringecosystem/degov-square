@@ -7,6 +7,7 @@ import (
 
 	dbmodels "github.com/ringecosystem/degov-square/database/models"
 	gqlmodels "github.com/ringecosystem/degov-square/graph/models"
+	"github.com/ringecosystem/degov-square/types"
 	"gopkg.in/yaml.v3"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -146,6 +147,41 @@ func TestApplyDaoConfigOutputOverridesPreservesCanonicalMode(t *testing.T) {
 
 	if got, want := getNestedString(document, "indexer", "endpoint"), "https://indexer.degov.ai/aixbt-dao/graphql"; got != want {
 		t.Fatalf("Indexer.Endpoint = %q, want %q", got, want)
+	}
+}
+
+func TestApplyDaoConfigInputOverridesUsesNextIndexer(t *testing.T) {
+	t.Parallel()
+
+	daoConfig := types.DaoConfig{Code: "demo-no-timelock-dao"}
+	daoConfig.Indexer.Endpoint = "https://indexer.degov.ai/demo-no-timelock-dao/graphql"
+
+	ApplyDaoConfigInputOverrides(
+		&daoConfig,
+		"next",
+		"https://indexer.next.degov.ai/{code}/graphql",
+	)
+
+	if got, want := daoConfig.Indexer.Endpoint, "https://indexer.next.degov.ai/demo-no-timelock-dao/graphql"; got != want {
+		t.Fatalf("indexer endpoint = %q, want %q", got, want)
+	}
+}
+
+func TestApplyDaoConfigInputOverridesPreservesCanonicalIndexer(t *testing.T) {
+	t.Parallel()
+
+	daoConfig := types.DaoConfig{Code: "demo-no-timelock-dao"}
+	const canonical = "https://indexer.degov.ai/demo-no-timelock-dao/graphql"
+	daoConfig.Indexer.Endpoint = canonical
+
+	ApplyDaoConfigInputOverrides(
+		&daoConfig,
+		"",
+		"https://indexer.next.degov.ai/{code}/graphql",
+	)
+
+	if daoConfig.Indexer.Endpoint != canonical {
+		t.Fatalf("indexer endpoint = %q, want %q", daoConfig.Indexer.Endpoint, canonical)
 	}
 }
 
