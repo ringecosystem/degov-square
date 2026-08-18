@@ -160,10 +160,13 @@ func startServer() {
 
 	// Create DAO route handler
 	daoRoute := routes.NewDaoRoute()
+	proposalSimulationRoute := routes.NewProposalSimulationRoute()
 
 	// Support both patterns: /dao/config and /dao/config/{dao}
 	mux.Handle("/dao/config", middlewareChain.Then(http.HandlerFunc(daoRoute.ConfigHandler)))
 	mux.Handle("/dao/config/{dao}", middlewareChain.Then(http.HandlerFunc(daoRoute.ConfigHandler)))
+	mux.Handle("GET /api/v1/daos/{daoCode}/proposal-simulation/capability", middlewareChain.Then(http.HandlerFunc(proposalSimulationRoute.CapabilityHandler)))
+	mux.Handle("POST /api/v1/daos/{daoCode}/proposals/{proposalId}/simulation", middlewareChain.Then(http.HandlerFunc(proposalSimulationRoute.SimulationHandler)))
 
 	registerStytchOAuthRoutes(mux, middlewareChain, cfg, nil)
 

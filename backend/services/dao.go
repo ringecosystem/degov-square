@@ -3,6 +3,7 @@ package services
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log/slog"
 	"regexp"
 	"strings"
@@ -85,6 +86,25 @@ func (s *DaoService) GetByCode(code string) (*gqlmodels.Dao, error) {
 		return nil, err
 	}
 	return s.convertToGqlDao(dbDao), nil
+}
+
+// HasFeature reports whether a DAO explicitly enables a feature.
+func (s *DaoService) HasFeature(code, feature string) (bool, error) {
+	var dao dbmodels.Dao
+	if err := s.db.Select("features").Where("code = ?", code).First(&dao).Error; err != nil {
+		return false, err
+	}
+
+	var features []string
+	if err := json.Unmarshal([]byte(dao.Features), &features); err != nil {
+		return false, fmt.Errorf("decode DAO features: %w", err)
+	}
+	for _, candidate := range features {
+		if candidate == feature {
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
 // ListDAOCodesWithFeature returns DAO codes that have a specific feature enabled

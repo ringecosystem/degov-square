@@ -126,6 +126,11 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("MCP_PROPOSAL_SUMMARY_GENERATE_ENABLED", false)
 	v.SetDefault("MCP_PROPOSAL_SUMMARY_TIMEOUT", "30s")
 
+	// Proposal execution simulation defaults
+	v.SetDefault("SIMULATION_NATIVE_RPC_FALLBACK", false)
+	v.SetDefault("SIMULATION_TIMEOUT", "15s")
+	v.SetDefault("SIMULATION_RATE_LIMIT_PER_MINUTE", 10)
+
 	// Task defaults
 	v.SetDefault("TASK_DAO_SYNC_ENABLED", true)
 	v.SetDefault("TASK_DAO_SYNC_INTERVAL", "5m")
