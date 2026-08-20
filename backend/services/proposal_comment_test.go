@@ -63,10 +63,15 @@ func TestProposalCommentsFeatureScopeAndThreadLifecycle(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Create(reply): %v", err)
 	}
-	_, err = service.Create(user, gqlmodels.CreateProposalCommentInput{
+	nested, err := service.Create(user, gqlmodels.CreateProposalCommentInput{
 		DaoCode: "demo", ProposalID: "42", Body: "nested", ReplyToID: &reply.ID,
 	})
-	assertProposalCommentError(t, err, "reply_depth_exceeded")
+	if err != nil {
+		t.Fatalf("Create(nested reply): %v", err)
+	}
+	if nested.ReplyToID == nil || *nested.ReplyToID != reply.ID {
+		t.Fatalf("nested reply = %#v", nested)
+	}
 
 	deleted, err := service.Delete(user, gqlmodels.DeleteProposalCommentInput{DaoCode: "demo", CommentID: root.ID})
 	if err != nil {
@@ -75,12 +80,16 @@ func TestProposalCommentsFeatureScopeAndThreadLifecycle(t *testing.T) {
 	if deleted.State != gqlmodels.ProposalCommentStateDeleted || deleted.Body != nil {
 		t.Fatalf("deleted = %#v", deleted)
 	}
+	_, err = service.Create(user, gqlmodels.CreateProposalCommentInput{
+		DaoCode: "demo", ProposalID: "42", Body: "reply to deleted", ReplyToID: &root.ID,
+	})
+	assertProposalCommentError(t, err, "reply_parent_deleted")
 
 	page, err := service.List(gqlmodels.ProposalCommentsInput{DaoCode: "demo", ProposalID: "0x2A"})
 	if err != nil {
 		t.Fatalf("List(): %v", err)
 	}
-	if len(page.Items) != 2 || page.Items[0].Body != nil || page.Items[1].ReplyToID == nil {
+	if len(page.Items) != 3 || page.Items[0].Body != nil || page.Items[1].ReplyToID == nil || page.Items[2].ReplyToID == nil {
 		t.Fatalf("page = %#v", page)
 	}
 }

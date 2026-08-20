@@ -163,9 +163,6 @@ func (s *ProposalCommentService) Create(user *types.UserSessInfo, input gqlmodel
 			if parent.State != dbmodels.ProposalCommentStateActive {
 				return commentError("reply_parent_deleted")
 			}
-			if parent.ReplyToID != nil {
-				return commentError("reply_depth_exceeded")
-			}
 		}
 		return tx.Create(&comment).Error
 	})
