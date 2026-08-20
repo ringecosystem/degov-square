@@ -53,33 +53,6 @@ type DaoConfigResult struct {
 	Config *types.DaoConfig // Parsed YAML content
 }
 
-func parseFeatureList(value string) []string {
-	if strings.TrimSpace(value) == "" {
-		return nil
-	}
-
-	features := make([]string, 0)
-	for _, feature := range strings.Split(value, ",") {
-		if feature = strings.TrimSpace(feature); feature != "" {
-			features = append(features, feature)
-		}
-	}
-	return features
-}
-
-func mergeFeatures(features, additionalFeatures []string) []string {
-	merged := make([]string, 0, len(features)+len(additionalFeatures))
-	seen := make(map[string]struct{}, len(features)+len(additionalFeatures))
-	for _, feature := range append(features, additionalFeatures...) {
-		if _, exists := seen[feature]; feature == "" || exists {
-			continue
-		}
-		seen[feature] = struct{}{}
-		merged = append(merged, feature)
-	}
-	return merged
-}
-
 // NewDaoSyncTask creates a new DAO sync task
 func NewDaoSyncTask() *DaoSyncTask {
 	return &DaoSyncTask{
@@ -200,13 +173,10 @@ func (t *DaoSyncTask) processSingleDao(remoteLink GithubConfigLink, daoInfo DaoR
 
 	// Prepare base input
 	input := types.RefreshDaoAndConfigInput{
-		Code:    daoConfig.Config.Code,
-		Domains: daoInfo.Domains,
-		Tags:    daoInfo.Tags,
-		Features: mergeFeatures(
-			daoInfo.Features,
-			parseFeatureList(config.GetString("REGISTRY_CONFIG_ADDITIONAL_FEATURES")),
-		),
+		Code:       daoConfig.Config.Code,
+		Domains:    daoInfo.Domains,
+		Tags:       daoInfo.Tags,
+		Features:   daoInfo.Features,
 		State:      state,
 		ConfigLink: configURL,
 		Config:     *daoConfig.Config,
